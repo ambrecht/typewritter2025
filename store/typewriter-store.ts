@@ -1,8 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { LineBreakConfig, FormattedLine, ParagraphRange, TextStatistics } from "@/types"
-import { MarkdownType } from "@/types"
-import { parseMarkdownLine, processMultilineMarkdown } from "@/utils/markdown-parser"
+import type { LineBreakConfig, FormattedLine, ParagraphRange, TextStatistics, FlowModeConfig } from "@/types"
 import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
 
@@ -16,6 +14,14 @@ const DEFAULT_TEXT_STATISTICS: TextStatistics = {
   wordCount: 0,
   letterCount: 0,
   pageCount: 0,
+}
+
+const DEFAULT_FLOW_MODE: FlowModeConfig = {
+  enabled: false,
+  noPunctuation: true,
+  noBackspace: true,
+  timerType: "time",
+  timerTarget: 15,
 }
 
 // Ändere den INITIAL_STATE, um Sound standardmäßig zu deaktivieren
@@ -37,7 +43,7 @@ const INITIAL_STATE: TypewriterState & {
   paragraphRanges: [],
   inParagraph: false,
   currentParagraphStart: -1,
-  activeLineType: MarkdownType.NORMAL,
+  flowMode: DEFAULT_FLOW_MODE,
 
   // Neue Zustandsvariablen
   mode: "typing",
@@ -59,6 +65,14 @@ const INITIAL_STATE: TypewriterState & {
 const computeTextStatistics = (lines: FormattedLine[], activeLine: string): TextStatistics => {
   const allText = [...lines.map((line) => line.text), activeLine].join(" ")
   return calculateTextStatistics(allText)
+}
+
+/**
+ * Entfernt Satzzeichen aus einem Text
+ */
+const removePunctuation = (text: string): string => {
+  // Entferne alle Satzzeichen, behalte aber Leerzeichen und Buchstaben
+  return text.replace(/[^\w\s]/g, "")
 }
 
 /**
@@ -132,6 +146,9 @@ export interface TypewriterActions {
   clearAllLines: () => void
   resetSession: () => void
   saveSession: () => Promise<void>
+  updateFlowMode: (config: Partial<FlowModeConfig>) => void
+  startFlowMode: (timerType: "time" | "words", target: number) => void
+  stopFlowMode: () => void
 }
 
 export interface TypewriterState {
@@ -146,7 +163,7 @@ export interface TypewriterState {
   paragraphRanges: ParagraphRange[]
   inParagraph: boolean
   currentParagraphStart: number
-  activeLineType: MarkdownType
+  flowMode: FlowModeConfig
 }
 
 // Füge die Sound-Aktionen zum Store hinzu
@@ -179,27 +196,29 @@ export const useTypewriterStore = create<
        */
       setActiveLine: (text: string) =>
         set((state) => {
-          // Berechne Statistiken basierend auf dem gesamten Text
-          const statistics = computeTextStatistics(state.lines, text)
+          let processedText = text
 
-          // Bestimme den Markdown-Typ der aktiven Zeile
-          const activeLineType = parseMarkdownLine(text).type
+          // Flow Mode: Satzzeichen entfernen
+          if (state.flowMode.enabled && state.flowMode.noPunctuation) {
+            processedText = removePunctuation(text)
+          }
+
+          // Berechne Statistiken basierend auf dem gesamten Text
+          const statistics = computeTextStatistics(state.lines, processedText)
 
           // Wenn wir im Navigationsmodus sind, wechseln wir zurück zum Schreibmodus
           if (state.mode === "navigating") {
             return {
-              activeLine: text,
+              activeLine: processedText,
               statistics,
-              activeLineType,
               mode: "typing",
               selectedLineIndex: null,
             }
           }
 
           return {
-            activeLine: text,
+            activeLine: processedText,
             statistics,
-            activeLineType,
           }
         }),
 
@@ -215,8 +234,8 @@ export const useTypewriterStore = create<
           const lines = state.activeLine.split("\n")
 
           if (lines.length > 1) {
-            // Verarbeite mehrere Zeilen als Markdown-Block
-            const formattedLines = processMultilineMarkdown(lines)
+            // Verarbeite mehrere Zeilen als einfache Textzeilen
+            const formattedLines = lines.map((line) => ({ text: line }))
             const newLines = [...state.lines, ...formattedLines]
 
             // Aktualisiere Absatzinformationen für die letzte Zeile
@@ -226,12 +245,11 @@ export const useTypewriterStore = create<
             return {
               lines: newLines,
               activeLine: "",
-              activeLineType: MarkdownType.NORMAL,
               ...paragraphInfo,
             }
           } else {
-            // Parse die Markdown-Formatierung für eine einzelne Zeile
-            const formattedLine = parseMarkdownLine(state.activeLine)
+            // Erstelle eine einfache Textzeile
+            const formattedLine = { text: state.activeLine }
 
             // Füge die formatierte Zeile zum Stack hinzu
             const newLines = [...state.lines, formattedLine]
@@ -243,7 +261,6 @@ export const useTypewriterStore = create<
             return {
               lines: newLines,
               activeLine: "",
-              activeLineType: MarkdownType.NORMAL,
               ...paragraphInfo,
             }
           }
@@ -316,7 +333,6 @@ export const useTypewriterStore = create<
       clearCurrentInput: () =>
         set(() => ({
           activeLine: "",
-          activeLineType: MarkdownType.NORMAL,
         })),
 
       /**
@@ -342,7 +358,6 @@ export const useTypewriterStore = create<
           paragraphRanges: [],
           inParagraph: false,
           currentParagraphStart: -1,
-          activeLineType: MarkdownType.NORMAL,
           mode: "typing",
           selectedLineIndex: null,
         })),
@@ -360,7 +375,7 @@ export const useTypewriterStore = create<
           // Sammle den gesamten Text
           const allText = [...state.lines.map((line) => line.text), state.activeLine].filter(Boolean).join("\n")
 
-          // Sende den Text an die API
+          // Sende den Text an die API (API-Key wird automatisch aus Umgebungsvariable gelesen)
           const result = await saveText(allText)
 
           // Aktualisiere den Speicherstatus
@@ -418,15 +433,15 @@ export const useTypewriterStore = create<
         set({ isLoading: true })
 
         try {
-          // Hole die letzte Sitzung von der API
+          // Hole die letzte Sitzung von der API (API-Key wird automatisch aus Umgebungsvariable gelesen)
           const result = await getLastSession()
 
           if (result.success && result.text) {
             // Teile den Text in Zeilen auf und entferne leere Zeilen am Ende
             const textLines = result.text.split("\n")
 
-            // Verarbeite die Zeilen als Markdown
-            const formattedLines = processMultilineMarkdown(textLines)
+            // Verarbeite die Zeilen als einfache Textzeilen
+            const formattedLines = textLines.map((line) => ({ text: line }))
 
             // Berechne Absatzbereiche neu
             const paragraphRanges: ParagraphRange[] = []
@@ -435,14 +450,7 @@ export const useTypewriterStore = create<
 
             // Durchlaufe alle Zeilen und identifiziere Absätze
             formattedLines.forEach((line, index) => {
-              // Wenn die Zeile ein Absatzmarker ist oder als Absatz formatiert ist
-              if (line.type === MarkdownType.PARAGRAPH) {
-                // Einzelner Absatz
-                paragraphRanges.push({
-                  start: index,
-                  end: index,
-                })
-              } else if (line.text.trim() === "***") {
+              if (line.text.trim() === "***") {
                 // Absatzmarker
                 if (!inParagraph) {
                   // Starte einen neuen Absatz
@@ -474,7 +482,6 @@ export const useTypewriterStore = create<
             set({
               lines: formattedLines,
               activeLine: "",
-              activeLineType: MarkdownType.NORMAL,
               statistics: {
                 wordCount: result.wordCount || calculateTextStatistics(result.text).wordCount,
                 letterCount: result.letterCount || calculateTextStatistics(result.text).letterCount,
@@ -688,6 +695,45 @@ export const useTypewriterStore = create<
         set(() => ({
           mode: "typing",
           selectedLineIndex: null,
+        })),
+
+      /**
+       * Aktualisiert die Flow Mode Konfiguration.
+       */
+      updateFlowMode: (config: Partial<FlowModeConfig>) =>
+        set((state) => ({
+          flowMode: {
+            ...state.flowMode,
+            ...config,
+          },
+        })),
+
+      /**
+       * Startet den Flow Mode mit Timer.
+       */
+      startFlowMode: (timerType: "time" | "words", target: number) =>
+        set((state) => ({
+          flowMode: {
+            ...state.flowMode,
+            enabled: true,
+            timerType,
+            timerTarget: target,
+            timerStartTime: Date.now(),
+            initialWordCount: state.statistics.wordCount,
+          },
+        })),
+
+      /**
+       * Beendet den Flow Mode.
+       */
+      stopFlowMode: () =>
+        set((state) => ({
+          flowMode: {
+            ...state.flowMode,
+            enabled: false,
+            timerStartTime: undefined,
+            initialWordCount: undefined,
+          },
         })),
     }),
     {

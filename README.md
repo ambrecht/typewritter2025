@@ -1,30 +1,200 @@
-# Erstelle neues projekt
+# Typewriter App
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+Eine minimalistische, ablenkungsfreie Schreibumgebung für konzentriertes Arbeiten. Die App bietet intelligente Zeilenumbrüche, Dark Mode und Offline-Funktionalität.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ambrechts-projects/v0-erstelle-neues-projekt)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/qMfyenoce0g)
+## Features
 
-## Overview
+- ✍️ **Ablenkungsfreies Schreiben**: Minimalistisches Interface ohne Störungen
+- 📱 **Responsive Design**: Optimiert für Desktop, Tablet und Mobile
+- 🌙 **Dark Mode**: Augenschonender dunkler Modus
+- 📏 **Intelligente Zeilenumbrüche**: Automatische Anpassung an Bildschirmgröße
+- 💾 **Cloud-Speicherung**: Sichere Speicherung in der Cloud
+- 📱 **PWA-Support**: Installierbar als Progressive Web App
+- 🔄 **Offline-Funktionalität**: Arbeiten auch ohne Internetverbindung
+- ⌨️ **Tastaturnavigation**: Navigation durch vorherige Zeilen mit Pfeiltasten
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Technologie-Stack
 
-## Deployment
+- **Framework**: Next.js 14 mit App Router
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **Icons**: Lucide React
+- **Testing**: Jest + React Testing Library
+- **Deployment**: Vercel
 
-Your project is live at:
+## Lokale Entwicklung
 
-**[https://vercel.com/ambrechts-projects/v0-erstelle-neues-projekt](https://vercel.com/ambrechts-projects/v0-erstelle-neues-projekt)**
+### Voraussetzungen
 
-## Build your app
+- Node.js 18+ 
+- pnpm (empfohlen) oder npm
 
-Continue building your app on:
+### Installation
 
-**[https://v0.dev/chat/projects/qMfyenoce0g](https://v0.dev/chat/projects/qMfyenoce0g)**
+1. Repository klonen:
+\`\`\`bash
+git clone <repository-url>
+cd typewriter-app
+\`\`\`
 
-## How It Works
+2. Abhängigkeiten installieren:
+\`\`\`bash
+pnpm install
+\`\`\`
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+3. Umgebungsvariablen konfigurieren:
+\`\`\`bash
+cp .env.example .env.local
+\`\`\`
+
+Bearbeiten Sie `.env.local` und setzen Sie:
+\`\`\`env
+API_KEY=your-api-key-here
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+\`\`\`
+
+4. Entwicklungsserver starten:
+\`\`\`bash
+pnpm dev
+\`\`\`
+
+Die App ist nun unter `http://localhost:3000` verfügbar.
+
+### Verfügbare Scripts
+
+\`\`\`bash
+# Entwicklungsserver starten
+pnpm dev
+
+# Produktions-Build erstellen
+pnpm build
+
+# Produktionsserver starten
+pnpm start
+
+# Tests ausführen
+pnpm test
+
+# Tests im Watch-Modus
+pnpm test:watch
+
+# Test-Coverage generieren
+pnpm test:coverage
+
+# Linting
+pnpm lint
+\`\`\`
+
+## Produktion
+
+### Build erstellen
+
+\`\`\`bash
+pnpm build
+\`\`\`
+
+Dies erstellt eine optimierte Produktionsversion in `.next/`.
+
+### Deployment auf Vercel
+
+1. **Automatisches Deployment**:
+   - Repository mit Vercel verbinden
+   - Vercel erkennt automatisch Next.js und konfiguriert das Deployment
+
+2. **Umgebungsvariablen in Vercel setzen**:
+   - Gehen Sie zu Ihrem Vercel-Dashboard
+   - Wählen Sie Ihr Projekt aus
+   - Navigieren Sie zu "Settings" → "Environment Variables"
+   - Fügen Sie hinzu:
+     \`\`\`
+     API_KEY=your-production-api-key
+     NEXT_PUBLIC_BASE_URL=https://your-domain.vercel.app
+     \`\`\`
+
+3. **Manuelles Deployment**:
+\`\`\`bash
+# Vercel CLI installieren
+npm i -g vercel
+
+# Deployment
+vercel --prod
+\`\`\`
+
+### Umgebungsvariablen
+
+| Variable | Beschreibung | Erforderlich |
+|----------|--------------|--------------|
+| `API_KEY` | API-Schlüssel für Backend-Kommunikation | Ja |
+| `NEXT_PUBLIC_BASE_URL` | Basis-URL der Anwendung | Ja |
+
+## API-Konfiguration
+
+Die App kommuniziert mit einer externen API für die Speicherung von Texten. Der API-Schlüssel wird über die Umgebungsvariable `API_KEY` konfiguriert.
+
+### API-Endpunkte
+
+- `POST /api/save` - Text speichern
+- `GET /api/sessions` - Alle Sitzungen abrufen  
+- `GET /api/last-session` - Letzte Sitzung abrufen
+
+## PWA-Features
+
+Die App ist als Progressive Web App (PWA) konfiguriert:
+
+- **Offline-Funktionalität**: Service Worker für Caching
+- **Installierbar**: Kann auf dem Homescreen installiert werden
+- **App-ähnliches Verhalten**: Vollbild-Modus auf mobilen Geräten
+
+## Testing
+
+### Unit Tests
+
+\`\`\`bash
+# Alle Tests ausführen
+pnpm test
+
+# Tests mit Coverage
+pnpm test:coverage
+
+# Tests im Watch-Modus
+pnpm test:watch
+\`\`\`
+
+### Test-Struktur
+
+- `__tests__/store/` - Store-Logic Tests
+- `__tests__/utils/` - Utility-Function Tests  
+- `__tests__/api/` - API-Route Tests
+
+## Sicherheit
+
+Die App implementiert verschiedene Sicherheitsmaßnahmen:
+
+- **Content Security Policy (CSP)**
+- **Strict Transport Security (HSTS)**
+- **X-Frame-Options**
+- **X-Content-Type-Options**
+- **Referrer Policy**
+
+## Performance-Optimierungen
+
+- **Image Optimization**: Next.js Image-Komponente
+- **Code Splitting**: Automatisch durch Next.js
+- **Service Worker**: Caching für bessere Performance
+- **Preconnect**: DNS-Prefetching für externe Ressourcen
+
+## Browser-Unterstützung
+
+- Chrome/Edge 88+
+- Firefox 85+
+- Safari 14+
+- Mobile Safari 14+
+- Chrome Mobile 88+
+
+## Lizenz
+
+[MIT License](LICENSE)
+
+## Support
+
+Bei Fragen oder Problemen erstellen Sie bitte ein Issue im Repository.

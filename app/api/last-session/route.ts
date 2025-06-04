@@ -1,32 +1,27 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getApiKey } from "../set-api-key/route"
-
-// Korrigierte API-Basis-URL
-const API_BASE_URL = "https://api.ambrecht.de"
-// Verwende den korrekten Pfad für den Endpunkt
-const API_ENDPOINT = "/api/typewriter/last"
+import { getApiKey } from "@/lib/api-key-storage"
+import { getApiUrl } from "@/lib/api-config"
 
 export async function GET(request: NextRequest) {
   try {
-    // Verwende die getApiKey-Funktion, um den API-Schlüssel zu erhalten
     const apiKey = getApiKey()
 
-    // Prüfe, ob der API-Schlüssel vorhanden ist
     if (!apiKey) {
-      console.warn("API-Schlüssel nicht gefunden. Bitte setzen Sie die API_KEY Umgebungsvariable.")
+      console.warn("API-Schlüssel nicht gefunden.")
       return NextResponse.json(
         {
           error: "Configuration Error",
-          message: "API-Schlüssel nicht gefunden. Bitte setzen Sie die API_KEY Umgebungsvariable.",
+          message:
+            "API-Schlüssel nicht gefunden. Bitte setzen Sie die API_KEY Umgebungsvariable oder konfigurieren Sie den Schlüssel in den Einstellungen.",
         },
         { status: 400 },
       )
     }
 
-    console.log("Sende Anfrage an:", `${API_BASE_URL}${API_ENDPOINT}`)
+    const apiUrl = getApiUrl("LAST_SESSION")
+    console.log("Sende Anfrage an:", apiUrl)
 
-    // Sende die Anfrage an den externen API-Endpunkt mit dem API-Schlüssel im Header
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINT}`, {
+    const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -34,22 +29,18 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Wenn die Antwort nicht OK ist, versuche den Fehler zu analysieren
     if (!response.ok) {
       let errorMessage = "Fehler beim Laden der letzten Sitzung"
       let errorData = {}
 
       try {
-        // Hole zuerst den Antworttext
         const responseText = await response.text()
 
-        // Prüfe, ob der Text leer ist oder nicht wie JSON aussieht
         if (!responseText || responseText.trim() === "" || responseText.includes("<!DOCTYPE html>")) {
           console.error("Ungültige API-Antwort:", responseText)
           errorMessage = "Ungültige Antwort vom Server erhalten"
         } else {
           try {
-            // Versuche, den Text als JSON zu parsen
             const data = JSON.parse(responseText)
             errorMessage = data.message || errorMessage
             errorData = data
@@ -63,12 +54,11 @@ export async function GET(request: NextRequest) {
         console.error("Fehler beim Verarbeiten der API-Antwort:", e)
       }
 
-      // Wenn der API-Schlüssel ungültig ist, gib eine spezifischere Fehlermeldung zurück
       if (response.status === 401 || response.status === 403 || errorMessage.includes("API-Schlüssel")) {
         return NextResponse.json(
           {
             error: "Authentication Error",
-            message: "Ungültiger API-Schlüssel. Bitte überprüfen Sie Ihre API_KEY Umgebungsvariable.",
+            message: "Ungültiger API-Schlüssel. Bitte überprüfen Sie Ihre Konfiguration.",
           },
           { status: 401 },
         )
@@ -85,12 +75,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Erfolgreiche Antwort verarbeiten
     try {
-      // Hole zuerst den Antworttext
       const responseText = await response.text()
 
-      // Prüfe, ob der Text leer ist oder nicht wie JSON aussieht
       if (!responseText || responseText.trim() === "") {
         console.error("Leere API-Antwort erhalten")
         return NextResponse.json(
@@ -103,13 +90,8 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        // Versuche, den Text als JSON zu parsen
         const responseData = JSON.parse(responseText)
-
-        // Extrahiere die Daten aus der Antwort
         const sessionData = responseData.data || {}
-
-        // Stelle sicher, dass der Text als String vorliegt
         const text = sessionData.text || ""
 
         return NextResponse.json(

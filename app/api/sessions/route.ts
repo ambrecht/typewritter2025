@@ -1,32 +1,27 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getApiKey } from "../set-api-key/route"
-
-// Korrigierte API-Basis-URL
-const API_BASE_URL = "https://api.ambrecht.de"
-// Verwende den korrekten Pfad für den Endpunkt
-const API_ENDPOINT = "/api/typewriter/sessions"
+import { getApiKey } from "@/lib/api-key-storage"
+import { getApiUrl } from "@/lib/api-config"
 
 export async function GET(request: NextRequest) {
   try {
-    // Verwende die getApiKey-Funktion, um den API-Schlüssel zu erhalten
     const apiKey = getApiKey()
 
-    // Prüfe, ob der API-Schlüssel vorhanden ist
     if (!apiKey) {
-      console.warn("API-Schlüssel nicht gefunden. Bitte setzen Sie die API_KEY Umgebungsvariable.")
+      console.warn("API-Schlüssel nicht gefunden.")
       return NextResponse.json(
         {
           error: "Configuration Error",
-          message: "API-Schlüssel nicht gefunden. Bitte setzen Sie die API_KEY Umgebungsvariable.",
+          message:
+            "API-Schlüssel nicht gefunden. Bitte setzen Sie die API_KEY Umgebungsvariable oder konfigurieren Sie den Schlüssel in den Einstellungen.",
         },
         { status: 400 },
       )
     }
 
-    console.log("Sende Anfrage an:", `${API_BASE_URL}${API_ENDPOINT}`)
+    const apiUrl = getApiUrl("SESSIONS")
+    console.log("Sende Anfrage an:", apiUrl)
 
-    // Sende die Anfrage an den externen API-Endpunkt mit dem API-Schlüssel im Header
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINT}`, {
+    const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -34,12 +29,9 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Verarbeite die Antwort
     try {
-      // Hole zuerst den Antworttext
       const responseText = await response.text()
 
-      // Prüfe, ob der Text leer ist oder nicht wie JSON aussieht
       if (!responseText || responseText.trim() === "" || responseText.includes("<!DOCTYPE html>")) {
         console.error("Ungültige API-Antwort:", responseText)
         return NextResponse.json(
@@ -52,11 +44,9 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        // Versuche, den Text als JSON zu parsen
         const data = JSON.parse(responseText)
 
         if (!response.ok) {
-          // Wenn der API-Schlüssel ungültig ist, gib eine spezifischere Fehlermeldung zurück
           if (
             response.status === 401 ||
             response.status === 403 ||
@@ -65,7 +55,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json(
               {
                 error: "Authentication Error",
-                message: "Ungültiger API-Schlüssel. Bitte überprüfen Sie Ihre API_KEY Umgebungsvariable.",
+                message: "Ungültiger API-Schlüssel. Bitte überprüfen Sie Ihre Konfiguration.",
               },
               { status: 401 },
             )

@@ -1,11 +1,22 @@
 "use client"
 
 import type React from "react"
-
-import { AlignLeft, FileText, Fullscreen, Settings, Moon, Sun, Copy, Minimize2, Save, Download } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import {
+  AlignLeft,
+  FileText,
+  Fullscreen,
+  Settings,
+  Moon,
+  Sun,
+  Copy,
+  Minimize2,
+  Save,
+  Download,
+  Trash2,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTypewriterStore } from "@/store/typewriter-store"
-import { useState, useEffect, useCallback } from "react"
 import { useKeyboard } from "@/hooks/use-keyboard"
 
 interface ControlBarProps {
@@ -17,7 +28,7 @@ interface ControlBarProps {
   openSettings: () => void
 }
 
-export default function ControlBar({
+function ControlBar({
   wordCount,
   pageCount,
   toggleFullscreen,
@@ -25,8 +36,18 @@ export default function ControlBar({
   isFullscreen = false,
   openSettings,
 }: ControlBarProps) {
-  const { darkMode, toggleDarkMode, lines, activeLine, saveSession, loadLastSession, isSaving, isLoading } =
-    useTypewriterStore()
+  const {
+    darkMode,
+    toggleDarkMode,
+    lines,
+    activeLine,
+    saveSession,
+    loadLastSession,
+    isSaving,
+    isLoading,
+    resetSession,
+  } = useTypewriterStore()
+
   const [isCompactView, setIsCompactView] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
@@ -43,7 +64,6 @@ export default function ControlBar({
     const isAndroidDevice = /Android/.test(navigator.userAgent)
     setIsAndroid(isAndroidDevice)
 
-    // Setze kompakte Ansicht für kleine Bildschirme
     const handleResize = () => {
       setIsCompactView(window.innerWidth < 640)
       setIsSmallScreen(window.innerWidth < 768 || isAndroidDevice)
@@ -57,41 +77,35 @@ export default function ControlBar({
     }
   }, [])
 
-  // Neue Funktion zum Refokussieren des Eingabefelds nach Button-Aktionen
+  // Refokussieren des Eingabefelds nach Button-Aktionen
   const refocusInput = useCallback(() => {
-    // Kurze Verzögerung, um sicherzustellen, dass die Button-Aktion abgeschlossen ist
     setTimeout(() => {
       if (isAndroid) {
-        // Verwende die Android-optimierte Fokus-Funktion
         if (hiddenInputRef.current) {
           hiddenInputRef.current.focus()
-          // Stelle sicher, dass der Cursor am Ende des Textes ist
           const length = hiddenInputRef.current.value.length
           hiddenInputRef.current.setSelectionRange(length, length)
         }
       } else {
-        // Standard-Fokus für andere Geräte
         showKeyboard()
       }
-    }, 150) // 150ms Verzögerung für bessere Zuverlässigkeit
+    }, 150)
   }, [isAndroid, hiddenInputRef, showKeyboard])
 
   // Copy text to clipboard
   const copyToClipboard = () => {
     const fullText = [...lines.map((line) => line.text), activeLine].join("\n")
 
-    // Verwende eine Android-freundliche Methode zum Kopieren
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
         .writeText(fullText)
         .then(() => {
           setCopied(true)
           setTimeout(() => setCopied(false), 2000)
-          refocusInput() // Fokus zurücksetzen
+          refocusInput()
         })
         .catch((err) => {
           console.error("Copy error:", err)
-          // Fallback für ältere Android-Geräte
           fallbackCopy(fullText)
         })
     } else {
@@ -102,11 +116,8 @@ export default function ControlBar({
   // Fallback-Kopiermethode für ältere Android-Geräte
   const fallbackCopy = (text: string) => {
     try {
-      // Erstelle ein temporäres Textarea-Element
       const textarea = document.createElement("textarea")
       textarea.value = text
-
-      // Stelle sicher, dass es nicht sichtbar ist
       textarea.style.position = "fixed"
       textarea.style.opacity = "0"
 
@@ -114,7 +125,6 @@ export default function ControlBar({
       textarea.focus()
       textarea.select()
 
-      // Versuche zu kopieren
       const successful = document.execCommand("copy")
 
       if (successful) {
@@ -123,54 +133,55 @@ export default function ControlBar({
       }
 
       document.body.removeChild(textarea)
-      refocusInput() // Fokus zurücksetzen
+      refocusInput()
     } catch (err) {
       console.error("Fallback copy error:", err)
     }
   }
 
-  // Öffne Einstellungen und blende die Tastatur aus
+  // Event Handler
   const handleOpenSettings = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
-    // Tastatur ausblenden
     hideKeyboard()
-
-    // Debug-Log
-    console.log("Einstellungen-Button in ControlBar geklickt")
-
-    // Einstellungen über die Callback-Funktion öffnen
     openSettings()
   }
 
-  // Speichern-Funktion
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
-    // Speichern starten
     await saveSession()
-    refocusInput() // Fokus zurücksetzen
+    refocusInput()
   }
 
-  // Laden-Funktion
   const handleLoad = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
-    // Laden starten
     await loadLastSession()
-    refocusInput() // Fokus zurücksetzen
+    refocusInput()
   }
 
-  // Für Android und kleine Bildschirme: Buttons ohne Text und kleiner
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const confirmed = window.confirm(
+      "Möchten Sie wirklich alle Zeilen löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    )
+
+    if (confirmed) {
+      resetSession()
+      refocusInput()
+    }
+  }
+
+  // Button-Styling
   const buttonSize = isSmallScreen ? "xs" : "sm"
   const buttonClass = `${
     darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-200" : "bg-[#d3d0cb] hover:bg-[#c4c1bc] text-[#222]"
   } font-serif ${isAndroid ? "min-h-[36px] min-w-[36px]" : ""}`
 
-  // Im Vollbildmodus und auf kleinen Bildschirmen: Buttons in die rechte obere Ecke
+  // Vollbild-Layout für kleine Bildschirme
   if (isFullscreen && isSmallScreen) {
     return (
       <div
@@ -189,7 +200,6 @@ export default function ControlBar({
           <Copy className="h-4 w-4" />
         </Button>
 
-        {/* Speicher Button */}
         <Button
           variant="outline"
           size={buttonSize}
@@ -202,7 +212,6 @@ export default function ControlBar({
           <Save className={`h-4 w-4 ${isSaving ? "animate-pulse" : ""}`} />
         </Button>
 
-        {/* Laden Button */}
         <Button
           variant="outline"
           size={buttonSize}
@@ -213,6 +222,17 @@ export default function ControlBar({
           title="Letzte Sitzung laden"
         >
           <Download className={`h-4 w-4 ${isLoading ? "animate-pulse" : ""}`} />
+        </Button>
+
+        <Button
+          variant="outline"
+          size={buttonSize}
+          onClick={handleDelete}
+          className={`${buttonClass} hover:bg-red-100 dark:hover:bg-red-900`}
+          aria-label="Alle Zeilen löschen"
+          title="Alle Zeilen löschen"
+        >
+          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
         </Button>
 
         <Button
@@ -256,7 +276,7 @@ export default function ControlBar({
     )
   }
 
-  // Standardansicht für größere Bildschirme oder nicht-Vollbildmodus
+  // Standard-Layout
   return (
     <div
       className={`flex flex-wrap gap-2 sm:gap-4 items-center justify-between p-2 sm:p-3 ${
@@ -289,7 +309,6 @@ export default function ControlBar({
           {!isSmallScreen && <span className="ml-1">{copied ? "Kopiert!" : "Kopieren"}</span>}
         </Button>
 
-        {/* Speicher Button */}
         <Button
           variant="outline"
           size={buttonSize}
@@ -303,7 +322,6 @@ export default function ControlBar({
           {!isSmallScreen && <span className="ml-1">{isSaving ? "Speichern..." : "Speichern"}</span>}
         </Button>
 
-        {/* Laden Button */}
         <Button
           variant="outline"
           size={buttonSize}
@@ -320,12 +338,24 @@ export default function ControlBar({
         <Button
           variant="outline"
           size={buttonSize}
+          onClick={handleDelete}
+          className={`${buttonClass} hover:bg-red-100 dark:hover:bg-red-900`}
+          aria-label="Alle Zeilen löschen"
+          title="Alle Zeilen löschen"
+        >
+          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+          {!isSmallScreen && <span className="ml-1 text-red-600 dark:text-red-400">Löschen</span>}
+        </Button>
+
+        <Button
+          variant="outline"
+          size={buttonSize}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             toggleFullscreen()
             setTimeout(() => {
-              refocusInput() // Fokus zurücksetzen mit etwas Verzögerung für Fullscreen-Änderung
+              refocusInput()
             }, 300)
           }}
           className={buttonClass}
@@ -356,7 +386,6 @@ export default function ControlBar({
           {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
 
-        {/* Einstellungen Button */}
         <Button
           variant="outline"
           size={buttonSize}
@@ -372,3 +401,5 @@ export default function ControlBar({
     </div>
   )
 }
+
+export default ControlBar

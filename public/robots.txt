@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://typewriter-app.vercel.app/sitemap.xml
+
+# Disallow API routes from crawling
+Disallow: /api/
+
+# Disallow private/admin areas if any
+Disallow: /_next/
+Disallow: /admin/

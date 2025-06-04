@@ -4,7 +4,7 @@ import type React from "react"
 import { useCallback } from "react"
 
 interface UseKeyboardOptions {
-  inputRef: React.RefObject<HTMLInputElement | null>
+  inputRef: React.RefObject<HTMLTextAreaElement | null> // Geändert von HTMLInputElement zu HTMLTextAreaElement
   isAndroid?: boolean
 }
 
