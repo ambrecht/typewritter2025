@@ -1,0 +1,99 @@
+/* Optimierungen für den Vollbildmodus */
+
+.fullscreen-container {
+  /* Mehr Platz für Inhalte im Vollbildmodus */
+  padding: 0 !important;
+}
+
+.fullscreen-linestack {
+  /* Verbesserte Lesbarkeit im Vollbildmodus */
+  letter-spacing: 0.01em;
+}
+
+/* Optimierungen für Android im Vollbildmodus */
+.android-typewriter.fullscreen .writing-container {
+  /* Maximale Höhe für Android im Vollbildmodus */
+  height: calc(100vh - 120px) !important;
+}
+
+/* Verbesserte Sichtbarkeit der aktiven Zeile im Vollbildmodus */
+[data-fullscreen="true"] .active-line {
+  /* Minimaler Schatten für bessere Sichtbarkeit */
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  /* Minimale Höhe im Vollbildmodus */
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+/* Optimierte Zeilenhöhe im Vollbildmodus */
+[data-fullscreen="true"] .writing-container {
+  line-height: 1.2 !important;
+}
+
+/* Kein Abstand zwischen den Zeilen im Vollbildmodus */
+[data-fullscreen="true"] .writing-container > div > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Optimierungen für Android */
+.android-typewriter .writing-container {
+  line-height: 1.3 !important;
+}
+
+.android-typewriter .writing-container > div > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Reduzierte Abstände für die aktive Zeile auf Android */
+.android-typewriter .active-line {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+/* Entferne alle Abstände zwischen Elementen */
+.writing-container > div > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Stelle sicher, dass der Zeilenstack direkt an der aktiven Zeile anliegt */
+.writing-container > div {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Wichtig: Entferne alle Abstände zwischen dem Container und der aktiven Zeile */
+.line-stack-container {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.line-stack {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Entferne alle Abstände in der aktiven Zeile */
+.active-line {
+  margin-top: 0 !important;
+  border-top-width: 1px !important;
+}
+
+/* Entferne alle Abstände im gesamten Dokument */
+* {
+  box-sizing: border-box;
+}
+
+/* Spezifische Optimierungen für den Zeilenstack */
+.writing-container {
+  padding-bottom: 0 !important;
+}
+
+/* Optimierung für die Zeilenhöhe im Stack */
+.line-stack > * {
+  line-height: 1.3 !important;
+}
