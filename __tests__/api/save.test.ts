@@ -1,6 +1,6 @@
 import { POST } from "@/app/api/save/route"
 import { NextRequest } from "next/server"
-import jest from "jest"
+import { jest } from "@jest/globals"
 
 // Mock the API key storage
 jest.mock("@/lib/api-key-storage", () => ({
@@ -28,11 +28,11 @@ describe("/api/save", () => {
       text: () => Promise.resolve(JSON.stringify({ id: 123 })),
     })
 
-    const request = new NextRequest("http://localhost:3000/api/save", {
+    const request = new Request("http://localhost:3000/api/save", {
       method: "POST",
       body: JSON.stringify({ text: "Test text" }),
-      headers: { "Content-Type": "application/json" },
-    })
+      headers: new Headers({ "Content-Type": "application/json" }),
+    }) as any
 
     const response = await POST(request)
     const data = await response.json()
@@ -44,11 +44,11 @@ describe("/api/save", () => {
   })
 
   it("should return 400 for invalid input", async () => {
-    const request = new NextRequest("http://localhost:3000/api/save", {
+    const request = new Request("http://localhost:3000/api/save", {
       method: "POST",
       body: JSON.stringify({ text: "" }),
-      headers: { "Content-Type": "application/json" },
-    })
+      headers: new Headers({ "Content-Type": "application/json" }),
+    }) as any
 
     const response = await POST(request)
     const data = await response.json()
@@ -65,16 +65,39 @@ describe("/api/save", () => {
       text: () => Promise.resolve(JSON.stringify({ message: "Server error" })),
     })
 
-    const request = new NextRequest("http://localhost:3000/api/save", {
+    const request = new Request("http://localhost:3000/api/save", {
       method: "POST",
       body: JSON.stringify({ text: "Test text" }),
-      headers: { "Content-Type": "application/json" },
-    })
+      headers: new Headers({ "Content-Type": "application/json" }),
+    }) as any
 
     const response = await POST(request)
     const data = await response.json()
 
     expect(response.status).toBe(500)
     expect(data.error).toBe("API Error")
+  })
+
+  it("should handle rate limit errors", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve("Rate limit"),
+    })
+
+    const request = new Request("http://localhost:3000/api/save", {
+      method: "POST",
+      body: JSON.stringify({ text: "Test text" }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+    }) as any
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(429)
+    expect(data.error).toBe("Rate Limit")
+    expect(data.message).toBe(
+      "Zu viele Anfragen. Bitte später erneut versuchen."
+    )
   })
 })

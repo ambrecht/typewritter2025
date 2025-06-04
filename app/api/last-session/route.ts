@@ -29,6 +29,17 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    if (response.status === 429) {
+      await response.text()
+      return NextResponse.json(
+        {
+          error: "Rate Limit",
+          message: "Zu viele Anfragen. Bitte später erneut versuchen.",
+        },
+        { status: 429 },
+      )
+    }
+
     if (!response.ok) {
       let errorMessage = "Fehler beim Laden der letzten Sitzung"
       let errorData = {}
