@@ -11,6 +11,7 @@ Eine minimalistische, ablenkungsfreie Schreibumgebung für konzentriertes Arbeit
 - 💾 **Cloud-Speicherung**: Sichere Speicherung in der Cloud
 - 📱 **PWA-Support**: Installierbar als Progressive Web App
 - 🔄 **Offline-Funktionalität**: Arbeiten auch ohne Internetverbindung
+- 🚀 **Flow Mode**: Zielorientiertes Schreiben mit Timer oder Wortzahl
 - ⌨️ **Tastaturnavigation**: Navigation durch vorherige Zeilen mit Pfeiltasten
 
 ## Technologie-Stack
