@@ -1,3 +1,4 @@
+import { describe, it, expect } from "@jest/globals"
 import { calculateOptimalLineLength, performLineBreak, breakTextIntoLines } from "@/utils/line-break-utils"
 
 describe("Line Break Utils", () => {

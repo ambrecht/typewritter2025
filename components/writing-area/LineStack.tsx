@@ -7,7 +7,7 @@ import { memo } from "react"
 import MarkdownIndicator from "../markdown-indicator"
 
 interface LineStackProps {
-  visibleLines: { line: FormattedLine; index: number }[]
+  visibleLines: { line: FormattedLine; index: number; key: string }[]
   lineRefs: React.MutableRefObject<(HTMLDivElement | null)[]>
   darkMode: boolean
   stackFontSize: number
@@ -62,7 +62,7 @@ export const LineStack = memo(function LineStack({
     >
       {/* Zeige nur die berechneten sichtbaren Zeilen an */}
       {visibleLines.map(({ line, index, key }) => {
-        const props = renderFormattedLine(line, index, lineRefs)
+        const props = renderFormattedLine(line, index, lineRefs) as any
         const { as = "div", ...restProps } = props
 
         // Verwende den generierten key, wenn vorhanden, sonst den Standard-key
@@ -81,7 +81,7 @@ export const LineStack = memo(function LineStack({
           : {}
 
         // Dynamisch das richtige Element basierend auf 'as' erstellen
-        const ElementType = as as keyof React.JSX.IntrinsicElements
+        const ElementType = as as React.ElementType
 
         if (as === "hr") {
           return <hr key={elementKey} className={props.className} data-line-index={index} style={{ margin: "0" }} />
@@ -92,7 +92,14 @@ export const LineStack = memo(function LineStack({
           return (
             <div
               key={elementKey}
-              ref={props.ref}
+              ref={(el: HTMLElement | null) => {
+                if (typeof props.ref === "function") {
+                  ;(props.ref as (instance: HTMLElement | null) => void)(el)
+                } else if (props.ref && "current" in props.ref) {
+                  ;(props.ref as React.MutableRefObject<HTMLElement | null>).current =
+                    el
+                }
+              }}
               className={props.className}
               data-line-index={index}
               // Kein Abstand für maximale Platznutzung
@@ -100,20 +107,28 @@ export const LineStack = memo(function LineStack({
             >
               {/* Füge den Markdown-Indikator hinzu */}
               <MarkdownIndicator type={line.type} darkMode={darkMode} />
-              {props.children.map((child: any, i: number) => {
+              {(props.children as any[]).map((child: any, i: number) => {
                 if (typeof child === "string") return child
-                const ChildType = child.type as keyof React.JSX.IntrinsicElements
-                return <ChildType key={i} {...child.props} />
+                const ChildType = child.type as React.ElementType
+                return <ChildType key={i} {...(child.props as any)} />
               })}
             </div>
           )
         }
 
         // Und auch für einfache Elemente
+        const Element = ElementType as React.ElementType
         return (
-          <ElementType
+          <Element
             key={elementKey}
-            ref={props.ref}
+            ref={(el: HTMLElement | null) => {
+              if (typeof props.ref === "function") {
+                ;(props.ref as (instance: HTMLElement | null) => void)(el)
+              } else if (props.ref && "current" in props.ref) {
+                ;(props.ref as React.MutableRefObject<HTMLElement | null>).current =
+                  el
+              }
+            }}
             className={props.className}
             data-line-index={index}
             // Kein Abstand für maximale Platznutzung
@@ -121,8 +136,8 @@ export const LineStack = memo(function LineStack({
           >
             {/* Füge den Markdown-Indikator hinzu */}
             <MarkdownIndicator type={line.type} darkMode={darkMode} />
-            {props.children}
-          </ElementType>
+            {props.children as React.ReactNode}
+          </Element>
         )
       })}
     </div>

@@ -14,6 +14,8 @@ import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
 import OfflineIndicator from "@/components/offline-indicator"
 import SaveNotification from "@/components/save-notification"
 import SettingsModal from "@/components/settings-modal"
+import FlowSettingsModal from "@/components/flow-settings-modal"
+import FlowModeOverlay from "@/components/flow-mode-overlay"
 
 // Importiere die ApiKeyWarning-Komponente am Anfang der Datei
 import ApiKeyWarning from "@/components/api-key-warning"
@@ -47,6 +49,11 @@ export default function TypewriterPage() {
     navigateForward,
     navigateBackward,
     resetNavigation,
+    flowMode,
+    startFlowMode,
+    stopFlowMode,
+    updateFlowMode,
+    saveSession,
   } = useTypewriterStore()
 
   // DOM references
@@ -66,6 +73,7 @@ export default function TypewriterPage() {
   )
   const [scrollPosition, setScrollPosition] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
+  const [showFlowSettings, setShowFlowSettings] = useState(false)
 
   // Neue States für das Navigations-Overlay
   const [showNavigationHint, setShowNavigationHint] = useState(false)
@@ -169,6 +177,10 @@ export default function TypewriterPage() {
     setShowSettings(true)
   }, [])
 
+  const openFlowSettings = useCallback(() => {
+    setShowFlowSettings(true)
+  }, [])
+
   const closeSettings = useCallback(() => {
     console.log("Einstellungen schließen (Hauptkomponente)")
     setShowSettings(false)
@@ -176,6 +188,11 @@ export default function TypewriterPage() {
     setTimeout(() => {
       focusInput()
     }, 300)
+  }, [focusInput])
+
+  const closeFlowSettings = useCallback(() => {
+    setShowFlowSettings(false)
+    setTimeout(() => focusInput(), 300)
   }, [focusInput])
 
   // Modul 4: Rückkehr zur aktuellen Schreibposition bei Eingabe
@@ -546,6 +563,7 @@ export default function TypewriterPage() {
             hiddenInputRef={hiddenInputRef}
             isFullscreen={isFullscreen}
             openSettings={openSettings}
+            openFlowSettings={openFlowSettings}
           />
         </header>
       )}
@@ -559,6 +577,7 @@ export default function TypewriterPage() {
           hiddenInputRef={hiddenInputRef}
           isFullscreen={isFullscreen}
           openSettings={openSettings}
+          openFlowSettings={openFlowSettings}
         />
       )}
 
@@ -588,6 +607,7 @@ export default function TypewriterPage() {
             selectedLineIndex={selectedLineIndex}
             isFullscreen={isFullscreen}
             linesContainerRef={linesContainerRef}
+            disableBackspace={flowMode.enabled && flowMode.noBackspace}
           />
         </section>
       </main>
@@ -618,6 +638,8 @@ export default function TypewriterPage() {
       {/* Speicher-Benachrichtigung */}
       <SaveNotification />
 
+      <FlowModeOverlay />
+
       {/* Offline-Indikator */}
       <OfflineIndicator darkMode={darkMode} />
 
@@ -636,6 +658,7 @@ export default function TypewriterPage() {
 
       {/* Einstellungen Modal - Separate Komponente */}
       <SettingsModal isOpen={showSettings} onClose={closeSettings} darkMode={darkMode} />
+      <FlowSettingsModal isOpen={showFlowSettings} onClose={closeFlowSettings} darkMode={darkMode} />
 
       {/* Offline-Indikator hinzufügen */}
       <OfflineIndicator darkMode={darkMode} />

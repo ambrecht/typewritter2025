@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useCallback } from "react"
+import React, { useCallback } from "react"
 import { MarkdownType } from "@/types"
 
 /**
@@ -26,85 +24,65 @@ export function useMarkdownIndicator(activeLineType: MarkdownType, darkMode: boo
     }
 
     if (activeLineType === MarkdownType.HEADING1) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-blue-300" : "text-blue-600",
-          children: "Überschrift 1",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-blue-300" : "text-blue-600" },
+        "Überschrift 1",
+      )
     } else if (activeLineType === MarkdownType.HEADING2) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-blue-300" : "text-blue-600",
-          children: "Überschrift 2",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-blue-300" : "text-blue-600" },
+        "Überschrift 2",
+      )
     } else if (activeLineType === MarkdownType.HEADING3) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-blue-300" : "text-blue-600",
-          children: "Überschrift 3",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-blue-300" : "text-blue-600" },
+        "Überschrift 3",
+      )
     } else if (activeLineType === MarkdownType.BLOCKQUOTE) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-amber-400" : "text-amber-600",
-          children: "Zitat",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-amber-400" : "text-amber-600" },
+        "Zitat",
+      )
     } else if (activeLineType === MarkdownType.UNORDERED_LIST) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-green-300" : "text-green-600",
-          children: "Liste",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-green-300" : "text-green-600" },
+        "Liste",
+      )
     } else if (activeLineType === MarkdownType.ORDERED_LIST) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-green-300" : "text-green-600",
-          children: "Nummerierte Liste",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-green-300" : "text-green-600" },
+        "Nummerierte Liste",
+      )
     } else if (activeLineType === MarkdownType.DIALOG) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-purple-300" : "text-purple-600",
-          children: "Dialog",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-purple-300" : "text-purple-600" },
+        "Dialog",
+      )
     } else if (activeLineType === MarkdownType.CODE) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-cyan-300" : "text-cyan-600",
-          children: "Code",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-cyan-300" : "text-cyan-600" },
+        "Code",
+      )
     } else if (activeLineType === MarkdownType.PARAGRAPH) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: darkMode ? "text-amber-400" : "text-amber-600",
-          children: "Absatz",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: darkMode ? "text-amber-400" : "text-amber-600" },
+        "Absatz",
+      )
     } else if (inParagraph && activeLineType === MarkdownType.NORMAL) {
-      indicatorProps.children = {
-        type: "span",
-        props: {
-          className: "text-amber-500 font-bold",
-          children: "Absatz aktiv",
-        },
-      }
+      indicatorProps.children = React.createElement(
+        "span",
+        { className: "text-amber-500 font-bold" },
+        "Absatz aktiv",
+      )
     }
 
     return indicatorProps

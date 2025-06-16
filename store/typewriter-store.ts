@@ -1,8 +1,17 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { LineBreakConfig, FormattedLine, ParagraphRange, TextStatistics, FlowModeConfig } from "@/types"
+import { MarkdownType }
+  from "@/types"
+import type {
+  LineBreakConfig,
+  FormattedLine,
+  ParagraphRange,
+  TextStatistics,
+  FlowModeConfig,
+} from "@/types"
 import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
+import { parseMarkdownLine } from "@/utils/markdown-parser"
 
 // Konstanten
 const DEFAULT_LINE_BREAK_CONFIG: LineBreakConfig = {
@@ -43,7 +52,13 @@ const INITIAL_STATE: TypewriterState & {
   paragraphRanges: [],
   inParagraph: false,
   currentParagraphStart: -1,
+  activeLineType: MarkdownType.NORMAL,
   flowMode: DEFAULT_FLOW_MODE,
+  soundEnabled: false,
+  soundVolume: 0.5,
+  soundsLoaded: false,
+  loadProgress: 0,
+  loadError: null,
 
   // Neue Zustandsvariablen
   mode: "typing",
@@ -163,30 +178,40 @@ export interface TypewriterState {
   paragraphRanges: ParagraphRange[]
   inParagraph: boolean
   currentParagraphStart: number
+  activeLineType: MarkdownType
   flowMode: FlowModeConfig
+  // Sound Einstellungen
+  soundEnabled: boolean
+  soundVolume: number
+  soundsLoaded: boolean
+  loadProgress: number
+  loadError: string | null
 }
 
 // Füge die Sound-Aktionen zum Store hinzu
-export const useTypewriterStore = create<
-  TypewriterState &
-    TypewriterActions & {
-      mode: "typing" | "navigating"
-      selectedLineIndex: number | null
-      isSaving: boolean
-      isLoading: boolean
-      lastSaveStatus: { success: boolean; message: string; timestamp: number } | null
-      setMode: (mode: "typing" | "navigating") => void
-      setSelectedLineIndex: (index: number | null) => void
-      navigateUp: () => void
-      navigateDown: () => void
-      navigateForward: (steps?: number) => void
-      navigateBackward: (steps?: number) => void
-      resetNavigation: () => void
-      saveSession: () => Promise<void>
-      loadLastSession: () => Promise<void>
-    }
->(
-  persist(
+type TypewriterStore = TypewriterState &
+  TypewriterActions & {
+    mode: "typing" | "navigating"
+    selectedLineIndex: number | null
+    isSaving: boolean
+    isLoading: boolean
+    lastSaveStatus: { success: boolean; message: string; timestamp: number } | null
+    setMode: (mode: "typing" | "navigating") => void
+    setSelectedLineIndex: (index: number | null) => void
+    navigateUp: () => void
+    navigateDown: () => void
+    navigateForward: (steps?: number) => void
+    navigateBackward: (steps?: number) => void
+    resetNavigation: () => void
+    saveSession: () => Promise<void>
+    loadLastSession: () => Promise<void>
+    toggleSoundEnabled: () => void
+    setSoundVolume: (value: number) => void
+    playTypewriterClick: () => void
+  }
+
+export const useTypewriterStore = create<TypewriterStore>()(
+  persist<TypewriterStore>(
     (set, get) => ({
       ...INITIAL_STATE,
 
@@ -205,11 +230,13 @@ export const useTypewriterStore = create<
 
           // Berechne Statistiken basierend auf dem gesamten Text
           const statistics = computeTextStatistics(state.lines, processedText)
+          const { type } = parseMarkdownLine(processedText)
 
           // Wenn wir im Navigationsmodus sind, wechseln wir zurück zum Schreibmodus
           if (state.mode === "navigating") {
             return {
               activeLine: processedText,
+              activeLineType: type,
               statistics,
               mode: "typing",
               selectedLineIndex: null,
@@ -218,6 +245,7 @@ export const useTypewriterStore = create<
 
           return {
             activeLine: processedText,
+            activeLineType: type,
             statistics,
           }
         }),
@@ -235,7 +263,7 @@ export const useTypewriterStore = create<
 
           if (lines.length > 1) {
             // Verarbeite mehrere Zeilen als einfache Textzeilen
-            const formattedLines = lines.map((line) => ({ text: line }))
+            const formattedLines = lines.map((line) => parseMarkdownLine(line))
             const newLines = [...state.lines, ...formattedLines]
 
             // Aktualisiere Absatzinformationen für die letzte Zeile
@@ -245,11 +273,12 @@ export const useTypewriterStore = create<
             return {
               lines: newLines,
               activeLine: "",
+              activeLineType: MarkdownType.NORMAL,
               ...paragraphInfo,
             }
           } else {
             // Erstelle eine einfache Textzeile
-            const formattedLine = { text: state.activeLine }
+            const formattedLine = parseMarkdownLine(state.activeLine)
 
             // Füge die formatierte Zeile zum Stack hinzu
             const newLines = [...state.lines, formattedLine]
@@ -261,6 +290,7 @@ export const useTypewriterStore = create<
             return {
               lines: newLines,
               activeLine: "",
+              activeLineType: MarkdownType.NORMAL,
               ...paragraphInfo,
             }
           }
@@ -441,7 +471,10 @@ export const useTypewriterStore = create<
             const textLines = result.text.split("\n")
 
             // Verarbeite die Zeilen als einfache Textzeilen
-            const formattedLines = textLines.map((line) => ({ text: line }))
+            const formattedLines = textLines.map((line) => ({
+              text: line,
+              type: MarkdownType.NORMAL,
+            }))
 
             // Berechne Absatzbereiche neu
             const paragraphRanges: ParagraphRange[] = []
@@ -735,6 +768,13 @@ export const useTypewriterStore = create<
             initialWordCount: undefined,
           },
         })),
+
+      // Platzhalterfunktionen für Soundeinstellungen
+      toggleSoundEnabled: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+      setSoundVolume: (value: number) => set(() => ({ soundVolume: value })),
+      playTypewriterClick: () => {
+        /* no-op */
+      },
     }),
     {
       // Konfiguration für das persist-Middleware

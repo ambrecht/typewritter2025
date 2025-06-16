@@ -82,6 +82,26 @@ export interface TextStatistics {
 }
 
 /**
+ * Konfiguration für den Flow Mode
+ */
+export interface FlowModeConfig {
+  /** Ist der Flow Mode aktiv? */
+  enabled: boolean
+  /** Soll das Löschen mit Backspace deaktiviert sein? */
+  noBackspace: boolean
+  /** Sollen Satzzeichen automatisch entfernt werden? */
+  noPunctuation: boolean
+  /** Art des Timers: Zeit oder Wortanzahl */
+  timerType: "time" | "words"
+  /** Zielwert (Minuten oder Wörter) */
+  timerTarget: number
+  /** Startzeit des Timers (Millisekunden seit Epoch) */
+  timerStartTime?: number
+  /** Wortzahl zu Beginn des Timers */
+  initialWordCount?: number
+}
+
+/**
  * Typewriter-Anwendungszustand
  */
 export interface TypewriterState {

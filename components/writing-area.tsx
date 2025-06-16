@@ -39,7 +39,8 @@ interface WritingAreaProps {
   mode: "typing" | "navigating"
   selectedLineIndex: number | null
   isFullscreen: boolean
-  linesContainerRef?: React.RefObject<HTMLDivElement>
+  linesContainerRef?: React.RefObject<HTMLDivElement | null>
+  disableBackspace?: boolean
 }
 
 /**
@@ -65,6 +66,7 @@ export default function WritingArea({
   selectedLineIndex,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
+  disableBackspace = false,
 }: WritingAreaProps) {
   // Verwende Hooks für Container-Dimensionen
   const {
@@ -84,6 +86,7 @@ export default function WritingArea({
     lineBreakConfig,
     hiddenInputRef,
     linesContainerRef,
+    disableBackspace,
   })
 
   // Berechne die sichtbaren Zeilen - der Hook gibt jetzt direkt das Ergebnis zurück

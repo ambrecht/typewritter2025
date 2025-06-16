@@ -17,7 +17,7 @@ interface ActiveLineProps {
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
   handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
-  activeLineRef: React.RefObject<HTMLDivElement>
+  activeLineRef: React.RefObject<HTMLDivElement | null>
   isAndroid?: boolean
   isFullscreen?: boolean
 }

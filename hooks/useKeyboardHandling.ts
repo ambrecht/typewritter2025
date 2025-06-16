@@ -19,12 +19,14 @@ export function useKeyboardHandling({
   lineBreakConfig,
   hiddenInputRef,
   linesContainerRef,
+  disableBackspace = false,
 }: {
   setActiveLine: (line: string) => void
   addLineToStack: () => void
   lineBreakConfig: LineBreakConfig
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
   linesContainerRef: React.RefObject<HTMLDivElement | null>
+  disableBackspace?: boolean
 }) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
   const [containerHeight, setContainerHeight] = useState<number | null>(null)
@@ -75,6 +77,12 @@ export function useKeyboardHandling({
    */
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      // Backspace/Delete deaktivieren, wenn Flow Mode aktiv ist
+      if (disableBackspace && (e.key === "Backspace" || e.key === "Delete")) {
+        e.preventDefault()
+        return
+      }
+
       // Enter-Taste: Neue Zeile hinzufügen
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault()
@@ -98,7 +106,7 @@ export function useKeyboardHandling({
         return
       }
     },
-    [addLineToStack, isAndroid, hiddenInputRef],
+    [addLineToStack, isAndroid, hiddenInputRef, disableBackspace],
   )
 
   // Verbesserte Tastaturerkennung für Android

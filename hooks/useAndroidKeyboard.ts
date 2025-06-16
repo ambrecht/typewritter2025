@@ -23,16 +23,20 @@ export function useAndroidKeyboard({ inputRef }: UseAndroidKeyboardOptions) {
 
   // Funktion zum sicheren Fokussieren des Eingabefelds
   const focusInputSafely = useCallback(() => {
-    if (!inputRef.current) return
+    const input = inputRef.current
+    if (!input) return
 
     // Verzögere den Fokus, um Probleme mit der virtuellen Tastatur zu vermeiden
     setTimeout(() => {
       try {
-        inputRef.current?.focus()
+        const current = inputRef.current
+        if (!current) return
+
+        current.focus()
 
         // Stelle sicher, dass der Cursor am Ende des Textes ist
-        const length = inputRef.current.value.length
-        inputRef.current.setSelectionRange(length, length)
+        const length = current.value.length
+        current.setSelectionRange(length, length)
       } catch (error) {
         console.error("Error focusing input:", error)
       }
