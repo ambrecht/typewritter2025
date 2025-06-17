@@ -15,6 +15,7 @@ import {
   Download,
   Trash2,
 } from "lucide-react"
+import FlowMenu from "./flow-menu"
 import { Button } from "@/components/ui/button"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import { useKeyboard } from "@/hooks/use-keyboard"
@@ -185,10 +186,11 @@ function ControlBar({
   if (isFullscreen && isSmallScreen) {
     return (
       <div
-        className={`fixed top-2 right-2 z-50 flex gap-1 rounded-lg p-1 ${
+        className={`fixed top-2 right-2 z-50 flex flex-wrap gap-1 rounded-lg p-1 ${
           darkMode ? "bg-gray-800/70 backdrop-blur-sm" : "bg-white/70 backdrop-blur-sm"
         }`}
       >
+        <FlowMenu />
         <Button
           variant="outline"
           size={buttonSize}
@@ -261,7 +263,6 @@ function ControlBar({
         >
           {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
-
         <Button
           variant="outline"
           size={buttonSize}
@@ -296,7 +297,8 @@ function ControlBar({
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+        <FlowMenu />
         <Button
           variant="outline"
           size={buttonSize}
