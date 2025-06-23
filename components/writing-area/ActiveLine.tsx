@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState, useCallback } from "react"
+import { getActiveLineTextClass } from "../../utils/lineClassUtils"
 
 interface ActiveLineProps {
   activeLine: string
@@ -34,17 +34,6 @@ export function ActiveLine({
   isAndroid = false,
   isFullscreen = false,
 }: ActiveLineProps) {
-  const [cursorIndex, setCursorIndex] = useState(activeLine.length)
-
-  const updateCursor = useCallback(() => {
-    if (hiddenInputRef.current) {
-      setCursorIndex(hiddenInputRef.current.selectionStart ?? activeLine.length)
-    }
-  }, [hiddenInputRef, activeLine.length])
-
-  useEffect(() => {
-    updateCursor()
-  }, [activeLine, updateCursor])
 
   // Verbessere die visuelle Trennung zwischen Schreibfläche und Steuerleiste
   // Füge einen subtilen Schatten und eine feine Linie hinzu
@@ -56,12 +45,7 @@ export function ActiveLine({
       : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
   }`
 
-  const activeLineTextClass = `whitespace-pre-wrap break-words absolute top-0 left-0 pointer-events-none overflow-hidden ${
-    darkMode ? "text-gray-200" : "text-gray-800"
-  }`
-
-  const beforeCursor = activeLine.slice(0, cursorIndex)
-  const afterCursor = activeLine.slice(cursorIndex)
+  const activeLineTextClass = getActiveLineTextClass(darkMode)
 
   // Ändere die return-Anweisung, um die Schreibkopfzeile besser hervorzuheben
   return (
@@ -138,7 +122,6 @@ export function ActiveLine({
           aria-label="Typewriter input field"
         />
 
-        {/* Markdown preview removed */}
       </div>
 
       {/* Progress bar for line length - verbesserte Anzeige */}
@@ -168,7 +151,6 @@ export function ActiveLine({
         {activeLine.length}/{maxCharsPerLine}
       </div>
 
-      {/* Markdown type indicator removed */}
     </div>
   )
 }

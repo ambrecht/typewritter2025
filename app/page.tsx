@@ -38,6 +38,7 @@ export default function TypewriterPage() {
     setStackFontSize,
     setFixedLineLength,
     paragraphRanges,
+    inParagraph,
     mode,
     selectedLineIndex,
     navigateUp,

@@ -29,44 +29,11 @@ export interface ParagraphRange {
 }
 
 /**
- * Markdown-Formatierungstypen
- */
-export enum MarkdownType {
-  NORMAL = "normal",
-  HEADING1 = "heading1",
-  HEADING2 = "heading2",
-  HEADING3 = "heading3",
-  BLOCKQUOTE = "blockquote",
-  UNORDERED_LIST = "unordered-list",
-  ORDERED_LIST = "ordered-list",
-  DIALOG = "dialog",
-  CODE = "code",
-  HORIZONTAL_RULE = "horizontal-rule",
-  PARAGRAPH = "paragraph",
-}
-
-/**
- * Metadaten für formatierte Zeilen
- */
-export interface LineMetadata {
-  /** Listennummer für geordnete Listen */
-  listNumber?: number
-  /** Charaktername für Dialog */
-  character?: string
-  /** Einrückungsebene */
-  indentLevel?: number
-}
-
-/**
- * Repräsentiert eine Zeile mit ihrer Formatierung
+ * Repräsentiert eine einfache Zeile Text
  */
 export interface FormattedLine {
   /** Der Textinhalt der Zeile */
   text: string
-  /** Der Markdown-Formatierungstyp */
-  type: MarkdownType
-  /** Zusätzliche Formatierungsdaten */
-  meta?: LineMetadata
 }
 
 /**
@@ -107,8 +74,6 @@ export interface TypewriterState {
   inParagraph: boolean
   /** Startindex des aktuellen Absatzes (für Abwärtskompatibilität) */
   currentParagraphStart: number
-  /** Aktueller Markdown-Formatierungstyp für die aktive Zeile */
-  activeLineType: MarkdownType
   /** Aktueller Modus (Schreiben oder Navigieren) */
   mode: "typing" | "navigating"
   /** Index der aktuell ausgewählten Zeile (null, wenn keine ausgewählt ist) */
