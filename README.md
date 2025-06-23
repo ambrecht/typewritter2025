@@ -19,7 +19,7 @@ Eine minimalistische, ablenkungsfreie Schreibumgebung für konzentriertes Arbeit
 - **Styling**: Tailwind CSS
 - **State Management**: Zustand
 - **Icons**: Lucide React
-- **Testing**: Jest + React Testing Library
+- **Testing**: Unit Tests
 - **Deployment**: Vercel
 
 ## Lokale Entwicklung
@@ -147,24 +147,20 @@ Die App ist als Progressive Web App (PWA) konfiguriert:
 
 ## Testing
 
-### Unit Tests
+Dieses Projekt verwendet **Jest** und **React Testing Library** für Unit Tests. Da kein Test-Script definiert ist, werden die Tests direkt mit `npx jest` ausgeführt.
 
-\`\`\`bash
+```bash
 # Alle Tests ausführen
-pnpm test
-
-# Tests mit Coverage
-pnpm test:coverage
+npx jest
 
 # Tests im Watch-Modus
-pnpm test:watch
-\`\`\`
+npx jest --watch
 
-### Test-Struktur
+# Testabdeckung generieren
+npx jest --coverage
+```
 
-- `__tests__/store/` - Store-Logic Tests
-- `__tests__/utils/` - Utility-Function Tests  
-- `__tests__/api/` - API-Route Tests
+Die Tests befinden sich im Verzeichnis `__tests__/`.
 
 ## Sicherheit
 
