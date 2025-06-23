@@ -176,10 +176,21 @@ function ControlBar({
   }
 
   // Button-Styling
-  const buttonSize = isSmallScreen ? "xs" : "sm"
+  // On small screens use slightly larger buttons and allow wrapping
+  const buttonSize = isSmallScreen ? "default" : "sm"
   const buttonClass = `${
     darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-200" : "bg-[#d3d0cb] hover:bg-[#c4c1bc] text-[#222]"
-  } font-serif ${isAndroid ? "min-h-[36px] min-w-[36px]" : ""}`
+  } font-serif ${isAndroid ? "min-h-[44px] min-w-[44px]" : ""}`
+
+  const controlsContainerClass = isSmallScreen
+    ? "grid w-full grid-cols-4 gap-2"
+    : "flex items-center gap-2 sm:gap-4"
+
+  const containerClass = `${
+    darkMode ? "text-gray-200 bg-gray-900" : "text-[#222] bg-[#f3efe9]"
+  } text-sm font-serif ${
+    isSmallScreen ? "flex flex-col items-center gap-2 p-2" : "flex flex-wrap items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3"
+  }`
 
   // Vollbild-Layout für kleine Bildschirme
   if (isFullscreen && isSmallScreen) {
@@ -278,13 +289,9 @@ function ControlBar({
 
   // Standard-Layout
   return (
-    <div
-      className={`flex flex-wrap gap-2 sm:gap-4 items-center justify-between p-2 sm:p-3 ${
-        darkMode ? "text-gray-200 bg-gray-900" : "text-[#222] bg-[#f3efe9]"
-      } text-sm font-serif`}
-    >
+    <div className={containerClass}>
       {/* Statistics */}
-      <div className="flex items-center gap-2 sm:gap-6">
+      <div className={`flex items-center gap-2 sm:gap-6 ${isSmallScreen ? 'w-full justify-center' : ''}` }>
         <div className="flex items-center gap-1 sm:gap-2">
           <AlignLeft className={`h-4 w-4 ${darkMode ? "text-gray-400" : "text-gray-600"}`} />
           <span className="whitespace-nowrap">{isCompactView ? wordCount : `Wörter: ${wordCount}`}</span>
@@ -296,7 +303,7 @@ function ControlBar({
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className={controlsContainerClass}>
         <Button
           variant="outline"
           size={buttonSize}

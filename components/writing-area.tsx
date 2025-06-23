@@ -3,7 +3,6 @@
 import type React from "react"
 import { useEffect, useState, useRef } from "react"
 import type { LineBreakConfig, ParagraphRange, FormattedLine } from "@/types"
-import type { MarkdownType } from "@/types"
 
 // Importiere Hooks
 import { useContainerDimensions } from "../hooks/useContainerDimensions"
@@ -24,7 +23,6 @@ const DEFAULT_LINE_BREAK_CONFIG: LineBreakConfig = {
 interface WritingAreaProps {
   lines: FormattedLine[]
   activeLine: string
-  activeLineType: MarkdownType
   setActiveLine: (line: string) => void
   addLineToStack: () => void
   maxCharsPerLine: number
@@ -35,7 +33,6 @@ interface WritingAreaProps {
   lineBreakConfig?: LineBreakConfig
   darkMode: boolean
   paragraphRanges: ParagraphRange[]
-  inParagraph: boolean
   mode: "typing" | "navigating"
   selectedLineIndex: number | null
   isFullscreen: boolean
@@ -49,7 +46,6 @@ interface WritingAreaProps {
 export default function WritingArea({
   lines,
   activeLine,
-  activeLineType,
   setActiveLine,
   addLineToStack,
   maxCharsPerLine,
@@ -60,7 +56,6 @@ export default function WritingArea({
   lineBreakConfig = DEFAULT_LINE_BREAK_CONFIG,
   darkMode,
   paragraphRanges,
-  inParagraph,
   mode,
   selectedLineIndex,
   isFullscreen,
@@ -231,11 +226,9 @@ export default function WritingArea({
       {mode === "typing" && (
         <ActiveLine
           activeLine={activeLine}
-          activeLineType={activeLineType}
           darkMode={darkMode}
           fontSize={fontSize}
           showCursor={showCursor}
-          inParagraph={inParagraph}
           maxCharsPerLine={maxCharsPerLine}
           hiddenInputRef={hiddenInputRef}
           handleChange={handleChange}
