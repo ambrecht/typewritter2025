@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useEffect, useState } from "react"
 import { getActiveLineTextClass } from "../../utils/lineClassUtils"
 
 interface ActiveLineProps {
@@ -47,6 +48,20 @@ export function ActiveLine({
 
   const activeLineTextClass = getActiveLineTextClass(darkMode)
 
+  const [cursorPosition, setCursorPosition] = useState(activeLine.length)
+
+  useEffect(() => {
+    setCursorPosition(activeLine.length)
+  }, [activeLine])
+
+  const handleCursorChange = () => {
+    if (hiddenInputRef.current) {
+      setCursorPosition(
+        hiddenInputRef.current.selectionStart ?? activeLine.length,
+      )
+    }
+  }
+
   // Ändere die return-Anweisung, um die Schreibkopfzeile besser hervorzuheben
   return (
     <div
@@ -88,7 +103,7 @@ export function ActiveLine({
           style={{ fontSize: `${fontSize}px`, lineHeight: "1.2" }}
           aria-hidden="true"
         >
-          {beforeCursor}
+          {activeLine.slice(0, cursorPosition)}
           <span
             className={`inline-block h-[1.2em] ml-[1px] align-middle ${
               showCursor
@@ -99,7 +114,7 @@ export function ActiveLine({
             }`}
             style={{ transform: "translateY(-0.1em)" }}
           />
-          {afterCursor}
+          {activeLine.slice(cursorPosition)}
         </div>
 
         {/* Textarea statt Input für Mehrzeilenunterstützung */}
@@ -108,9 +123,9 @@ export function ActiveLine({
           value={activeLine}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          onKeyUp={updateCursor}
-          onClick={updateCursor}
-          onSelect={updateCursor}
+          onSelect={handleCursorChange}
+          onKeyUp={handleCursorChange}
+          onClick={handleCursorChange}
           className="w-full bg-transparent text-transparent caret-transparent outline-none resize-none overflow-hidden"
           style={{
             fontSize: `${fontSize}px`,
