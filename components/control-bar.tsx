@@ -19,6 +19,14 @@ import { Button } from "@/components/ui/button"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import { useKeyboard } from "@/hooks/use-keyboard"
 
+// Helper to detect touch-capable devices
+function detectTouchDevice() {
+  return (
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0)
+  )
+}
+
 interface ControlBarProps {
   wordCount: number
   pageCount: number
@@ -52,6 +60,8 @@ function ControlBar({
   const [copied, setCopied] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
   const [isSmallScreen, setIsSmallScreen] = useState(false)
+  const [isTouchDeviceState, setIsTouchDevice] = useState(false)
+  const [isVeryNarrowScreen, setIsVeryNarrowScreen] = useState(false)
 
   // Keyboard-Hook verwenden
   const { hideKeyboard, showKeyboard } = useKeyboard({
@@ -59,14 +69,18 @@ function ControlBar({
     isAndroid,
   })
 
-  // Überprüfen, ob es sich um ein Android-Gerät handelt und Bildschirmgröße überwachen
+  // Geräte- und Bildschirmgrößenerkennung
   useEffect(() => {
     const isAndroidDevice = /Android/.test(navigator.userAgent)
     setIsAndroid(isAndroidDevice)
+    setIsTouchDevice(detectTouchDevice())
 
     const handleResize = () => {
       setIsCompactView(window.innerWidth < 640)
       setIsSmallScreen(window.innerWidth < 768 || isAndroidDevice)
+      setIsVeryNarrowScreen(
+        window.innerWidth < 400 && window.innerHeight > window.innerWidth,
+      )
     }
 
     handleResize()
@@ -176,21 +190,95 @@ function ControlBar({
   }
 
   // Button-Styling
-  // On small screens use slightly larger buttons and allow wrapping
-  const buttonSize = isSmallScreen ? "default" : "sm"
+  const buttonSize = isSmallScreen ? "xs" : "sm"
+  const touchSize =
+    isTouchDeviceState || isAndroid || isVeryNarrowScreen
+      ? "min-h-[44px] min-w-[44px]"
+      : ""
   const buttonClass = `${
     darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-200" : "bg-[#d3d0cb] hover:bg-[#c4c1bc] text-[#222]"
-  } font-serif ${isAndroid ? "min-h-[44px] min-w-[44px]" : ""}`
+  } font-serif ${touchSize}`
 
-  const controlsContainerClass = isSmallScreen
-    ? "grid w-full grid-cols-4 gap-2"
-    : "flex items-center gap-2 sm:gap-4"
+  // Button definitions
+  const primaryButtons = [
+    {
+      icon: <Copy className="h-4 w-4" />,
+      label: copied ? "Kopiert!" : "Kopieren",
+      action: copyToClipboard,
+      aria: "Kopieren",
+    },
+    {
+      icon: <Save className={`h-4 w-4 ${isSaving ? "animate-pulse" : ""}`} />,
+      label: isSaving ? "Speichern..." : "Speichern",
+      action: handleSave,
+      disabled: isSaving,
+      aria: "Speichern",
+    },
+    {
+      icon: <Download className={`h-4 w-4 ${isLoading ? "animate-pulse" : ""}`} />,
+      label: isLoading ? "Laden..." : "Laden",
+      action: handleLoad,
+      disabled: isLoading,
+      aria: "Letzte Sitzung laden",
+    },
+  ]
 
-  const containerClass = `${
-    darkMode ? "text-gray-200 bg-gray-900" : "text-[#222] bg-[#f3efe9]"
-  } text-sm font-serif ${
-    isSmallScreen ? "flex flex-col items-center gap-2 p-2" : "flex flex-wrap items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3"
-  }`
+  const secondaryButtons = [
+    {
+      icon: <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />,
+      label: "Löschen",
+      action: handleDelete,
+      className: "hover:bg-red-100 dark:hover:bg-red-900",
+      aria: "Alle Zeilen löschen",
+    },
+    {
+      icon: isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Fullscreen className="h-4 w-4" />,
+      label: isFullscreen ? "Vollbild beenden" : "Vollbild",
+      action: () => {
+        toggleFullscreen()
+        setTimeout(() => {
+          refocusInput()
+        }, 300)
+      },
+      aria: isFullscreen ? "Vollbild beenden" : "Vollbild",
+    },
+    {
+      icon: darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />,
+      label: darkMode ? "Hellmodus" : "Dunkelmodus",
+      action: toggleDarkMode,
+      aria: darkMode ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln",
+    },
+    {
+      icon: <Settings className="h-4 w-4" />,
+      label: "Einstellungen",
+      action: handleOpenSettings,
+      aria: "Einstellungen",
+    },
+  ]
+
+  const renderButtonGroup = (buttons: any[], showLabels = true) => (
+    <div className={`flex ${isVeryNarrowScreen ? "gap-1" : "gap-2"}`}>
+      {buttons.map((btn, index) => (
+        <Button
+          key={index}
+          variant="outline"
+          size={buttonSize}
+          onClick={(e: React.MouseEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+            btn.action(e)
+          }}
+          disabled={btn.disabled}
+          className={`${buttonClass} ${btn.className || ""}`}
+          aria-label={btn.aria}
+          title={btn.aria}
+        >
+          {btn.icon}
+          {showLabels && !isSmallScreen && <span className="ml-1">{btn.label}</span>}
+        </Button>
+      ))}
+    </div>
+  )
 
   // Vollbild-Layout für kleine Bildschirme
   if (isFullscreen && isSmallScreen) {
@@ -200,96 +288,19 @@ function ControlBar({
           darkMode ? "bg-gray-800/70 backdrop-blur-sm" : "bg-white/70 backdrop-blur-sm"
         }`}
       >
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={copyToClipboard}
-          className={buttonClass}
-          aria-label="Kopieren"
-          title="Kopieren"
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleSave}
-          disabled={isSaving}
-          className={buttonClass}
-          aria-label="Speichern"
-          title="Speichern"
-        >
-          <Save className={`h-4 w-4 ${isSaving ? "animate-pulse" : ""}`} />
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleLoad}
-          disabled={isLoading}
-          className={buttonClass}
-          aria-label="Letzte Sitzung laden"
-          title="Letzte Sitzung laden"
-        >
-          <Download className={`h-4 w-4 ${isLoading ? "animate-pulse" : ""}`} />
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleDelete}
-          className={`${buttonClass} hover:bg-red-100 dark:hover:bg-red-900`}
-          aria-label="Alle Zeilen löschen"
-          title="Alle Zeilen löschen"
-        >
-          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            toggleFullscreen()
-            setTimeout(() => showKeyboard(), 300)
-          }}
-          className={buttonClass}
-          aria-label={isFullscreen ? "Vollbild beenden" : "Vollbild"}
-          title={isFullscreen ? "Vollbild beenden" : "Vollbild"}
-        >
-          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Fullscreen className="h-4 w-4" />}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={toggleDarkMode}
-          className={buttonClass}
-          aria-label={darkMode ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
-          title={darkMode ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
-        >
-          {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleOpenSettings}
-          className={buttonClass}
-          aria-label="Einstellungen"
-          title="Einstellungen"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
+        {renderButtonGroup(primaryButtons, false)}
+        {renderButtonGroup(secondaryButtons, false)}
       </div>
     )
   }
 
   // Standard-Layout
   return (
-    <div className={containerClass}>
+    <div
+      className={`flex flex-wrap items-center justify-between p-2 sm:p-3 ${
+        darkMode ? "text-gray-200 bg-gray-900" : "text-[#222] bg-[#f3efe9]"
+      } text-sm font-serif gap-2`}
+    >
       {/* Statistics */}
       <div className={`flex items-center gap-2 sm:gap-6 ${isSmallScreen ? 'w-full justify-center' : ''}` }>
         <div className="flex items-center gap-1 sm:gap-2">
@@ -303,108 +314,21 @@ function ControlBar({
       </div>
 
       {/* Controls */}
-      <div className={controlsContainerClass}>
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={copyToClipboard}
-          className={buttonClass}
-          aria-label="Kopieren"
-          title="Kopieren"
-        >
-          <Copy className="h-4 w-4" />
-          {!isSmallScreen && <span className="ml-1">{copied ? "Kopiert!" : "Kopieren"}</span>}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleSave}
-          disabled={isSaving}
-          className={buttonClass}
-          aria-label="Speichern"
-          title="Speichern"
-        >
-          <Save className={`h-4 w-4 ${isSaving ? "animate-pulse" : ""}`} />
-          {!isSmallScreen && <span className="ml-1">{isSaving ? "Speichern..." : "Speichern"}</span>}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleLoad}
-          disabled={isLoading}
-          className={buttonClass}
-          aria-label="Letzte Sitzung laden"
-          title="Letzte Sitzung laden"
-        >
-          <Download className={`h-4 w-4 ${isLoading ? "animate-pulse" : ""}`} />
-          {!isSmallScreen && <span className="ml-1">{isLoading ? "Laden..." : "Laden"}</span>}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleDelete}
-          className={`${buttonClass} hover:bg-red-100 dark:hover:bg-red-900`}
-          aria-label="Alle Zeilen löschen"
-          title="Alle Zeilen löschen"
-        >
-          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-          {!isSmallScreen && <span className="ml-1 text-red-600 dark:text-red-400">Löschen</span>}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            toggleFullscreen()
-            setTimeout(() => {
-              refocusInput()
-            }, 300)
-          }}
-          className={buttonClass}
-          aria-label={isFullscreen ? "Vollbild beenden" : "Vollbild"}
-          title={isFullscreen ? "Vollbild beenden" : "Vollbild"}
-        >
-          {isFullscreen ? (
-            <>
-              <Minimize2 className="h-4 w-4" />
-              {!isSmallScreen && <span className="ml-1">Vollbild beenden</span>}
-            </>
-          ) : (
-            <>
-              <Fullscreen className="h-4 w-4" />
-              {!isSmallScreen && <span className="ml-1">Vollbild</span>}
-            </>
-          )}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={toggleDarkMode}
-          className={buttonClass}
-          aria-label={darkMode ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
-          title={darkMode ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
-        >
-          {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleOpenSettings}
-          className={buttonClass}
-          aria-label="Einstellungen"
-          title="Einstellungen"
-        >
-          <Settings className="h-4 w-4" />
-          {!isSmallScreen && <span className="ml-1">Einstellungen</span>}
-        </Button>
-      </div>
+      {isVeryNarrowScreen ? (
+        <div className="flex flex-col w-full gap-2 mt-2">
+          <div className="flex justify-center gap-2">
+            {renderButtonGroup(primaryButtons, false)}
+          </div>
+          <div className="flex justify-center gap-2 overflow-x-auto pb-1">
+            {renderButtonGroup(secondaryButtons, false)}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          {renderButtonGroup(primaryButtons)}
+          {renderButtonGroup(secondaryButtons)}
+        </div>
+      )}
     </div>
   )
 }
