@@ -39,7 +39,6 @@ export default function TypewriterPage() {
     setFixedLineLength,
     paragraphRanges,
     inParagraph,
-    activeLineType,
     mode,
     selectedLineIndex,
     navigateUp,
@@ -572,7 +571,6 @@ export default function TypewriterPage() {
           <WritingArea
             lines={lines}
             activeLine={activeLine}
-            activeLineType={activeLineType}
             setActiveLine={setActiveLine}
             addLineToStack={addLineToStack}
             maxCharsPerLine={maxCharsPerLine}

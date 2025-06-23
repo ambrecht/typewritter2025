@@ -1,18 +1,13 @@
 "use client"
 
 import type React from "react"
-import { MarkdownType } from "@/types"
 import { getActiveLineTextClass } from "../../utils/lineClassUtils"
-import ActiveLinePreview from "../active-line-preview"
-import { useMarkdownIndicator } from "../../hooks/useMarkdownIndicator"
 
 interface ActiveLineProps {
   activeLine: string
-  activeLineType: MarkdownType
   darkMode: boolean
   fontSize: number
   showCursor: boolean
-  inParagraph: boolean
   maxCharsPerLine: number
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
   handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
@@ -28,11 +23,9 @@ interface ActiveLineProps {
  */
 export function ActiveLine({
   activeLine,
-  activeLineType,
   darkMode,
   fontSize,
   showCursor,
-  inParagraph,
   maxCharsPerLine,
   hiddenInputRef,
   handleChange,
@@ -41,7 +34,6 @@ export function ActiveLine({
   isAndroid = false,
   isFullscreen = false,
 }: ActiveLineProps) {
-  const { renderMarkdownTypeIndicator } = useMarkdownIndicator(activeLineType, darkMode, inParagraph)
 
   // Verbessere die visuelle Trennung zwischen Schreibfläche und Steuerleiste
   // Füge einen subtilen Schatten und eine feine Linie hinzu
@@ -51,34 +43,9 @@ export function ActiveLine({
     darkMode
       ? "bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
       : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
-  } ${
-    activeLineType === MarkdownType.HEADING1
-      ? "heading-marker"
-      : activeLineType === MarkdownType.HEADING2
-        ? "heading-marker"
-        : activeLineType === MarkdownType.HEADING3
-          ? "heading-marker"
-          : activeLineType === MarkdownType.BLOCKQUOTE
-            ? "blockquote-marker"
-            : activeLineType === MarkdownType.UNORDERED_LIST
-              ? "list-marker"
-              : activeLineType === MarkdownType.ORDERED_LIST
-                ? "list-marker"
-                : activeLineType === MarkdownType.DIALOG
-                  ? "dialog-marker"
-                  : activeLineType === MarkdownType.CODE
-                    ? "code-marker"
-                    : activeLineType === MarkdownType.PARAGRAPH
-                      ? "paragraph-marker"
-                      : inParagraph
-                        ? "paragraph-marker"
-                        : ""
   }`
 
-  const activeLineTextClass = getActiveLineTextClass(darkMode, activeLineType, inParagraph)
-
-  // Hole die Eigenschaften für den Markdown-Typ-Indikator
-  const indicatorProps = renderMarkdownTypeIndicator()
+  const activeLineTextClass = getActiveLineTextClass(darkMode)
 
   // Ändere die return-Anweisung, um die Schreibkopfzeile besser hervorzuheben
   return (
@@ -151,17 +118,6 @@ export function ActiveLine({
           aria-label="Typewriter input field"
         />
 
-        {/* Markdown-Vorschau (nur anzeigen, wenn Markdown-Formatierung erkannt wurde) */}
-        {activeLineType !== MarkdownType.NORMAL && (
-          <div
-            className="absolute top-full left-0 right-0 mt-2 p-2 rounded-md bg-opacity-90 z-20 shadow-lg"
-            style={{
-              backgroundColor: darkMode ? "rgba(31, 41, 55, 0.9)" : "rgba(255, 255, 255, 0.9)",
-            }}
-          >
-            <ActiveLinePreview text={activeLine} activeLineType={activeLineType} darkMode={darkMode} />
-          </div>
-        )}
       </div>
 
       {/* Progress bar for line length - verbesserte Anzeige */}
@@ -191,20 +147,6 @@ export function ActiveLine({
         {activeLine.length}/{maxCharsPerLine}
       </div>
 
-      {/* Markdown type indicator */}
-      {indicatorProps && (
-        <div className={indicatorProps.className}>
-          {typeof indicatorProps.children === "object" &&
-          indicatorProps.children !== null &&
-          "type" in indicatorProps.children ? (
-            <span className={(indicatorProps.children as any).props.className}>
-              {(indicatorProps.children as any).props.children}
-            </span>
-          ) : (
-            indicatorProps.children
-          )}
-        </div>
-      )}
     </div>
   )
 }

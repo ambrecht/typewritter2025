@@ -3,7 +3,6 @@
 import type React from "react"
 import { useEffect, useState, useRef } from "react"
 import type { LineBreakConfig, ParagraphRange, FormattedLine } from "@/types"
-import type { MarkdownType } from "@/types"
 
 // Importiere Hooks
 import { useContainerDimensions } from "../hooks/useContainerDimensions"
@@ -24,7 +23,6 @@ const DEFAULT_LINE_BREAK_CONFIG: LineBreakConfig = {
 interface WritingAreaProps {
   lines: FormattedLine[]
   activeLine: string
-  activeLineType: MarkdownType
   setActiveLine: (line: string) => void
   addLineToStack: () => void
   maxCharsPerLine: number
@@ -49,7 +47,6 @@ interface WritingAreaProps {
 export default function WritingArea({
   lines,
   activeLine,
-  activeLineType,
   setActiveLine,
   addLineToStack,
   maxCharsPerLine,
@@ -152,7 +149,7 @@ export default function WritingArea({
   // Berechne die Höhe des aktiven Zeilenbereichs
   // Reduziere die Höhe für Android und im Vollbildmodus
   const activeLineHeight =
-    isFullscreen || navigator.userAgent.includes("Android")
+    isFullscreen || (typeof navigator !== "undefined" && navigator.userAgent.includes("Android"))
       ? fontSize * 1.8 + 16 // Stark reduzierte Höhe für Vollbildmodus und Android
       : fontSize * 2.0 + 24 // Reduzierte Standard-Höhe
 
@@ -231,11 +228,9 @@ export default function WritingArea({
       {mode === "typing" && (
         <ActiveLine
           activeLine={activeLine}
-          activeLineType={activeLineType}
           darkMode={darkMode}
           fontSize={fontSize}
           showCursor={showCursor}
-          inParagraph={inParagraph}
           maxCharsPerLine={maxCharsPerLine}
           hiddenInputRef={hiddenInputRef}
           handleChange={handleChange}
