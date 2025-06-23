@@ -350,6 +350,7 @@ export default function TypewriterPage() {
   }, [fontSize, lineBreakConfig.autoMaxChars, updateLineBreakConfig])
 
   useEffect(() => {
+    if (typeof navigator === "undefined") return
     const isAndroidDevice = /Android/.test(navigator.userAgent)
     setIsAndroid(isAndroidDevice)
     setIsSmallScreen(window.innerWidth < 768 || isAndroidDevice)
@@ -496,6 +497,7 @@ export default function TypewriterPage() {
 
   // Überprüfen, ob es sich um ein Android-Gerät handelt
   useEffect(() => {
+    if (typeof navigator === "undefined") return
     const isAndroidDevice = /Android/.test(navigator.userAgent)
     setIsAndroid(isAndroidDevice)
 

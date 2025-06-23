@@ -147,7 +147,8 @@ export default function WritingArea({
   // Berechne die Höhe des aktiven Zeilenbereichs
   // Reduziere die Höhe für Android und im Vollbildmodus
   const activeLineHeight =
-    isFullscreen || navigator.userAgent.includes("Android")
+    isFullscreen ||
+    (typeof navigator !== "undefined" && navigator.userAgent.includes("Android"))
       ? fontSize * 1.8 + 16 // Stark reduzierte Höhe für Vollbildmodus und Android
       : fontSize * 2.0 + 24 // Reduzierte Standard-Höhe
 
