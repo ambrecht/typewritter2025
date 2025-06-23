@@ -49,24 +49,47 @@ export function ActiveLine({
   const activeLineTextClass = getActiveLineTextClass(darkMode)
 
   const [cursorPosition, setCursorPosition] = useState(activeLine.length)
+  const [isFocused, setIsFocused] = useState(true)
 
   useEffect(() => {
-    setCursorPosition(activeLine.length)
-  }, [activeLine])
-
-  const handleCursorChange = () => {
-    if (hiddenInputRef.current) {
-      setCursorPosition(
-        hiddenInputRef.current.selectionStart ?? activeLine.length,
-      )
+    const updateCursor = () => {
+      if (hiddenInputRef.current) {
+        const pos = hiddenInputRef.current.selectionStart ?? activeLine.length
+        setCursorPosition(pos)
+      }
     }
-  }
+
+    const handleFocus = () => setIsFocused(true)
+    const handleBlur = () => setIsFocused(false)
+
+    const input = hiddenInputRef.current
+    if (input) {
+      input.addEventListener("focus", handleFocus)
+      input.addEventListener("blur", handleBlur)
+      input.addEventListener("select", updateCursor)
+      input.addEventListener("keyup", updateCursor)
+      input.addEventListener("click", updateCursor)
+      input.addEventListener("input", updateCursor)
+    }
+
+    return () => {
+      if (input) {
+        input.removeEventListener("focus", handleFocus)
+        input.removeEventListener("blur", handleBlur)
+        input.removeEventListener("select", updateCursor)
+        input.removeEventListener("keyup", updateCursor)
+        input.removeEventListener("click", updateCursor)
+        input.removeEventListener("input", updateCursor)
+      }
+    }
+  }, [activeLine])
 
   // Ändere die return-Anweisung, um die Schreibkopfzeile besser hervorzuheben
   return (
     <div
       ref={activeLineRef}
       className={fixedActiveLineClass}
+      onClick={() => hiddenInputRef.current?.focus()}
       style={{
         // Erhöhe die Höhe für bessere Sichtbarkeit
         height: isFullscreen || isAndroid ? `${fontSize * 2.2}px` : `${fontSize * 2.4}px`,
@@ -106,13 +129,16 @@ export function ActiveLine({
           {activeLine.slice(0, cursorPosition)}
           <span
             className={`inline-block h-[1.2em] ml-[1px] align-middle ${
-              showCursor
+              showCursor && isFocused
                 ? darkMode
-                  ? "border-r-2 border-gray-200 animate-pulse"
-                  : "border-r-2 border-[#222] animate-pulse"
+                  ? "border-r-2 border-gray-200"
+                  : "border-r-2 border-[#222]"
                 : "border-r-2 border-transparent"
             }`}
-            style={{ transform: "translateY(-0.1em)" }}
+            style={{
+              transform: "translateY(-0.1em)",
+              animation: showCursor && isFocused ? "pulse 1.5s infinite" : "none",
+            }}
           />
           {activeLine.slice(cursorPosition)}
         </div>
@@ -123,9 +149,6 @@ export function ActiveLine({
           value={activeLine}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          onSelect={handleCursorChange}
-          onKeyUp={handleCursorChange}
-          onClick={handleCursorChange}
           className="w-full bg-transparent text-transparent caret-transparent outline-none resize-none overflow-hidden"
           style={{
             fontSize: `${fontSize}px`,
