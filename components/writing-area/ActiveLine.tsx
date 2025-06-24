@@ -30,77 +30,74 @@ export function ActiveLine({
   isAndroid = false,
   isFullscreen = false,
 }: ActiveLineProps) {
-  const fixedActiveLineClass = `fixed bottom-0 left-0 right-0 font-serif border-t z-50 active-line ${
+  const fixedClass = `fixed bottom-0 left-0 right-0 font-serif border-t z-50 ${
     darkMode
       ? 'bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]'
       : 'bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]'
   }`;
+  const textClass = getActiveLineTextClass(darkMode);
 
-  const activeLineTextClass = getActiveLineTextClass(darkMode);
-  const [cursorPosition, setCursorPosition] = useState(activeLine.length);
-  const [isFocused, setIsFocused] = useState(true);
+  const [cursorPos, setCursorPos] = useState(activeLine.length);
+  const [focused, setFocused] = useState(true);
 
-  // Keep textarea focused on Android
+  // 1) Immer Fokus auf der textarea halten (Android & extern)
   useEffect(() => {
-    if (isAndroid && hiddenInputRef.current) {
-      hiddenInputRef.current.focus({ preventScroll: true });
+    const ta = hiddenInputRef.current;
+    if (ta) {
+      ta.focus({ preventScroll: true });
     }
   }, [isAndroid, hiddenInputRef]);
 
-  // Update cursor position and focus state
+  // 2) Cursor- und Fokus-Listener
   useEffect(() => {
-    const input = hiddenInputRef.current;
-    if (!input) return;
+    const ta = hiddenInputRef.current;
+    if (!ta) return;
 
-    const updateCursor = () => {
-      setCursorPosition(input.selectionStart ?? activeLine.length);
-    };
-    const onFocus = () => setIsFocused(true);
-    const onBlur = () => setIsFocused(false);
+    const update = () => setCursorPos(ta.selectionStart ?? activeLine.length);
+    const onF = () => setFocused(true);
+    const onB = () => setFocused(false);
 
-    input.addEventListener('focus', onFocus);
-    input.addEventListener('blur', onBlur);
-    input.addEventListener('select', updateCursor);
-    input.addEventListener('keyup', updateCursor);
-    input.addEventListener('click', updateCursor);
-    input.addEventListener('input', updateCursor);
+    ta.addEventListener('focus', onF);
+    ta.addEventListener('blur', onB);
+    ta.addEventListener('input', update);
+    ta.addEventListener('keyup', update);
+    ta.addEventListener('click', update);
+    ta.addEventListener('select', update);
 
     return () => {
-      input.removeEventListener('focus', onFocus);
-      input.removeEventListener('blur', onBlur);
-      input.removeEventListener('select', updateCursor);
-      input.removeEventListener('keyup', updateCursor);
-      input.removeEventListener('click', updateCursor);
-      input.removeEventListener('input', updateCursor);
+      ta.removeEventListener('focus', onF);
+      ta.removeEventListener('blur', onB);
+      ta.removeEventListener('input', update);
+      ta.removeEventListener('keyup', update);
+      ta.removeEventListener('click', update);
+      ta.removeEventListener('select', update);
     };
   }, [activeLine, hiddenInputRef]);
 
-  // Refocus helper after actions
-  const refocusInput = useCallback(() => {
+  // 3) Nach jeder Tastaturaktion erneut fokussieren
+  const refocus = useCallback(() => {
     setTimeout(() => {
       const ta = hiddenInputRef.current;
-      if (isAndroid && ta) {
+      if (ta) {
         ta.focus();
         ta.setSelectionRange(ta.value.length, ta.value.length);
       }
-    }, 150);
-  }, [isAndroid, hiddenInputRef]);
+    }, 50);
+  }, [hiddenInputRef]);
 
   return (
     <div
       ref={activeLineRef}
-      className={fixedActiveLineClass}
+      className={fixedClass}
       onClick={() => hiddenInputRef.current?.focus()}
       style={{
         height:
           isFullscreen || isAndroid
             ? `${fontSize * 2.2}px`
             : `${fontSize * 2.4}px`,
-        paddingTop: isFullscreen || isAndroid ? '0.5rem' : '0.75rem',
-        paddingBottom: isFullscreen || isAndroid ? '0.5rem' : '0.75rem',
-        paddingLeft: '1.25rem',
-        paddingRight: '1.25rem',
-        marginTop: '0',
+        padding:
+          isFullscreen || isAndroid ? '0.5rem 1.25rem' : '0.75rem 1.25rem',
+        marginTop: 0,
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         background: darkMode
@@ -115,6 +112,7 @@ export function ActiveLine({
       }}
       data-testid="active-line"
     >
+      {/* Visual Cue */}
       <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
         <div
           className={`h-3 w-3 rounded-full ${
@@ -123,16 +121,17 @@ export function ActiveLine({
         />
       </div>
 
+      {/* Rendered Text + Cursor */}
       <div className="relative pl-3">
         <div
-          className={activeLineTextClass}
-          style={{ fontSize: `${fontSize}px`, lineHeight: '1.2' }}
+          className={textClass}
+          style={{ fontSize: `${fontSize}px`, lineHeight: 1.2 }}
           aria-hidden="true"
         >
-          {activeLine.slice(0, cursorPosition)}
+          {activeLine.slice(0, cursorPos)}
           <span
             className={`inline-block h-[1.2em] ml-[1px] align-middle ${
-              showCursor && isFocused
+              showCursor && focused
                 ? darkMode
                   ? 'border-r-2 border-gray-200'
                   : 'border-r-2 border-[#222]'
@@ -140,25 +139,32 @@ export function ActiveLine({
             }`}
             style={{
               transform: 'translateY(-0.1em)',
-              animation:
-                showCursor && isFocused ? 'pulse 1.5s infinite' : 'none',
+              animation: showCursor && focused ? 'pulse 1.5s infinite' : 'none',
             }}
           />
-          {activeLine.slice(cursorPosition)}
+          {activeLine.slice(cursorPos)}
         </div>
 
+        {/* Invisible Textarea */}
         <textarea
           ref={hiddenInputRef}
           value={activeLine}
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e);
+            refocus();
+          }}
           onKeyDown={(e) => {
             handleKeyDown(e);
-            refocusInput();
+            refocus();
+          }}
+          onInput={(e) => {
+            handleChange(e as any);
+            refocus();
           }}
           className="w-full bg-transparent text-transparent caret-transparent outline-none resize-none overflow-hidden"
           style={{
             fontSize: `${fontSize}px`,
-            lineHeight: '1.2',
+            lineHeight: 1.2,
             fontFamily: 'serif',
             height: `${fontSize * 1.2}px`,
           }}
@@ -167,6 +173,7 @@ export function ActiveLine({
         />
       </div>
 
+      {/* Progress Bar */}
       <div
         className={`absolute bottom-0 left-0 h-1 ${
           darkMode ? 'bg-gray-700' : 'bg-[#e2dfda]'
@@ -195,6 +202,7 @@ export function ActiveLine({
         />
       </div>
 
+      {/* Char Counter */}
       <div className="absolute bottom-1 right-4 text-xs opacity-60">
         {activeLine.length}/{maxCharsPerLine}
       </div>
