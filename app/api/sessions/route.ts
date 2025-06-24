@@ -29,6 +29,18 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    if (response.status === 429) {
+      const text = await response.text().catch(() => "")
+      console.warn("Rate limit reached:", text)
+      return NextResponse.json(
+        {
+          error: "Rate Limit",
+          message: "Zu viele Anfragen. Bitte später erneut versuchen.",
+        },
+        { status: 429 },
+      )
+    }
+
     try {
       const responseText = await response.text()
 
