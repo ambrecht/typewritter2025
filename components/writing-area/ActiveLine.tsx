@@ -1,9 +1,11 @@
 'use client';
 
-import type React from 'react';
+import React from 'react';
 
 interface ActiveLineProps {
   activeLine: string;
+  activeLineType: string;
+  inParagraph: boolean;
   darkMode: boolean;
   fontSize: number;
   showCursor: boolean;
@@ -11,14 +13,11 @@ interface ActiveLineProps {
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>;
   handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  activeLineRef: React.RefObject<HTMLDivElement>;
+  activeLineRef: React.RefObject<HTMLDivElement | null>;
   isAndroid?: boolean;
   isFullscreen?: boolean;
 }
 
-/**
- * Eingabezeile am unteren Bildschirmrand (ohne Markdown‑Verarbeitung)
- */
 export function ActiveLine({
   activeLine,
   darkMode,
@@ -32,47 +31,64 @@ export function ActiveLine({
   isAndroid = false,
   isFullscreen = false,
 }: ActiveLineProps) {
-  // Grundlegendes Layout
-  const fixedActiveLineClass = `fixed bottom-0 left-0 right-0 font-serif border-t z-50 active-line ${
+  const fixedActiveLineClass = `fixed bottom-0 left-0 right-0 font-serif border-t z-50 active-line bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]  ${
     darkMode
       ? 'bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]'
       : 'bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]'
   }`;
 
-  const activeLineTextClass = `whitespace-pre ${
+  const activeLineTextClass = `whitespace-pre font-serif ${
     darkMode ? 'text-gray-200' : 'text-[#222]'
   }`;
+
+  function stopScroll(e: React.WheelEvent) {
+    e.preventDefault();
+  }
 
   return (
     <div
       ref={activeLineRef}
-      className={fixedActiveLineClass}
       style={{
+        // Erhöhe die Höhe für bessere Sichtbarkeit
         height:
           isFullscreen || isAndroid
             ? `${fontSize * 2.2}px`
             : `${fontSize * 2.4}px`,
+        // Erhöhe das Padding für mehr visuellen Raum
         paddingTop: isFullscreen || isAndroid ? '0.5rem' : '0.75rem',
         paddingBottom: isFullscreen || isAndroid ? '0.5rem' : '0.75rem',
         paddingLeft: '1.25rem',
         paddingRight: '1.25rem',
-        marginTop: '0',
+
+        // Füge einen subtilen Hintergrundeffekt hinzu
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
+        // Füge einen leichten Farbverlauf hinzu
         background: darkMode
           ? 'linear-gradient(to bottom, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.98))'
           : 'linear-gradient(to bottom, rgba(243, 239, 233, 0.95), rgba(248, 245, 240, 0.98))',
+        // Füge einen deutlicheren Schatten hinzu
         boxShadow: darkMode
           ? '0 -8px 20px rgba(0, 0, 0, 0.4)'
           : '0 -8px 20px rgba(0, 0, 0, 0.15)',
+        // Füge einen subtilen Rand hinzu
         borderTop: darkMode
           ? '2px solid rgba(55, 65, 81, 0.8)'
           : '2px solid rgba(214, 211, 205, 0.8)',
       }}
       data-testid="active-line"
     >
-      <div className="relative">
-        {/* Sichtbarer Text mit Blink‑Cursor */}
+      {/* Füge einen visuellen Indikator für die Schreibzeile hinzu */}
+      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center">
+        <div
+          className={`h-3 w-3 rounded-full ${
+            darkMode ? 'bg-blue-500' : 'bg-amber-500'
+          } opacity-70`}
+        ></div>
+      </div>
+
+      <div className="relative pl-3">
+        {/* Visible text with cursor */}
         <div
           className={activeLineTextClass}
           style={{ fontSize: `${fontSize}px`, lineHeight: '1.2' }}
@@ -91,25 +107,24 @@ export function ActiveLine({
           />
         </div>
 
-        {/* Unsichtbares Textarea für Eingabe */}
+        {/* Textarea statt Input für Mehrzeilenunterstützung */}
         <textarea
           ref={hiddenInputRef}
           value={activeLine}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          className="w-full bg-transparent text-transparent caret-transparent outline-none resize-none overflow-hidden"
-          style={{
-            fontSize: `${fontSize}px`,
-            lineHeight: '1.2',
-            fontFamily: 'serif',
-            height: `${fontSize * 1.2}px`,
-          }}
-          autoFocus
-          aria-label="Typewriter input field"
+          className="
+  absolute inset-0           
+  opacity-0                  
+  caret-transparent
+  outline-none resize-none overflow-hidden
+  select-none
+"
+          spellCheck={false}
         />
       </div>
 
-      {/* Fortschrittsbalken für Zeilenlänge */}
+      {/* Progress bar for line length - verbesserte Anzeige */}
       <div
         className={`absolute bottom-0 left-0 h-1 ${
           darkMode ? 'bg-gray-700' : 'bg-[#e2dfda]'
@@ -138,7 +153,7 @@ export function ActiveLine({
         />
       </div>
 
-      {/* Zeichen‑Zähler */}
+      {/* Zeichen-Zähler hinzufügen */}
       <div className="absolute bottom-1 right-4 text-xs opacity-60">
         {activeLine.length}/{maxCharsPerLine}
       </div>

@@ -1,3 +1,5 @@
+'use client';
+
 import type React from 'react';
 import type { FormattedLine } from '@/types';
 import { memo } from 'react';
@@ -14,6 +16,10 @@ interface LineStackProps {
   isFullscreen?: boolean;
 }
 
+/**
+ * Zeilen‑Stack ohne Markdown‑Logik.
+ * CSS‑Layout bleibt exakt wie im Original.
+ */
 export const LineStack = memo(function LineStack({
   visibleLines,
   lineRefs,
@@ -21,10 +27,20 @@ export const LineStack = memo(function LineStack({
   stackFontSize,
   mode,
   fontSize,
-  paragraphRanges,
-  selectedLineIndex,
+  paragraphRanges, // ignoriert
+  selectedLineIndex, // ignoriert
   isFullscreen = false,
 }: LineStackProps) {
+  // Element‑Typ: prüfe rudimentär auf horizontale Linie, ohne Annahme eines "type"‑Feldes
+  function resolveElementType(
+    line: FormattedLine,
+  ): keyof React.JSX.IntrinsicElements {
+    const raw = (line as any).raw ?? (line as any).text ?? '';
+    if (typeof raw === 'string' && raw.trim() === '---') return 'hr';
+    return 'div';
+  }
+
+  // Android‑Erkennung beibehalten → Einfluss auf lineHeight
   const isAndroid =
     typeof navigator !== 'undefined' && navigator.userAgent.includes('Android');
 
@@ -45,8 +61,11 @@ export const LineStack = memo(function LineStack({
         marginBottom: '0',
       }}
     >
-      {visibleLines.map(({ line, index, key }) => {
-        const elementKey = key || index;
+      {visibleLines.map(({ line, index }) => {
+        const ElementType = resolveElementType(line);
+        const elementKey = index;
+
+        // Hervorhebung der zuletzt aktiven Zeile
         const isLastActive =
           index === visibleLines.length - 1 && mode === 'typing';
         const lastActiveStyle = isLastActive
@@ -59,17 +78,41 @@ export const LineStack = memo(function LineStack({
             }
           : {};
 
+        if (ElementType === 'hr') {
+          return (
+            <hr
+              key={elementKey}
+              data-line-index={index}
+              style={{ margin: '0' }}
+            />
+          );
+        }
+
+        // Klassennamen für Textfarbe
+        const lineClassName = darkMode ? 'text-gray-200' : 'text-[#222]';
+
+        // Content ermitteln
+        const content: string | React.ReactNode =
+          (line as any).html ??
+          (line as any).text ??
+          (line as any).raw ??
+          (line as any).content ??
+          '';
+
         return (
           <div
             key={elementKey}
-            ref={(el) => (lineRefs.current[index] = el)}
-            className={`whitespace-pre-wrap break-words mb-2 font-serif ${
-              darkMode ? 'text-gray-200' : 'text-gray-800'
-            }`}
+            ref={(el: HTMLDivElement | null) => {
+              lineRefs.current[index] = el;
+            }}
             data-line-index={index}
+            className={lineClassName}
             style={{ margin: '0', padding: '0', ...lastActiveStyle }}
+            {...(typeof content === 'string'
+              ? { dangerouslySetInnerHTML: { __html: content } }
+              : {})}
           >
-            {line.text}
+            {typeof content !== 'string' ? content : null}
           </div>
         );
       })}

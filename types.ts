@@ -3,9 +3,9 @@
  */
 export interface LineBreakConfig {
   /** Maximale Anzahl von Zeichen pro Zeile (Standard: 56) */
-  maxCharsPerLine: number
+  maxCharsPerLine: number;
   /** Automatische Berechnung der Zeilenlänge basierend auf dem Viewport */
-  autoMaxChars: boolean
+  autoMaxChars: boolean;
 }
 
 /**
@@ -13,9 +13,9 @@ export interface LineBreakConfig {
  */
 export interface LineBreakResult {
   /** Text, der in die aktuelle Zeile passt */
-  line: string
+  line: string;
   /** Verbleibender Text, der in die nächste Zeile verschoben werden soll */
-  remainder: string
+  remainder: string;
 }
 
 /**
@@ -23,9 +23,9 @@ export interface LineBreakResult {
  */
 export interface ParagraphRange {
   /** Startindex der Zeile (inklusive) */
-  start: number
+  start: number;
   /** Endindex der Zeile (inklusive) */
-  end: number
+  end: number;
 }
 
 /**
@@ -33,7 +33,7 @@ export interface ParagraphRange {
  */
 export interface FormattedLine {
   /** Der Textinhalt der Zeile */
-  text: string
+  text: string;
 }
 
 /**
@@ -41,11 +41,11 @@ export interface FormattedLine {
  */
 export interface TextStatistics {
   /** Anzahl der Wörter im Text */
-  wordCount: number
+  wordCount: number;
   /** Anzahl der Buchstaben im Text */
-  letterCount: number
+  letterCount: number;
   /** Anzahl der Seiten im Text */
-  pageCount: number
+  pageCount: number;
 }
 
 /**
@@ -53,31 +53,31 @@ export interface TextStatistics {
  */
 export interface TypewriterState {
   /** Array bereits geschriebener Zeilen */
-  lines: FormattedLine[]
+  lines: FormattedLine[];
   /** Aktuell bearbeitete Zeile */
-  activeLine: string
+  activeLine: string;
   /** Maximale Anzahl von Zeichen pro Zeile */
-  maxCharsPerLine: number
+  maxCharsPerLine: number;
   /** Textstatistiken */
-  statistics: TextStatistics
+  statistics: TextStatistics;
   /** Konfiguration für Zeilenumbrüche */
-  lineBreakConfig: LineBreakConfig
+  lineBreakConfig: LineBreakConfig;
   /** Schriftgröße in Pixeln für aktive Zeile */
-  fontSize: number
+  fontSize: number;
   /** Schriftgröße in Pixeln für Stack vorheriger Zeilen */
-  stackFontSize: number
+  stackFontSize: number;
   /** Ob der Dark Mode aktiviert ist */
-  darkMode: boolean
+  darkMode: boolean;
   /** Array von Absatzbereichen (für Abwärtskompatibilität) */
-  paragraphRanges: ParagraphRange[]
+  paragraphRanges: ParagraphRange[];
   /** Ob wir uns derzeit in einem Absatz befinden (für Abwärtskompatibilität) */
-  inParagraph: boolean
+  inParagraph: boolean;
   /** Startindex des aktuellen Absatzes (für Abwärtskompatibilität) */
-  currentParagraphStart: number
+  currentParagraphStart: number;
   /** Aktueller Modus (Schreiben oder Navigieren) */
-  mode: "typing" | "navigating"
+  mode: 'typing' | 'navigating';
   /** Index der aktuell ausgewählten Zeile (null, wenn keine ausgewählt ist) */
-  selectedLineIndex: number | null
+  selectedLineIndex: number | null;
 }
 
 /**
@@ -85,33 +85,33 @@ export interface TypewriterState {
  */
 export interface TypewriterActions {
   /** Funktion zum Setzen der aktiven Zeile */
-  setActiveLine: (text: string) => void
+  setActiveLine: (text: string) => void;
   /** Funktion zum Hinzufügen der aktiven Zeile zum Stack */
-  addLineToStack: () => void
+  addLineToStack: () => void;
   /** Funktion zum Aktualisieren der Konfiguration */
-  updateLineBreakConfig: (config: Partial<LineBreakConfig>) => void
+  updateLineBreakConfig: (config: Partial<LineBreakConfig>) => void;
   /** Funktion zum Setzen der Schriftgröße für aktive Zeile */
-  setFontSize: (size: number) => void
+  setFontSize: (size: number) => void;
   /** Funktion zum Setzen der Schriftgröße für Stack vorheriger Zeilen */
-  setStackFontSize: (size: number) => void
+  setStackFontSize: (size: number) => void;
   /** Funktion zum Umschalten des Dark Mode */
-  toggleDarkMode: () => void
+  toggleDarkMode: () => void;
   /** Funktion zum Löschen der aktuellen Eingabe */
-  clearCurrentInput: () => void
+  clearCurrentInput: () => void;
   /** Funktion zum Löschen aller Zeilen */
-  clearAllLines: () => void
+  clearAllLines: () => void;
   /** Funktion zum Zurücksetzen der Sitzung */
-  resetSession: () => void
+  resetSession: () => void;
   /** Funktion zum Setzen einer festen Zeilenlänge */
-  setFixedLineLength: (length: number) => void
+  setFixedLineLength: (length: number) => void;
   /** Funktion zum Setzen des Modus */
-  setMode: (mode: "typing" | "navigating") => void
+  setMode: (mode: 'typing' | 'navigating') => void;
   /** Funktion zum Setzen des ausgewählten Zeilenindex */
-  setSelectedLineIndex: (index: number | null) => void
+  setSelectedLineIndex: (index: number | null) => void;
   /** Funktion zum Navigieren nach oben im Stack */
-  navigateUp: () => void
+  navigateUp: () => void;
   /** Funktion zum Navigieren nach unten im Stack */
-  navigateDown: () => void
+  navigateDown: () => void;
   /** Funktion zum Zurücksetzen der Navigation */
-  resetNavigation: () => void
+  resetNavigation: () => void;
 }
