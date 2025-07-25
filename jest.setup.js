@@ -1,7 +1,6 @@
 "use client"
 
 import "@testing-library/jest-dom"
-import { Request as FetchRequest, Headers as FetchHeaders, Response as FetchResponse } from "node-fetch"
 
 // Mock Next.js router
 jest.mock("next/navigation", () => ({
@@ -31,23 +30,6 @@ global.localStorage = localStorageMock
 
 // Mock fetch
 global.fetch = jest.fn()
-if (typeof global.Request === "undefined") {
-  global.Request = FetchRequest
-}
-if (typeof global.Headers === "undefined") {
-  global.Headers = FetchHeaders
-}
-if (typeof global.Response === "undefined") {
-  class PolyfillResponse extends FetchResponse {
-    static json(data, init) {
-      return new PolyfillResponse(JSON.stringify(data), {
-        ...(init || {}),
-        headers: { ...(init?.headers || {}), "Content-Type": "application/json" },
-      })
-    }
-  }
-  global.Response = PolyfillResponse
-}
 
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({

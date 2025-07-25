@@ -62,10 +62,7 @@ export const metadata: Metadata = {
   applicationName: "Typewriter App",
   referrer: "origin-when-cross-origin",
   colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f59e0b" },
-    { media: "(prefers-color-scheme: dark)", color: "#1f2937" },
-  ],
+  themeColor: "#f5f5f4",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",

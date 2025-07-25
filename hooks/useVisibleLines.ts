@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import type { FormattedLine } from "@/types"
 
 /**
  * Hook zur Berechnung der sichtbaren Zeilen mit Virtualisierung für bessere Performance
@@ -15,7 +14,7 @@ import type { FormattedLine } from "@/types"
  * @returns Die aktuell sichtbaren Zeilen
  */
 export function useVisibleLines(
-  lines: FormattedLine[],
+  lines: string[],
   maxVisibleLines: number,
   mode: "typing" | "navigating",
   selectedLineIndex: number | null,
@@ -24,15 +23,9 @@ export function useVisibleLines(
   const [isAndroid, setIsAndroid] = useState(false)
   const [useVirtualization, setUseVirtualization] = useState(false)
 
-  // Refs für die letzte Berechnung und deren Parameter
-
-  // Prüfe, ob es sich um ein Android-Gerät handelt
   useEffect(() => {
     const isAndroidDevice = navigator.userAgent.includes("Android")
     setIsAndroid(isAndroidDevice)
-
-    // Im Vollbildmodus oder auf Android: Reduziere Virtualisierung für bessere Nutzung des Platzes
-    // Aktiviere Virtualisierung nur bei sehr vielen Zeilen
     const threshold = isFullscreen ? 200 : isAndroidDevice ? 100 : 80
     setUseVirtualization(lines.length > threshold)
   }, [lines.length, isFullscreen])
@@ -40,43 +33,37 @@ export function useVisibleLines(
   const calculateVisibleLines = useMemo(() => {
     const effectiveMaxVisibleLines = Math.max(20, maxVisibleLines)
 
-    // Früher Return für leere Arrays
     if (lines.length === 0) return []
 
     let result
     if (!useVirtualization || lines.length <= effectiveMaxVisibleLines) {
       if (mode === "typing") {
         if (lines.length <= effectiveMaxVisibleLines) {
-          result = lines.map((line, i) => ({ line, index: i, key: `${i}` }))
+          result = lines
         } else {
           const start = Math.max(0, lines.length - effectiveMaxVisibleLines)
-          result = lines.slice(start).map((line, i) => ({ line, index: start + i, key: `${start + i}` }))
+          result = lines.slice(start)
         }
       } else {
         const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
         const contextLines = Math.floor(visibleCount / 2)
         const start = Math.max(0, (selectedLineIndex ?? 0) - contextLines)
         const end = Math.min(lines.length - 1, start + visibleCount - 1)
-        result = lines.slice(start, end + 1).map((line, i) => ({ line, index: start + i, key: `${start + i}` }))
+        result = lines.slice(start, end + 1)
       }
     } else {
-      // Virtualisierung mit reduzierten Berechnungen
       if (mode === "navigating" && selectedLineIndex !== null) {
         const contextLines = isFullscreen ? 20 : isAndroid ? 15 : 10
         const visibleStart = Math.max(0, selectedLineIndex - contextLines)
         const visibleEnd = Math.min(lines.length - 1, selectedLineIndex + contextLines)
-        result = lines
-          .slice(visibleStart, visibleEnd + 1)
-          .map((line, i) => ({ line, index: visibleStart + i, key: `${visibleStart + i}` }))
+        result = lines.slice(visibleStart, visibleEnd + 1)
       } else {
         const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
         if (lines.length <= visibleCount) {
-          result = lines.map((line, i) => ({ line, index: i, key: `${i}` }))
+          result = lines
         } else {
           const visibleStart = Math.max(0, lines.length - visibleCount)
-          result = lines
-            .slice(visibleStart)
-            .map((line, i) => ({ line, index: visibleStart + i, key: `${visibleStart + i}` }))
+          result = lines.slice(visibleStart)
         }
       }
     }
@@ -84,6 +71,5 @@ export function useVisibleLines(
     return result
   }, [lines, maxVisibleLines, mode, selectedLineIndex, useVirtualization, isAndroid, isFullscreen])
 
-  // Entferne die calculateVisibleLines Funktion und return direkt das Memo
   return calculateVisibleLines
 }

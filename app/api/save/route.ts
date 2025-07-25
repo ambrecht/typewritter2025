@@ -50,18 +50,6 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ text: body.text }),
     })
 
-    if (response.status === 429) {
-      const text = await response.text().catch(() => "")
-      log("warn", "Rate limit reached:", text)
-      return NextResponse.json(
-        {
-          error: "Rate Limit",
-          message: "Zu viele Anfragen. Bitte später erneut versuchen.",
-        },
-        { status: 429 },
-      )
-    }
-
     if (!response.ok) {
       let errorMessage = "Fehler beim Speichern des Textes"
       let errorData = {}

@@ -1,10 +1,9 @@
 "use client"
 
 import { useCallback } from "react"
-import type { FormattedLine } from "@/types"
 
 interface CopyButtonProps {
-  lines: FormattedLine[]
+  lines: string[]
   activeLine: string
   darkMode: boolean
 }
@@ -17,7 +16,7 @@ export function CopyButton({ lines, activeLine, darkMode }: CopyButtonProps) {
    * Funktion zum Kopieren des gesamten Textes
    */
   const copyAllText = useCallback(() => {
-    const allText = lines.map((line) => line.text).join("\n") + (activeLine ? "\n" + activeLine : "")
+    const allText = lines.join("\n") + (activeLine ? "\n" + activeLine : "")
     navigator.clipboard
       .writeText(allText)
       .then(() => {

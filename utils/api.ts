@@ -20,13 +20,6 @@ export const saveText = async (text: string): Promise<{ success: boolean; messag
 
     const data = await response.json()
 
-    if (response.status === 429) {
-      return {
-        success: false,
-        message: data.message || "Zu viele Anfragen. Bitte später erneut versuchen.",
-      }
-    }
-
     if (!response.ok) {
       throw new Error(data.message || "Fehler beim Speichern des Textes")
     }
@@ -60,10 +53,6 @@ export const getAllTexts = async (): Promise<{ success: boolean; data?: any[]; m
     })
 
     const data = await response.json()
-
-    if (response.status === 429) {
-      return { success: false, message: data.message || "Zu viele Anfragen. Bitte später erneut versuchen." }
-    }
 
     if (!response.ok) {
       throw new Error(data.message || "Fehler beim Laden der Texte")
@@ -105,10 +94,6 @@ export const getLastSession = async (): Promise<{
     })
 
     const data = await response.json()
-
-    if (response.status === 429) {
-      return { success: false, message: data.message || "Zu viele Anfragen. Bitte später erneut versuchen." }
-    }
 
     if (!response.ok) {
       throw new Error(data.message || "Fehler beim Laden der letzten Sitzung")
