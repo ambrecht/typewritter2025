@@ -57,19 +57,15 @@ const nextConfig = {
         ],
       },
       // HTTPS-only in Produktion
-      ...(process.env.NODE_ENV === "production"
-        ? [
-            {
-              source: "/(.*)",
-              headers: [
-                {
-                  key: "Strict-Transport-Security",
-                  value: "max-age=31536000; includeSubDomains; preload",
-                },
-              ],
-            },
-          ]
-        : []),
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
+        ],
+      },
     ]
   },
   // PWA-Unterstützung vorbereiten

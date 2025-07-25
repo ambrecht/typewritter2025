@@ -17,7 +17,7 @@ export function setApiKey(apiKey: string): void {
     cookieStore.set(API_KEY_COOKIE_NAME, apiKey, {
       maxAge: COOKIE_MAX_AGE,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "strict",
     })
   } catch (error) {

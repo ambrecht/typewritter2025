@@ -5,9 +5,6 @@ import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
 import { measureTextWidth } from "@/utils/canvas-utils"
 
-const debug = process.env.NODE_ENV !== "production"
-const log = (...args: unknown[]) => debug && console.log("[TypewriterPad]", ...args)
-
 const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoading" | "containerWidth"> = {
   lines: [],
   activeLine: "",
@@ -46,8 +43,6 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           const textWidth = measureTextWidth(currentText, font)
           const willWrap = textWidth > availableWidth
 
-          log("input", { len: currentText.length, width: textWidth.toFixed(2), availableWidth, willWrap })
-
           if (!willWrap) {
             return { finalLines: currentLines, finalActiveLine: currentText }
           }
@@ -83,12 +78,6 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
             remainder = currentText.substring(breakPoint)
           }
 
-          log("wrap", {
-            pushed: lineToAdd,
-            stackSize: currentLines.length + 1,
-            remainder: remainder,
-          })
-
           const newLines = [...currentLines, lineToAdd]
           // Verarbeite den Rest rekursiv, falls er ebenfalls zu lang ist
           return processLine(remainder, newLines)
@@ -102,10 +91,6 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           activeLine: finalActiveLine,
           statistics: calculateTextStatistics(newFullText),
         })
-
-        if (debug) {
-          log("setActiveLine Δms", Math.round(performance.now() - t0))
-        }
       },
 
       addLineToStack: () => {

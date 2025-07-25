@@ -2,17 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getApiKey } from "@/lib/api-key-storage"
 import { getApiUrl } from "@/lib/api-config"
 
-// Logging-Funktion für Produktion
-const log = (level: "info" | "warn" | "error", message: string, data?: any) => {
-  if (process.env.NODE_ENV === "development") {
-    console[level](message, data)
-  } else if (level === "error") {
-    // In Produktion nur Fehler loggen
-    console.error(message, data)
-    // Hier könnte Sentry oder anderes Monitoring integriert werden
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -27,7 +16,6 @@ export async function POST(request: NextRequest) {
     const apiKey = getApiKey()
 
     if (!apiKey) {
-      log("warn", "API-Schlüssel nicht gefunden.")
       return NextResponse.json(
         {
           error: "Configuration Error",
@@ -39,7 +27,6 @@ export async function POST(request: NextRequest) {
     }
 
     const apiUrl = getApiUrl("SAVE")
-    log("info", "Sende Anfrage an:", apiUrl)
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -58,22 +45,17 @@ export async function POST(request: NextRequest) {
         const responseText = await response.text()
 
         if (!responseText || responseText.trim() === "" || responseText.includes("<!DOCTYPE html>")) {
-          log("error", "Ungültige API-Antwort:", responseText)
           errorMessage = "Ungültige Antwort vom Server erhalten"
         } else {
           try {
             const data = JSON.parse(responseText)
             errorMessage = data.message || errorMessage
             errorData = data
-            log("error", "API-Fehler:", data)
           } catch (parseError) {
-            log("error", "Konnte API-Antwort nicht als JSON parsen:", responseText)
             errorMessage = "Ungültige JSON-Antwort vom Server"
           }
         }
-      } catch (e) {
-        log("error", "Fehler beim Verarbeiten der API-Antwort:", e)
-      }
+      } catch (e) {}
 
       if (response.status === 401 || response.status === 403 || errorMessage.includes("API-Schlüssel")) {
         return NextResponse.json(
@@ -100,7 +82,6 @@ export async function POST(request: NextRequest) {
       const responseText = await response.text()
 
       if (!responseText || responseText.trim() === "") {
-        log("error", "Leere API-Antwort erhalten")
         return NextResponse.json(
           {
             error: "API Error",
@@ -122,7 +103,6 @@ export async function POST(request: NextRequest) {
           { status: 201 },
         )
       } catch (parseError) {
-        log("error", "Konnte API-Antwort nicht als JSON parsen:", responseText)
         return NextResponse.json(
           {
             error: "API Error",
@@ -132,7 +112,6 @@ export async function POST(request: NextRequest) {
         )
       }
     } catch (e) {
-      log("error", "Fehler beim Verarbeiten der API-Antwort:", e)
       return NextResponse.json(
         {
           error: "API Error",
@@ -142,7 +121,6 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    log("error", "Fehler beim Speichern des Textes:", error)
     return NextResponse.json(
       {
         error: "Internal Server Error",

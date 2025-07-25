@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
-import { AlertTriangle, RefreshCw, Home } from "lucide-react"
+import { Home, RefreshCw, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 
 export default function Error({
@@ -11,14 +10,6 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  useEffect(() => {
-    // Log error to monitoring service in production
-    if (process.env.NODE_ENV === "production") {
-      console.error("Application error:", error)
-      // Here you could send to Sentry or other monitoring service
-    }
-  }, [error])
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f3efe9] dark:bg-gray-900">
       <div className="text-center p-8 max-w-md mx-auto">
@@ -30,15 +21,6 @@ export default function Error({
             Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder kehren Sie zur Startseite
             zurück.
           </p>
-          {process.env.NODE_ENV === "development" && (
-            <details className="text-left bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-4">
-              <summary className="cursor-pointer font-mono text-sm">Fehlerdetails (Development)</summary>
-              <pre className="mt-2 text-xs overflow-auto">
-                {error.message}
-                {error.stack && `\n\n${error.stack}`}
-              </pre>
-            </details>
-          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
