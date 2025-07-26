@@ -91,7 +91,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden"
+      className="fixed inset-0 z-50 overflow-hidden font-sans"
       style={{
         backgroundColor: darkMode ? "#111827" : "#ffffff",
       }}
@@ -128,13 +128,11 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-          <span style={{ fontFamily: "serif" }}>Zurück</span>
+          <span>Zurück</span>
         </button>
 
         {/* Titel */}
-        <h1 className="text-xl font-medium" style={{ fontFamily: "serif" }}>
-          Einstellungen
-        </h1>
+        <h1 className="text-xl font-medium">Einstellungen</h1>
 
         {/* Platzhalter für symmetrisches Layout */}
         <div style={{ width: "48px" }}></div>
@@ -150,9 +148,9 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
       >
         {/* Schriftgröße für aktive Zeile */}
         <div className="space-y-4">
-          <h2 style={{ fontSize: "1.25rem", marginBottom: "1rem", fontFamily: "serif" }}>Schreibkopf</h2>
+          <h2 className="text-xl mb-4 font-serif">Schreibkopf</h2>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <label style={{ display: "flex", alignItems: "center", fontSize: "1.125rem", fontFamily: "serif" }}>
+            <label style={{ display: "flex", alignItems: "center", fontSize: "1.125rem" }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -239,11 +237,11 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             </div>
           </div>
           <div
+            className="font-serif"
             style={{
               padding: "1.25rem",
               borderRadius: "0.5rem",
               backgroundColor: darkMode ? "#1f2937" : "#f3f4f6",
-              fontFamily: "serif",
               overflow: "hidden",
               fontSize: `${localFontSize}px`,
             }}
@@ -272,9 +270,9 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
 
         {/* Schriftgröße für Zeilenstack */}
         <div className="space-y-4">
-          <h2 style={{ fontSize: "1.25rem", marginBottom: "1rem", fontFamily: "serif" }}>Zeilenstack</h2>
+          <h2 className="text-xl mb-4 font-serif">Zeilenstack</h2>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <label style={{ display: "flex", alignItems: "center", fontSize: "1.125rem", fontFamily: "serif" }}>
+            <label style={{ display: "flex", alignItems: "center", fontSize: "1.125rem" }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -362,11 +360,11 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             </div>
           </div>
           <div
+            className="font-serif"
             style={{
               padding: "1.25rem",
               borderRadius: "0.5rem",
               backgroundColor: darkMode ? "#1f2937" : "#f3f4f6",
-              fontFamily: "serif",
               overflow: "hidden",
               fontSize: `${localStackFontSize}px`,
             }}
@@ -395,11 +393,11 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
 
         {/* Zeilenlänge */}
         <div className="space-y-4">
-          <h2 style={{ fontSize: "1.25rem", marginBottom: "1rem", fontFamily: "serif" }}>Zeilenlänge</h2>
+          <h2 className="text-xl mb-4 font-sans">Zeilenlänge</h2>
           <div
             style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}
           >
-            <label style={{ fontSize: "1.125rem", fontFamily: "serif" }}>Maximale Zeichen pro Zeile</label>
+            <label className="text-lg font-sans">Maximale Zeichen pro Zeile</label>
             <span style={{ fontFamily: "monospace", fontSize: "1.25rem" }}>{localLineBreakConfig.maxCharsPerLine}</span>
           </div>
           <input
@@ -444,7 +442,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
         {/* Automatische Zeilenlänge */}
         <div style={{ padding: "1rem 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <label style={{ fontSize: "1.125rem", fontFamily: "serif" }}>Automatische Zeilenlänge</label>
+            <label className="text-lg font-sans">Automatische Zeilenlänge</label>
             <label style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
               <input
                 type="checkbox"
@@ -484,10 +482,10 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             </label>
           </div>
           <p
+            className="font-sans"
             style={{
               fontSize: "0.875rem",
               marginTop: "0.5rem",
-              fontFamily: "serif",
               color: darkMode ? "#9ca3af" : "#6b7280",
             }}
           >

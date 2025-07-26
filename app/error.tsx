@@ -1,6 +1,7 @@
 "use client"
 
-import { Home, RefreshCw, AlertTriangle } from "lucide-react"
+import { useEffect } from "react"
+import { AlertTriangle, RefreshCw, Home } from "lucide-react"
 import Link from "next/link"
 
 export default function Error({
@@ -10,6 +11,11 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    // Log error to monitoring service
+    console.error("Application error:", error)
+  }, [error])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f3efe9] dark:bg-gray-900">
       <div className="text-center p-8 max-w-md mx-auto">

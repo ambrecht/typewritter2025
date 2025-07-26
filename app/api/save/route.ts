@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const apiKey = getApiKey()
 
     if (!apiKey) {
+      console.warn("API-Schlüssel nicht gefunden.")
       return NextResponse.json(
         {
           error: "Configuration Error",
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const apiUrl = getApiUrl("SAVE")
+    console.log("Sende Anfrage an:", apiUrl)
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -45,17 +47,22 @@ export async function POST(request: NextRequest) {
         const responseText = await response.text()
 
         if (!responseText || responseText.trim() === "" || responseText.includes("<!DOCTYPE html>")) {
+          console.error("Ungültige API-Antwort:", responseText)
           errorMessage = "Ungültige Antwort vom Server erhalten"
         } else {
           try {
             const data = JSON.parse(responseText)
             errorMessage = data.message || errorMessage
             errorData = data
+            console.error("API-Fehler:", data)
           } catch (parseError) {
+            console.error("Konnte API-Antwort nicht als JSON parsen:", responseText)
             errorMessage = "Ungültige JSON-Antwort vom Server"
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Fehler beim Verarbeiten der API-Antwort:", e)
+      }
 
       if (response.status === 401 || response.status === 403 || errorMessage.includes("API-Schlüssel")) {
         return NextResponse.json(
@@ -82,6 +89,7 @@ export async function POST(request: NextRequest) {
       const responseText = await response.text()
 
       if (!responseText || responseText.trim() === "") {
+        console.error("Leere API-Antwort erhalten")
         return NextResponse.json(
           {
             error: "API Error",
@@ -103,6 +111,7 @@ export async function POST(request: NextRequest) {
           { status: 201 },
         )
       } catch (parseError) {
+        console.error("Konnte API-Antwort nicht als JSON parsen:", responseText)
         return NextResponse.json(
           {
             error: "API Error",
@@ -112,6 +121,7 @@ export async function POST(request: NextRequest) {
         )
       }
     } catch (e) {
+      console.error("Fehler beim Verarbeiten der API-Antwort:", e)
       return NextResponse.json(
         {
           error: "API Error",
@@ -121,6 +131,7 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
+    console.error("Fehler beim Speichern des Textes:", error)
     return NextResponse.json(
       {
         error: "Internal Server Error",

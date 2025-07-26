@@ -179,13 +179,13 @@ function ControlBar({
   const buttonSize = isSmallScreen ? "xs" : "sm"
   const buttonClass = `${
     darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-200" : "bg-[#d3d0cb] hover:bg-[#c4c1bc] text-[#222]"
-  } font-serif min-h-[48px]`
+  } font-sans min-h-[48px]`
 
   // Vollbild-Layout für kleine Bildschirme
   if (isFullscreen && isSmallScreen) {
     return (
       <div
-        className={`fixed top-2 right-2 z-50 flex gap-1 rounded-lg p-1 ${
+        className={`fixed top-4 right-2 z-50 flex flex-col gap-2 rounded-lg p-1.5 ${
           darkMode ? "bg-gray-800/70 backdrop-blur-sm" : "bg-white/70 backdrop-blur-sm"
         }`}
       >
@@ -281,7 +281,7 @@ function ControlBar({
     <div
       className={`flex flex-wrap gap-2 sm:gap-4 items-center justify-between p-2 sm:p-3 ${
         darkMode ? "text-gray-200 bg-gray-900" : "text-[#222] bg-[#f3efe9]"
-      } text-sm font-serif`}
+      } text-sm font-sans`}
     >
       {/* Statistics */}
       <div className="flex items-center gap-2 sm:gap-6">

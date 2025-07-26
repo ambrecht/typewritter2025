@@ -1,7 +1,20 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { Inter, Lora } from "next/font/google"
 import "./globals.css"
 import "../styles/android-fixes.css"
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+})
+
+const lora = Lora({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-lora",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -82,7 +95,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="de">
+    <html lang="de" className={`${inter.variable} ${lora.variable}`}>
       <head>
         {/* Service Worker Registration */}
         <script
@@ -103,12 +116,9 @@ export default function RootLayout({
           }}
         />
         {/* Preconnect to external domains */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.ambrecht.de" />
 
         {/* DNS Prefetch */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://api.ambrecht.de" />
       </head>
       <body>{children}</body>

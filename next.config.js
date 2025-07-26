@@ -54,12 +54,6 @@ const nextConfig = {
               "frame-ancestors 'none'",
             ].join("; "),
           },
-        ],
-      },
-      // HTTPS-only in Produktion
-      {
-        source: "/(.*)",
-        headers: [
           {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains; preload",

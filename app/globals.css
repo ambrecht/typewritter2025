@@ -55,7 +55,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "IBM Plex Serif", Georgia, serif; /* Verbesserte Hauptschriftart */
+    font-family: var(--font-inter), sans-serif; /* Set default font to Inter */
   }
 
   /* Monospace-Schriftarten für Code-Elemente */
@@ -64,7 +64,8 @@
   .font-mono {
     font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
   }
-}
 
-/* Importiere die Schriftarten */
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap");
+  .font-serif {
+    font-family: var(--font-lora), serif; /* Set serif font to Lora */
+  }
+}

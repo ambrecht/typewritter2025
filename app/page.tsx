@@ -4,8 +4,6 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import WritingArea from "@/components/writing-area"
 import ControlBar from "@/components/control-bar"
-import DebugInfo from "@/components/debug-info"
-import { debounce } from "@/utils/debounce"
 import NavigationIndicator from "@/components/navigation-indicator"
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation"
 import { useAndroidKeyboard } from "@/hooks/useAndroidKeyboard"
@@ -14,9 +12,7 @@ import OfflineIndicator from "@/components/offline-indicator"
 import SaveNotification from "@/components/save-notification"
 import SettingsModal from "@/components/settings-modal"
 import ApiKeyWarning from "@/components/api-key-warning"
-
-const debug = process.env.NODE_ENV !== "production"
-const log = (...args: unknown[]) => debug && console.log("[TypewriterPad]", ...args)
+import debounce from "lodash.debounce" // Import debounce from lodash
 
 export default function TypewriterPage() {
   const {
@@ -265,7 +261,6 @@ export default function TypewriterPage() {
       if (contentRef.current) {
         const newWidth = contentRef.current.clientWidth
         setContainerWidth(newWidth)
-        log("recalc", { containerWidth: newWidth })
       }
       if (typeof window !== "undefined") {
         const newOrientation = window.innerWidth > window.innerHeight ? "landscape" : "portrait"
@@ -344,7 +339,7 @@ export default function TypewriterPage() {
   return (
     <div
       ref={containerRef}
-      className={`min-h-screen flex flex-col typewriter-container ${
+      className={`min-h-screen flex flex-col typewriter-container font-sans ${
         darkMode
           ? "dark bg-[#121212] text-[#E0E0E0]"
           : (isFullscreen ? "bg-[#f8f5f0]" : "bg-[#f3efe9]") + " text-gray-900"
@@ -414,21 +409,12 @@ export default function TypewriterPage() {
         <footer
           className={`p-3 border-t ${
             darkMode ? "border-gray-700 text-gray-400 bg-gray-900" : "border-[#d3d0cb] text-gray-600"
-          } text-center text-sm font-serif`}
+          } text-center text-sm font-sans`}
         >
           Typewriter — Konzentriere dich auf dein Schreiben
         </footer>
       )}
-      {debug && (
-        <DebugInfo
-          containerWidth={contentRef.current?.clientWidth || 0}
-          fontSize={fontSize}
-          darkMode={darkMode}
-          mode={mode}
-          selectedLineIndex={selectedLineIndex}
-          scrollPosition={scrollPosition}
-        />
-      )}
+
       <NavigationIndicator darkMode={darkMode} />
       <SaveNotification />
       <OfflineIndicator darkMode={darkMode} />

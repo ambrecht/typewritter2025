@@ -1,200 +1,145 @@
 # Typewriter App
 
-Eine minimalistische, ablenkungsfreie Schreibumgebung für konzentriertes Arbeiten. Die App bietet intelligente Zeilenumbrüche, Dark Mode und Offline-Funktionalität.
+Eine minimalistische, ablenkungsfreie Schreibumgebung, die für konzentriertes Arbeiten entwickelt wurde. Die App emuliert das Gefühl einer klassischen Schreibmaschine mit modernen Features wie Cloud-Speicherung und PWA-Funktionalität.
 
-## Features
+## Inhaltsverzeichnis
 
-- ✍️ **Ablenkungsfreies Schreiben**: Minimalistisches Interface ohne Störungen
-- 📱 **Responsive Design**: Optimiert für Desktop, Tablet und Mobile
-- 🌙 **Dark Mode**: Augenschonender dunkler Modus
-- 📏 **Intelligente Zeilenumbrüche**: Automatische Anpassung an Bildschirmgröße
-- 💾 **Cloud-Speicherung**: Sichere Speicherung in der Cloud
-- 📱 **PWA-Support**: Installierbar als Progressive Web App
-- 🔄 **Offline-Funktionalität**: Arbeiten auch ohne Internetverbindung
-- ⌨️ **Tastaturnavigation**: Navigation durch vorherige Zeilen mit Pfeiltasten
+- [Architektur-Überblick](#architektur-überblick)
+- [Projektstruktur](#projektstruktur)
+- [Technologie-Stack](#technologie-stack)
+- [Lokale Entwicklung](#lokale-entwicklung)
+- [Deployment](#deployment)
+- [Wichtige Konzepte](#wichtige-konzepte)
+  - [State Management (Zustand)](#state-management-zustand)
+  - [Automatischer Zeilenumbruch](#automatischer-zeilenumbruch)
+  - [Responsive Typografie](#responsive-typografie)
+- [API-Konfiguration](#api-konfiguration)
+- [PWA-Features](#pwa-features)
+- [Testing](#testing)
+
+## Architektur-Überblick
+
+Die Anwendung ist eine Single-Page-Application (SPA), die mit dem **Next.js App Router** aufgebaut ist. Das Herzstück der Anwendung ist die `app/page.tsx`, die als Hauptcontainer dient und den globalen Zustand verwaltet.
+
+-   **Zustandsverwaltung**: Der gesamte Anwendungszustand wird zentral in einem **Zustand-Store** (`store/typewriter-store.ts`) gehalten. Dies entkoppelt die UI-Komponenten von der Geschäftslogik.
+-   **Komponenten-Struktur**: Die UI ist in logische, wiederverwendbare Komponenten unterteilt (`components/`). Die Haupt-Schreibfläche (`WritingArea`) besteht aus weiteren Unterkomponenten (`ActiveLine`, `LineStack`).
+-   **Hooks**: Komplexe Logik (Tastatur-Handling, Dimensionsberechnungen, etc.) ist in wiederverwendbare Custom Hooks ausgelagert (`hooks/`).
+-   **Styling**: **Tailwind CSS** wird für das Styling verwendet. Globale Stile und Schriftarten werden in `app/globals.css` und `app/layout.tsx` definiert.
+
+## Projektstruktur
+
+\`\`\`
+/
+├── __tests__/          # Jest-Tests für Store, Utils und API
+├── app/
+│   ├── api/            # API-Routen (Backend-Proxies)
+│   ├── (main)/
+│   │   ├── page.tsx    # Hauptkomponente der Anwendung
+│   │   └── layout.tsx  # Root-Layout mit Schriftarten
+│   └── globals.css     # Globale Stile und Tailwind-Konfiguration
+├── components/
+│   ├── ui/             # (Optional) Shadcn UI-Komponenten
+│   ├── writing-area/   # Unterkomponenten für den Schreibbereich
+│   ├── control-bar.tsx # Obere Leiste mit Steuerelementen
+│   └── ...             # Weitere UI-Komponenten
+├── hooks/              # Benutzerdefinierte React-Hooks
+├── lib/                # API-Konfiguration und Hilfsfunktionen
+├── public/             # Statische Assets (Icons, Manifest, etc.)
+├── store/
+│   └── typewriter-store.ts # Zentraler Zustand-Store
+├── styles/             # Zusätzliche CSS-Dateien
+└── utils/              # Allgemeine Hilfsfunktionen
+\`\`\`
 
 ## Technologie-Stack
 
-- **Framework**: Next.js 14 mit App Router
-- **Styling**: Tailwind CSS
-- **State Management**: Zustand
-- **Icons**: Lucide React
-- **Testing**: Jest + React Testing Library
-- **Deployment**: Vercel
+-   **Framework**: Next.js 14 (App Router)
+-   **Sprache**: TypeScript
+-   **Styling**: Tailwind CSS
+-   **State Management**: Zustand
+-   **Icons**: Lucide React
+-   **Schriftarten**: Next/Font mit Inter (UI) und Lora (Inhalt)
+-   **Testing**: Jest + React Testing Library
+-   **Deployment**: Vercel
 
 ## Lokale Entwicklung
 
 ### Voraussetzungen
 
-- Node.js 18+ 
-- pnpm (empfohlen) oder npm
+-   Node.js 18+
+-   pnpm (empfohlen) oder npm
 
 ### Installation
 
-1. Repository klonen:
-\`\`\`bash
-git clone <repository-url>
-cd typewriter-app
-\`\`\`
+1.  Repository klonen:
+    \`\`\`bash
+    git clone <repository-url>
+    cd typewriter-app
+    \`\`\`
 
-2. Abhängigkeiten installieren:
-\`\`\`bash
-pnpm install
-\`\`\`
+2.  Abhängigkeiten installieren:
+    \`\`\`bash
+    pnpm install
+    \`\`\`
 
-3. Umgebungsvariablen konfigurieren:
-\`\`\`bash
-cp .env.example .env.local
-\`\`\`
+3.  Umgebungsvariablen konfigurieren:
+    \`\`\`bash
+    cp .env.example .env.local
+    \`\`\`
+    Bearbeiten Sie `.env.local` und setzen Sie die erforderlichen Werte.
 
-Bearbeiten Sie `.env.local` und setzen Sie:
-\`\`\`env
-API_KEY=your-api-key-here
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-\`\`\`
+4.  Entwicklungsserver starten:
+    \`\`\`bash
+    pnpm dev
+    \`\`\`
+    Die App ist nun unter `http://localhost:3000` verfügbar.
 
-4. Entwicklungsserver starten:
-\`\`\`bash
-pnpm dev
-\`\`\`
+## Deployment
 
-Die App ist nun unter `http://localhost:3000` verfügbar.
+Das Deployment auf Vercel ist der empfohlene Weg.
 
-### Verfügbare Scripts
+1.  **Automatisches Deployment**: Verbinden Sie Ihr Git-Repository mit Vercel.
+2.  **Umgebungsvariablen**: Konfigurieren Sie die `API_KEY` und `NEXT_PUBLIC_BASE_URL` in den Vercel-Projekteinstellungen.
 
-\`\`\`bash
-# Entwicklungsserver starten
-pnpm dev
+## Wichtige Konzepte
 
-# Produktions-Build erstellen
-pnpm build
+### State Management (Zustand)
 
-# Produktionsserver starten
-pnpm start
+Der `typewriter-store.ts` ist die "Single Source of Truth" für den Zustand der App.
 
-# Tests ausführen
-pnpm test
+-   **State**: Enthält Daten wie `lines`, `activeLine`, `fontSize`, `darkMode`, etc.
+-   **Actions**: Enthält Funktionen zur Manipulation des Zustands, z.B. `setActiveLine`, `addLineToStack`, `saveSession`.
+-   **Persistenz**: Der Zustand wird mittels `persist`-Middleware im `localStorage` des Browsers gespeichert, um den Schreibfortschritt zwischen Sitzungen zu erhalten.
 
-# Tests im Watch-Modus
-pnpm test:watch
+### Automatischer Zeilenumbruch
 
-# Test-Coverage generieren
-pnpm test:coverage
+Die Logik für den automatischen Zeilenumbruch befindet sich in der `setActiveLine`-Aktion im Store.
 
-# Linting
-pnpm lint
-\`\`\`
+1.  Bei jeder Eingabe wird die `setActiveLine`-Aktion aufgerufen.
+2.  Die Funktion misst die Breite des Textes in der `activeLine` mit der `measureTextWidth`-Utility (die die Canvas-API nutzt).
+3.  Wenn die Textbreite die verfügbare Containerbreite überschreitet, wird der Text an der passenden Stelle (vorzugsweise bei einem Leerzeichen) umgebrochen.
+4.  Der vordere Teil wird zur letzten Zeile im `lines`-Array, der hintere Teil wird zur neuen `activeLine`.
+5.  Dieser Prozess wiederholt sich, falls der verbleibende Text immer noch zu lang ist.
 
-## Produktion
+### Responsive Typografie
 
-### Build erstellen
-
-\`\`\`bash
-pnpm build
-\`\`\`
-
-Dies erstellt eine optimierte Produktionsversion in `.next/`.
-
-### Deployment auf Vercel
-
-1. **Automatisches Deployment**:
-   - Repository mit Vercel verbinden
-   - Vercel erkennt automatisch Next.js und konfiguriert das Deployment
-
-2. **Umgebungsvariablen in Vercel setzen**:
-   - Gehen Sie zu Ihrem Vercel-Dashboard
-   - Wählen Sie Ihr Projekt aus
-   - Navigieren Sie zu "Settings" → "Environment Variables"
-   - Fügen Sie hinzu:
-     \`\`\`
-     API_KEY=your-production-api-key
-     NEXT_PUBLIC_BASE_URL=https://your-domain.vercel.app
-     \`\`\`
-
-3. **Manuelles Deployment**:
-\`\`\`bash
-# Vercel CLI installieren
-npm i -g vercel
-
-# Deployment
-vercel --prod
-\`\`\`
-
-### Umgebungsvariablen
-
-| Variable | Beschreibung | Erforderlich |
-|----------|--------------|--------------|
-| `API_KEY` | API-Schlüssel für Backend-Kommunikation | Ja |
-| `NEXT_PUBLIC_BASE_URL` | Basis-URL der Anwendung | Ja |
+Der `useResponsiveTypography`-Hook passt die Schriftgrößen dynamisch an die Bildschirmbreite an, um eine optimale Lesbarkeit auf allen Geräten zu gewährleisten, insbesondere auf der Vielzahl von Android-Smartphones.
 
 ## API-Konfiguration
 
-Die App kommuniziert mit einer externen API für die Speicherung von Texten. Der API-Schlüssel wird über die Umgebungsvariable `API_KEY` konfiguriert.
-
-### API-Endpunkte
-
-- `POST /api/save` - Text speichern
-- `GET /api/sessions` - Alle Sitzungen abrufen  
-- `GET /api/last-session` - Letzte Sitzung abrufen
+Die App kommuniziert mit einer externen API. Die Konfiguration befindet sich in `lib/api-config.ts`. Der API-Schlüssel wird sicher über Umgebungsvariablen (`API_KEY`) verwaltet und ist nur serverseitig zugänglich. Die API-Routen in `app/api/` fungieren als sichere Proxies, die den API-Schlüssel hinzufügen, bevor sie die Anfrage an das eigentliche Backend weiterleiten.
 
 ## PWA-Features
 
 Die App ist als Progressive Web App (PWA) konfiguriert:
 
-- **Offline-Funktionalität**: Service Worker für Caching
-- **Installierbar**: Kann auf dem Homescreen installiert werden
-- **App-ähnliches Verhalten**: Vollbild-Modus auf mobilen Geräten
+-   **Offline-Funktionalität**: Ein Service Worker (`public/sw.js`) sorgt für das Caching von statischen Assets.
+-   **Installierbar**: Über das `public/manifest.json` kann die App auf dem Homescreen installiert werden.
 
 ## Testing
 
-### Unit Tests
+Tests sind mit Jest und React Testing Library implementiert.
 
-\`\`\`bash
-# Alle Tests ausführen
-pnpm test
-
-# Tests mit Coverage
-pnpm test:coverage
-
-# Tests im Watch-Modus
-pnpm test:watch
-\`\`\`
-
-### Test-Struktur
-
-- `__tests__/store/` - Store-Logic Tests
-- `__tests__/utils/` - Utility-Function Tests  
-- `__tests__/api/` - API-Route Tests
-
-## Sicherheit
-
-Die App implementiert verschiedene Sicherheitsmaßnahmen:
-
-- **Content Security Policy (CSP)**
-- **Strict Transport Security (HSTS)**
-- **X-Frame-Options**
-- **X-Content-Type-Options**
-- **Referrer Policy**
-
-## Performance-Optimierungen
-
-- **Image Optimization**: Next.js Image-Komponente
-- **Code Splitting**: Automatisch durch Next.js
-- **Service Worker**: Caching für bessere Performance
-- **Preconnect**: DNS-Prefetching für externe Ressourcen
-
-## Browser-Unterstützung
-
-- Chrome/Edge 88+
-- Firefox 85+
-- Safari 14+
-- Mobile Safari 14+
-- Chrome Mobile 88+
-
-## Lizenz
-
-[MIT License](LICENSE)
-
-## Support
-
-Bei Fragen oder Problemen erstellen Sie bitte ein Issue im Repository.
+-   `pnpm test`: Führt alle Tests aus.
+-   `pnpm test:watch`: Startet Tests im Watch-Modus.
+-   `pnpm test:coverage`: Generiert einen Coverage-Report.
