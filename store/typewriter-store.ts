@@ -21,6 +21,7 @@ const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoa
   darkMode: false,
   mode: "typing",
   selectedLineIndex: null,
+  flowMode: false, // Neuer Zustand für den Flow Mode
 }
 
 /**
@@ -43,6 +44,96 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       // --- ACTIONS ---
 
       /**
+       * Schaltet den Flow Mode um. Im Flow Mode kann nicht gelöscht werden.
+       */
+      toggleFlowMode: () => set((state) => ({ flowMode: !state.flowMode })),
+
+      /**
+       * Verarbeitet einen Tastendruck. Dies ist die ZENTRALE Funktion für alle Eingaben.
+       * Sie ersetzt die direkte Interaktion mit einem <textarea>-Element.
+       * @param {string} key - Die von der Tastatur gedrückte Taste (z.B. "a", "Backspace", "Enter").
+       */
+      handleKeyPress: (key: string) => {
+        const { flowMode, activeLine, lines, containerWidth, fontSize, lineBreakConfig } = get()
+
+        // 1. Behandelt die "Enter"-Taste
+        if (key === "Enter") {
+          get().addLineToStack()
+          return
+        }
+
+        // 2. Behandelt die "Backspace"-Taste
+        if (key === "Backspace") {
+          // Löschen ist im Flow Mode nicht erlaubt.
+          if (flowMode) {
+            return
+          }
+
+          // Das Löschen wirkt sich NUR auf die activeLine aus.
+          // Wenn die activeLine leer ist, passiert nichts.
+          if (activeLine.length > 0) {
+            const newActiveLine = activeLine.slice(0, -1)
+            set({
+              activeLine: newActiveLine,
+              statistics: calculateTextStatistics([...lines, newActiveLine].join("\n")),
+            })
+          }
+          // Die fehlerhafte Logik, die Zeilen aus dem Stack zurückgeholt hat, wurde entfernt.
+          return
+        }
+
+        // 3. Behandelt alle anderen (druckbaren) Zeichen
+        // Ignoriere Funktionstasten wie "Shift", "Control", "ArrowLeft" etc.
+        if (key.length === 1) {
+          const newActiveLineContent = activeLine + key
+
+          // Wenn der automatische Umbruch deaktiviert ist, einfach Text anhängen.
+          if (!lineBreakConfig.autoMaxChars) {
+            set({
+              activeLine: newActiveLineContent,
+              statistics: calculateTextStatistics([...lines, newActiveLineContent].join("\n")),
+            })
+            return
+          }
+
+          const font = `${fontSize}px "Lora", serif`
+          // The containerWidth from the store is now the clientWidth of the text area,
+          // which already accounts for padding. No subtraction needed.
+          const availableWidth = containerWidth
+          const textWidth = measureTextWidth(newActiveLineContent, font)
+
+          if (textWidth <= availableWidth) {
+            set({
+              activeLine: newActiveLineContent,
+              statistics: calculateTextStatistics([...lines, newActiveLineContent].join("\n")),
+            })
+          } else {
+            // Der Text ist zu lang, führe einen Umbruch durch.
+            const lastSpaceIndex = newActiveLineContent.lastIndexOf(" ")
+            let lineToAdd: string
+            let remainder: string
+
+            if (lastSpaceIndex > 0) {
+              // Weicher Umbruch am letzten Leerzeichen
+              lineToAdd = newActiveLineContent.substring(0, lastSpaceIndex)
+              remainder = newActiveLineContent.substring(lastSpaceIndex + 1)
+            } else {
+              // Harter Umbruch, wenn kein Leerzeichen gefunden wurde
+              lineToAdd = newActiveLineContent
+              remainder = ""
+            }
+
+            const newLines = [...lines, lineToAdd]
+            set({
+              lines: newLines,
+              activeLine: remainder,
+              statistics: calculateTextStatistics([...newLines, remainder].join("\n")),
+            })
+          }
+        }
+      },
+
+      /**
        * Aktualisiert die Breite des Schreib-Containers.
        * Wichtig für die Berechnung des automatischen Zeilenumbruchs.
        * @param {number} width - Die neue Breite des Containers in Pixeln.
@@ -55,82 +146,9 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * @param {string} text - Der neue Text aus dem Eingabefeld.
        */
       setActiveLine: (text) => {
-        const { containerWidth, fontSize, lines, lineBreakConfig } = get()
-
-        // Wenn der automatische Umbruch deaktiviert ist, Text einfach setzen.
-        if (!lineBreakConfig.autoMaxChars) {
-          const newFullText = [...lines, text].join("\n")
-          set({
-            activeLine: text,
-            statistics: calculateTextStatistics(newFullText),
-          })
-          return
-        }
-
-        const font = `${fontSize}px "Lora", serif`
-        // Abzug für Padding (p-4/p-6 in Tailwind)
-        const availableWidth = containerWidth > 48 ? containerWidth - 48 : containerWidth
-
-        /**
-         * Rekursive Hilfsfunktion, die einen Text so lange umbricht, bis er in die verfügbare Breite passt.
-         * @param {string} currentText - Der zu verarbeitende Text.
-         * @param {string[]} currentLines - Die bisher angesammelten neuen Zeilen.
-         * @returns {{ finalLines: string[], finalActiveLine: string }} - Die neuen Zeilen und die verbleibende aktive Zeile.
-         */
-        const processLine = (
-          currentText: string,
-          currentLines: string[],
-        ): { finalLines: string[]; finalActiveLine: string } => {
-          const textWidth = measureTextWidth(currentText, font)
-
-          // Wenn der Text passt, ist die Rekursion beendet.
-          if (textWidth <= availableWidth) {
-            return { finalLines: currentLines, finalActiveLine: currentText }
-          }
-
-          // Text ist zu lang, finde den optimalen Umbruchpunkt.
-          let breakPoint = -1
-          // Finde das letzte Zeichen, das gerade noch in die Zeile passt.
-          for (let i = currentText.length - 1; i >= 0; i--) {
-            if (measureTextWidth(currentText.substring(0, i), font) <= availableWidth) {
-              breakPoint = i
-              break
-            }
-          }
-
-          // Wenn kein Umbruchpunkt gefunden wurde (z.B. bei einem sehr langen Wort), beende.
-          if (breakPoint <= 0) {
-            return { finalLines: currentLines, finalActiveLine: currentText }
-          }
-
-          const fittingText = currentText.substring(0, breakPoint)
-          const lastSpaceIndex = fittingText.lastIndexOf(" ")
-
-          let lineToAdd: string
-          let remainder: string
-
-          // Bevorzuge einen "weichen" Umbruch am letzten Leerzeichen.
-          if (lastSpaceIndex > 0) {
-            lineToAdd = currentText.substring(0, lastSpaceIndex)
-            remainder = currentText.substring(lastSpaceIndex + 1)
-          } else {
-            // Wenn kein Leerzeichen gefunden, erzwinge einen "harten" Umbruch.
-            lineToAdd = fittingText
-            remainder = currentText.substring(breakPoint)
-          }
-
-          const newLines = [...currentLines, lineToAdd]
-          // Verarbeite den restlichen Text rekursiv.
-          return processLine(remainder, newLines)
-        }
-
-        // Starte den Umbruchprozess mit dem aktuellen Text und den bestehenden Zeilen.
-        const { finalLines, finalActiveLine } = processLine(text, lines)
-
-        const newFullText = [...finalLines, finalActiveLine].join("\n")
+        const newFullText = [...get().lines, text].join("\n")
         set({
-          lines: finalLines,
-          activeLine: finalActiveLine,
+          activeLine: text,
           statistics: calculateTextStatistics(newFullText),
         })
       },
@@ -343,6 +361,10 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           ) {
             console.log("Veraltetes Datenformat erkannt. Migriere 'lines'-Zustand.")
             state.lines = state.lines.map((line: any) => (typeof line.text === "string" ? line.text : ""))
+          }
+          // Stelle sicher, dass flowMode nach dem Laden existiert
+          if (typeof state.flowMode === "undefined") {
+            state.flowMode = false
           }
         }
       },

@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useTypewriterStore } from "@/store/typewriter-store"
 
 interface SettingsModalProps {
@@ -11,87 +10,25 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsModalProps) {
   const {
-    fontSize: storeFontSize,
-    stackFontSize: storeStackFontSize,
+    fontSize,
+    stackFontSize,
     setFontSize,
     setStackFontSize,
-    lineBreakConfig: storeLineBreakConfig,
+    lineBreakConfig,
     updateLineBreakConfig,
     setFixedLineLength,
+    flowMode,
+    toggleFlowMode,
   } = useTypewriterStore()
 
-  // LOKALE UI-STATES - Diese werden NICHT bei Store-Updates zurückgesetzt!
-  const [localFontSize, setLocalFontSize] = useState(storeFontSize)
-  const [localStackFontSize, setLocalStackFontSize] = useState(storeStackFontSize)
-  const [localLineBreakConfig, setLocalLineBreakConfig] = useState(storeLineBreakConfig)
-  const [isAndroid, setIsAndroid] = useState(false)
-
-  // Synchronisiere lokale States NUR beim Öffnen der Einstellungen
-  useEffect(() => {
-    if (isOpen) {
-      console.log("🔄 Einstellungen geöffnet - Synchronisiere lokale States mit Store")
-      setLocalFontSize(storeFontSize)
-      setLocalStackFontSize(storeStackFontSize)
-      setLocalLineBreakConfig(storeLineBreakConfig)
-    }
-  }, [isOpen]) // NUR bei isOpen-Änderung, NICHT bei Store-Updates!
-
-  // Android-Erkennung
-  useEffect(() => {
-    setIsAndroid(/Android/.test(navigator.userAgent))
-  }, [])
-
-  // Wenn Modal nicht geöffnet ist, nichts rendern
   if (!isOpen) return null
-
-  // Handler-Funktionen mit sofortiger lokaler State-Aktualisierung
-  const handleFontSizeDecrease = () => {
-    const newSize = Math.max(11, localFontSize - 2)
-    console.log("🔧 Font Size verringern:", localFontSize, "->", newSize)
-    setLocalFontSize(newSize) // Sofort lokalen State aktualisieren
-    setFontSize(newSize) // Store aktualisieren
-  }
-
-  const handleFontSizeIncrease = () => {
-    const newSize = Math.min(64, localFontSize + 2)
-    console.log("🔧 Font Size erhöhen:", localFontSize, "->", newSize)
-    setLocalFontSize(newSize) // Sofort lokalen State aktualisieren
-    setFontSize(newSize) // Store aktualisieren
-  }
-
-  const handleStackFontSizeDecrease = () => {
-    const newSize = Math.max(11, localStackFontSize - 1)
-    console.log("🔧 Stack Font Size verringern:", localStackFontSize, "->", newSize)
-    setLocalStackFontSize(newSize) // Sofort lokalen State aktualisieren
-    setStackFontSize(newSize) // Store aktualisieren
-  }
-
-  const handleStackFontSizeIncrease = () => {
-    const newSize = Math.min(64, localStackFontSize + 1)
-    console.log("🔧 Stack Font Size erhöhen:", localStackFontSize, "->", newSize)
-    setLocalStackFontSize(newSize) // Sofort lokalen State aktualisieren
-    setStackFontSize(newSize) // Store aktualisieren
-  }
-
-  const handleLineWidthChange = (value: string) => {
-    const newWidth = Number.parseInt(value)
-    console.log("🔧 Zeilenlänge ändern:", localLineBreakConfig.maxCharsPerLine, "->", newWidth)
-    const newConfig = { ...localLineBreakConfig, maxCharsPerLine: newWidth }
-    setLocalLineBreakConfig(newConfig) // Sofort lokalen State aktualisieren
-    setFixedLineLength(newWidth) // Store aktualisieren
-  }
-
-  const handleAutoLineWidthToggle = () => {
-    const newAutoMaxChars = !localLineBreakConfig.autoMaxChars
-    console.log("🔧 Auto-Zeilenlänge umschalten:", localLineBreakConfig.autoMaxChars, "->", newAutoMaxChars)
-    const newConfig = { ...localLineBreakConfig, autoMaxChars: newAutoMaxChars }
-    setLocalLineBreakConfig(newConfig) // Sofort lokalen State aktualisieren
-    updateLineBreakConfig({ autoMaxChars: newAutoMaxChars }) // Store aktualisieren
-  }
 
   return (
     <div
       className="fixed inset-0 z-50 overflow-hidden font-sans"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
       style={{
         backgroundColor: darkMode ? "#111827" : "#ffffff",
       }}
@@ -132,7 +69,9 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
         </button>
 
         {/* Titel */}
-        <h1 className="text-xl font-medium">Einstellungen</h1>
+        <h1 id="settings-title" className="text-xl font-medium">
+          Einstellungen
+        </h1>
 
         {/* Platzhalter für symmetrisches Layout */}
         <div style={{ width: "48px" }}></div>
@@ -171,7 +110,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             </label>
             <div style={{ display: "flex", alignItems: "center" }}>
               <button
-                onClick={handleFontSizeDecrease}
+                onClick={() => setFontSize(Math.max(11, fontSize - 2))}
                 style={{
                   height: "3.5rem",
                   width: "3.5rem",
@@ -205,10 +144,10 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
                   fontSize: "1.25rem",
                 }}
               >
-                {localFontSize}
+                {fontSize}
               </span>
               <button
-                onClick={handleFontSizeIncrease}
+                onClick={() => setFontSize(Math.min(64, fontSize + 2))}
                 style={{
                   height: "3.5rem",
                   width: "3.5rem",
@@ -243,7 +182,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
               borderRadius: "0.5rem",
               backgroundColor: darkMode ? "#1f2937" : "#f3f4f6",
               overflow: "hidden",
-              fontSize: `${localFontSize}px`,
+              fontSize: `${fontSize}px`,
             }}
           >
             <span
@@ -294,7 +233,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             </label>
             <div style={{ display: "flex", alignItems: "center" }}>
               <button
-                onClick={handleStackFontSizeDecrease}
+                onClick={() => setStackFontSize(Math.max(11, stackFontSize - 1))}
                 style={{
                   height: "3.5rem",
                   width: "3.5rem",
@@ -328,10 +267,10 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
                   fontSize: "1.25rem",
                 }}
               >
-                {localStackFontSize}
+                {stackFontSize}
               </span>
               <button
-                onClick={handleStackFontSizeIncrease}
+                onClick={() => setStackFontSize(Math.min(64, stackFontSize + 1))}
                 style={{
                   height: "3.5rem",
                   width: "3.5rem",
@@ -366,7 +305,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
               borderRadius: "0.5rem",
               backgroundColor: darkMode ? "#1f2937" : "#f3f4f6",
               overflow: "hidden",
-              fontSize: `${localStackFontSize}px`,
+              fontSize: `${stackFontSize}px`,
             }}
           >
             <span
@@ -398,14 +337,14 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}
           >
             <label className="text-lg font-sans">Maximale Zeichen pro Zeile</label>
-            <span style={{ fontFamily: "monospace", fontSize: "1.25rem" }}>{localLineBreakConfig.maxCharsPerLine}</span>
+            <span style={{ fontFamily: "monospace", fontSize: "1.25rem" }}>{lineBreakConfig.maxCharsPerLine}</span>
           </div>
           <input
             type="range"
             min="20"
             max="100"
-            value={localLineBreakConfig.maxCharsPerLine}
-            onChange={(e) => handleLineWidthChange(e.target.value)}
+            value={lineBreakConfig.maxCharsPerLine}
+            onChange={(e) => setFixedLineLength(Number.parseInt(e.target.value))}
             style={{
               width: "100%",
               height: "2rem",
@@ -446,8 +385,8 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             <label style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
               <input
                 type="checkbox"
-                checked={localLineBreakConfig.autoMaxChars}
-                onChange={handleAutoLineWidthToggle}
+                checked={lineBreakConfig.autoMaxChars}
+                onChange={() => updateLineBreakConfig({ autoMaxChars: !lineBreakConfig.autoMaxChars })}
                 style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
               />
               <div
@@ -455,7 +394,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
                   width: "4rem",
                   height: "2.25rem",
                   borderRadius: "9999px",
-                  backgroundColor: localLineBreakConfig.autoMaxChars
+                  backgroundColor: lineBreakConfig.autoMaxChars
                     ? darkMode
                       ? "#4b5563"
                       : "#9ca3af"
@@ -469,7 +408,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
                   style={{
                     position: "absolute",
                     top: "0.25rem",
-                    left: localLineBreakConfig.autoMaxChars ? "2.25rem" : "0.25rem",
+                    left: lineBreakConfig.autoMaxChars ? "2.25rem" : "0.25rem",
                     backgroundColor: "white",
                     border: "1px solid #d1d5db",
                     borderRadius: "9999px",
@@ -490,6 +429,63 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             }}
           >
             Passt die Zeilenlänge automatisch an die Bildschirmgröße an
+          </p>
+        </div>
+
+        {/* Trennlinie */}
+        <div
+          style={{
+            height: "1px",
+            width: "100%",
+            backgroundColor: darkMode ? "#374151" : "#e5e7eb",
+          }}
+        ></div>
+
+        {/* Flow Mode Einstellung */}
+        <div style={{ padding: "1rem 0" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <label className="text-lg font-sans">Flow Mode</label>
+            <label style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={flowMode}
+                onChange={toggleFlowMode}
+                style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+              />
+              <div
+                style={{
+                  width: "4rem",
+                  height: "2.25rem",
+                  borderRadius: "9999px",
+                  backgroundColor: flowMode ? (darkMode ? "#4b5563" : "#9ca3af") : darkMode ? "#1f2937" : "#e5e7eb",
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "0.25rem",
+                    left: flowMode ? "2.25rem" : "0.25rem",
+                    backgroundColor: "white",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "9999px",
+                    height: "1.75rem",
+                    width: "1.75rem",
+                    transition: "all 0.3s",
+                  }}
+                ></div>
+              </div>
+            </label>
+          </div>
+          <p
+            className="font-sans"
+            style={{
+              fontSize: "0.875rem",
+              marginTop: "0.5rem",
+              color: darkMode ? "#9ca3af" : "#6b7280",
+            }}
+          >
+            Wenn aktiviert, können Zeichen nicht gelöscht werden (echtes Schreibmaschinen-Feeling).
           </p>
         </div>
       </div>

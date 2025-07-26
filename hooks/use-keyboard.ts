@@ -19,7 +19,8 @@ export function useKeyboard({ inputRef, isAndroid = false }: UseKeyboardOptions)
    * Blendet die Tastatur aus
    */
   const hideKeyboard = useCallback(() => {
-    if (!inputRef.current) return
+    // Robust check for both the ref object and its current property
+    if (!inputRef || !inputRef.current) return
 
     // Methode 1: Blur auf das Input-Element anwenden
     inputRef.current.blur()
@@ -51,7 +52,8 @@ export function useKeyboard({ inputRef, isAndroid = false }: UseKeyboardOptions)
    * Zeigt die Tastatur an
    */
   const showKeyboard = useCallback(() => {
-    if (!inputRef.current) return
+    // Robust check for both the ref object and its current property
+    if (!inputRef || !inputRef.current) return
 
     // Fokussiere das Input-Element
     inputRef.current.focus()

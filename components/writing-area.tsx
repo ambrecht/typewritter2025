@@ -4,7 +4,6 @@ import type React from "react"
 import { useRef } from "react"
 import type { LineBreakConfig } from "@/types"
 
-import { useKeyboardHandling } from "../hooks/useKeyboardHandling"
 import { useVisibleLines } from "../hooks/useVisibleLines"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
@@ -14,16 +13,16 @@ import { ActiveLine } from "./writing-area/ActiveLine"
 /**
  * @interface WritingAreaProps
  * @description Props für die WritingArea Komponente.
+ * Die Props für `setActiveLine`, `addLineToStack` und `hiddenInputRef` wurden entfernt,
+ * da die Eingabelogik nun global gehandhabt wird.
  */
 interface WritingAreaProps {
   lines: string[]
   activeLine: string
-  setActiveLine: (line: string) => void
-  addLineToStack: () => void
   maxCharsPerLine: number
   fontSize: number
   stackFontSize: number
-  hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
+  hiddenInputRef: React.RefObject<HTMLTextAreaElement | null> // Add prop back
   showCursor: boolean
   lineBreakConfig: LineBreakConfig
   darkMode: boolean
@@ -36,20 +35,16 @@ interface WritingAreaProps {
 /**
  * @component WritingArea
  * @description Die Hauptkomponente des Schreibbereichs.
- * Orchestriert die Darstellung des Zeilenstapels (`LineStack`) und der aktiven Eingabezeile (`ActiveLine`).
- *
- * @param {WritingAreaProps} props - Die Props für die Komponente.
- * @returns {React.ReactElement} Das gerenderte Schreibbereichs-Element.
+ * Diese Komponente ist jetzt rein präsentationell und empfängt den darzustellenden Zustand.
+ * Die Eingabelogik wurde in die `app/page.tsx` und den Store verlagert.
  */
 export default function WritingArea({
   lines,
   activeLine,
-  setActiveLine,
-  addLineToStack,
   maxCharsPerLine,
   fontSize,
   stackFontSize,
-  hiddenInputRef,
+  hiddenInputRef, // Add prop back
   showCursor,
   lineBreakConfig,
   darkMode,
@@ -58,30 +53,16 @@ export default function WritingArea({
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
 }: WritingAreaProps) {
-  // Internes Ref, falls von außen keines übergeben wird.
   const internalLinesContainerRef = useRef<HTMLDivElement>(null)
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
 
-  // Hook für die Verarbeitung von Tastatureingaben.
-  const { handleChange, handleKeyDown } = useKeyboardHandling({
-    setActiveLine,
-    addLineToStack,
-    lineBreakConfig,
-    hiddenInputRef,
-    linesContainerRef,
-  })
-
-  // Hook zur Virtualisierung und Berechnung der sichtbaren Zeilen.
-  // Zeigt nur eine Teilmenge der Zeilen an, um die Performance bei sehr langen Texten zu verbessern.
   const visibleLines = useVisibleLines(lines, 200, mode, selectedLineIndex, isFullscreen)
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
-      {/* Hilfs-UI-Elemente, die über dem Schreibbereich schweben */}
       <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
       <NavigationHint darkMode={darkMode} />
 
-      {/* Container für den Zeilenstack */}
       <div
         ref={linesContainerRef}
         className={`flex-1 px-4 md:px-6 pt-6 writing-container flex flex-col justify-end ${
@@ -90,9 +71,9 @@ export default function WritingArea({
         style={{
           fontSize: `${stackFontSize}px`,
           lineHeight: isFullscreen ? "1.3" : "1.4",
-          overflow: "hidden", // Verhindert Scrollbalken, da Scrollen programmatisch gehandhabt wird
+          overflow: "hidden",
         }}
-        aria-live="polite" // Wichtig für Screenreader, um Änderungen mitzuteilen
+        aria-live="polite"
       >
         <LineStack
           visibleLines={visibleLines.map((line, index) => ({ line, index: lines.indexOf(line) }))}
@@ -104,7 +85,6 @@ export default function WritingArea({
         />
       </div>
 
-      {/* Aktive Eingabezeile, wird nur im Schreibmodus angezeigt */}
       {mode === "typing" && (
         <ActiveLine
           activeLine={activeLine}
@@ -112,9 +92,7 @@ export default function WritingArea({
           fontSize={fontSize}
           showCursor={showCursor}
           maxCharsPerLine={maxCharsPerLine}
-          hiddenInputRef={hiddenInputRef}
-          handleChange={handleChange}
-          handleKeyDown={handleKeyDown}
+          hiddenInputRef={hiddenInputRef} // Pass the ref
           isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
           isFullscreen={isFullscreen}
         />

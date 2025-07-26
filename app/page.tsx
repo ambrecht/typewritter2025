@@ -5,20 +5,18 @@ import { useTypewriterStore } from "@/store/typewriter-store"
 import WritingArea from "@/components/writing-area"
 import ControlBar from "@/components/control-bar"
 import NavigationIndicator from "@/components/navigation-indicator"
-import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation"
 import { useAndroidKeyboard } from "@/hooks/useAndroidKeyboard"
 import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
 import OfflineIndicator from "@/components/offline-indicator"
 import SaveNotification from "@/components/save-notification"
 import SettingsModal from "@/components/settings-modal"
 import ApiKeyWarning from "@/components/api-key-warning"
-import debounce from "lodash.debounce" // Import debounce from lodash
+import { debounce } from "@/utils/debounce" // Korrekter Import
 
 export default function TypewriterPage() {
   const {
     lines,
     activeLine,
-    setActiveLine,
     addLineToStack,
     maxCharsPerLine,
     statistics,
@@ -26,9 +24,6 @@ export default function TypewriterPage() {
     fontSize,
     stackFontSize,
     darkMode,
-    updateLineBreakConfig,
-    setFontSize,
-    setStackFontSize,
     setContainerWidth,
     mode,
     selectedLineIndex,
@@ -37,12 +32,12 @@ export default function TypewriterPage() {
     navigateForward,
     navigateBackward,
     resetNavigation,
+    handleKeyPress,
   } = useTypewriterStore()
 
   const containerRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
-  const linesContainerRef = useRef<HTMLDivElement>(null)
+  const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
 
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -51,67 +46,19 @@ export default function TypewriterPage() {
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(
     typeof window !== "undefined" && window.innerWidth > window.innerHeight ? "landscape" : "portrait",
   )
-  const [scrollPosition, setScrollPosition] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
   const [showNavigationHint, setShowNavigationHint] = useState(false)
   const navigationHintTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const {
-    isKeyboardVisible: isKeyboardVisibleAndroid,
-    keyboardHeight,
-    focusInputSafely,
-  } = useAndroidKeyboard({
+  const { focusInputSafely } = useAndroidKeyboard({
     inputRef: hiddenInputRef,
   })
 
-  const { deviceCategory } = useResponsiveTypography({
+  useResponsiveTypography({
     initialFontSize: fontSize,
     initialStackFontSize: stackFontSize,
-    setFontSize,
-    setStackFontSize,
-  })
-
-  useEffect(() => {
-    let animationId: number
-    let lastActivity = Date.now()
-    let isActive = true
-
-    const blinkCursor = () => {
-      const now = Date.now()
-      if (now - lastActivity > 30000) {
-        setShowCursor(true)
-        return
-      }
-      setShowCursor((prev) => !prev)
-      setTimeout(() => {
-        animationId = requestAnimationFrame(blinkCursor)
-      }, 530)
-    }
-
-    const resetActivity = () => {
-      lastActivity = Date.now()
-      if (!isActive) {
-        isActive = true
-        blinkCursor()
-      }
-    }
-
-    document.addEventListener("keydown", resetActivity, { passive: true })
-    document.addEventListener("touchstart", resetActivity, { passive: true })
-    document.addEventListener("click", resetActivity, { passive: true })
-    blinkCursor()
-
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId)
-      document.removeEventListener("keydown", resetActivity)
-      document.removeEventListener("touchstart", resetActivity)
-      document.removeEventListener("click", resetActivity)
-    }
-  }, [])
-
-  const { focusInput } = useKeyboardNavigation({
-    hiddenInputRef,
-    isAndroid,
+    setFontSize: useTypewriterStore.getState().setFontSize,
+    setStackFontSize: useTypewriterStore.getState().setStackFontSize,
   })
 
   const showTemporaryNavigationHint = useCallback(() => {
@@ -121,255 +68,134 @@ export default function TypewriterPage() {
     setShowNavigationHint(true)
     navigationHintTimerRef.current = setTimeout(() => {
       setShowNavigationHint(false)
-      navigationHintTimerRef.current = null
     }, 1500)
   }, [])
 
-  const openSettings = useCallback(() => {
-    setShowSettings(true)
+  // Effekt für den blinkenden Cursor
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowCursor((prev) => !prev)
+    }, 530)
+    return () => clearInterval(interval)
   }, [])
 
-  const closeSettings = useCallback(() => {
-    setShowSettings(false)
-    setTimeout(() => {
-      focusInput()
-    }, 300)
-  }, [focusInput])
-
-  useEffect(() => {
-    if (mode === "typing" && selectedLineIndex === null) {
-      focusInput()
+  const focusInput = useCallback(() => {
+    if (isAndroid) {
+      focusInputSafely()
+    } else {
+      // Stelle sicher, dass der Fokus gesetzt wird, auch wenn das Fenster nicht aktiv war
+      setTimeout(() => hiddenInputRef.current?.focus(), 0)
     }
-  }, [mode, selectedLineIndex, focusInput])
+  }, [isAndroid, focusInputSafely])
 
+  // Globale Tastatur-Listener
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
-      const isInputField = target.tagName === "INPUT" || target.tagName === "TEXTAREA"
+      // Diese Bedingung blockiert jetzt NICHT mehr, wenn unser hidden-input den Fokus hat.
+      if (target.closest('[role="dialog"], .settings-panel, input, textarea:not(#hidden-input)')) {
+        return
+      }
 
-      if (!isInputField) {
-        if (event.key === "ArrowUp") {
-          event.preventDefault()
-          navigateUp()
-          showTemporaryNavigationHint()
-        } else if (event.key === "ArrowDown") {
-          event.preventDefault()
-          navigateDown()
-          showTemporaryNavigationHint()
-        } else if (event.key === "ArrowLeft") {
-          event.preventDefault()
-          navigateBackward(10)
-          showTemporaryNavigationHint()
-        } else if (event.key === "ArrowRight") {
-          event.preventDefault()
-          navigateForward(10)
-          showTemporaryNavigationHint()
-        } else if (event.key === "Escape" && mode === "navigating") {
+      if (event.key.startsWith("Arrow")) {
+        event.preventDefault()
+        showTemporaryNavigationHint()
+        if (event.key === "ArrowUp") navigateUp()
+        if (event.key === "ArrowDown") navigateDown()
+        if (event.key === "ArrowLeft") navigateBackward(10)
+        if (event.key === "ArrowRight") navigateForward(10)
+        return
+      }
+
+      if (mode === "navigating") {
+        if (event.key === "Escape" || event.key === "Enter") {
           event.preventDefault()
           resetNavigation()
-          focusInput()
-        } else if (event.key === "Enter" && mode === "navigating") {
-          event.preventDefault()
-          resetNavigation()
-          focusInput()
+          focusInput() // Fokus nach Beenden der Navigation wiederherstellen
         }
+        return
+      }
+
+      if (event.key.length === 1 || event.key === "Backspace" || event.key === "Enter") {
+        event.preventDefault()
+        handleKeyPress(event.key)
       }
     }
-    document.addEventListener("keydown", handleKeyDown, { passive: false })
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-    }
+
+    document.addEventListener("keydown", handleGlobalKeyDown)
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown)
   }, [
+    mode,
     navigateUp,
     navigateDown,
     navigateForward,
     navigateBackward,
     resetNavigation,
-    focusInput,
-    mode,
+    handleKeyPress,
     showTemporaryNavigationHint,
+    focusInput, // focusInput als Abhängigkeit hinzufügen
   ])
 
-  useEffect(() => {
-    if (mode !== "typing") return
-    const scrollToBottom = () => {
-      if (linesContainerRef.current) {
-        const elements = linesContainerRef.current.querySelectorAll("[data-line-index]")
-        const lastElement = elements[elements.length - 1]
-        if (lastElement) {
-          lastElement.scrollIntoView({ behavior: "auto", block: "end" })
-        } else {
-          linesContainerRef.current.scrollTop = linesContainerRef.current.scrollHeight
-        }
-      }
-    }
-    scrollToBottom()
-    const timeoutId = setTimeout(scrollToBottom, 50)
-    const longTimeoutId = setTimeout(scrollToBottom, 300)
-    return () => {
-      clearTimeout(timeoutId)
-      clearTimeout(longTimeoutId)
-    }
-  }, [lines.length, mode])
+  const openSettings = useCallback(() => setShowSettings(true), [])
+  const closeSettings = useCallback(() => {
+    setShowSettings(false)
+    focusInput()
+  }, [focusInput])
 
-  useEffect(() => {
-    if (isAndroid) {
-      focusInputSafely()
-    } else {
-      focusInput()
-    }
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (
-        target.tagName !== "BUTTON" &&
-        target.tagName !== "INPUT" &&
-        target.tagName !== "TEXTAREA" &&
-        !target.closest("button") &&
-        !target.closest("input") &&
-        !target.closest("textarea") &&
-        !target.closest('[role="dialog"]') &&
-        !target.closest(".settings-panel")
-      ) {
-        if (isAndroid) {
-          focusInputSafely()
-        } else {
-          focusInput()
-        }
-      }
-    }
-    document.addEventListener("click", handleClick)
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-      setTimeout(() => {
-        if (isAndroid) {
-          focusInputSafely()
-        } else {
-          focusInput()
-        }
-      }, 300)
-    }
-    document.addEventListener("fullscreenchange", handleFullscreenChange)
-    return () => {
-      document.removeEventListener("click", handleClick)
-      document.removeEventListener("fullscreenchange", handleFullscreenChange)
-    }
-  }, [focusInput, focusInputSafely, isAndroid])
-
-  // Effect for handling resize and orientation changes
+  // Effekt für Layout-Anpassungen
   useEffect(() => {
     const updateLayout = debounce(() => {
-      if (contentRef.current) {
-        const newWidth = contentRef.current.clientWidth
-        setContainerWidth(newWidth)
+      // Korrektes Ref für die Breitenberechnung verwenden
+      if (linesContainerRef.current) {
+        setContainerWidth(linesContainerRef.current.clientWidth)
       }
       if (typeof window !== "undefined") {
-        const newOrientation = window.innerWidth > window.innerHeight ? "landscape" : "portrait"
-        setOrientation(newOrientation)
+        setOrientation(window.innerWidth > window.innerHeight ? "landscape" : "portrait")
         setIsSmallScreen(window.innerWidth < 768)
       }
-    }, 100)
+    }, 150)
 
     const isAndroidDevice = /Android/.test(navigator.userAgent)
     setIsAndroid(isAndroidDevice)
-    if (isAndroidDevice) {
-      document.body.classList.add("android-typewriter")
-      document.body.dataset.deviceCategory = deviceCategory
-    }
+    if (isAndroidDevice) document.body.classList.add("android-typewriter")
 
     window.addEventListener("resize", updateLayout)
-    if (isAndroid) {
-      window.addEventListener("orientationchange", updateLayout)
-    }
+    updateLayout()
 
-    updateLayout() // Initial call
-
-    return () => {
-      window.removeEventListener("resize", updateLayout)
-      if (isAndroid) {
-        window.removeEventListener("orientationchange", updateLayout)
-      }
-    }
-  }, [setContainerWidth, isAndroid, deviceCategory])
+    return () => window.removeEventListener("resize", updateLayout)
+  }, [setContainerWidth])
 
   const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement && containerRef.current) {
-      containerRef.current.requestFullscreen().catch((err) => {
-        console.error("Fullscreen error:", err)
-        if (isAndroid) {
-          const elem = containerRef.current
-          if (elem) {
-            elem.style.position = "fixed"
-            elem.style.top = "0"
-            elem.style.left = "0"
-            elem.style.width = "100%"
-            elem.style.height = "100%"
-            elem.style.zIndex = "9999"
-            setIsFullscreen(true)
-          }
-        }
-      })
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen().catch((err) => {
-        console.error("Exit fullscreen error:", err)
-        if (isAndroid && containerRef.current) {
-          const elem = containerRef.current
-          elem.style.position = ""
-          elem.style.top = ""
-          elem.style.left = ""
-          elem.style.width = ""
-          elem.style.height = ""
-          elem.style.zIndex = ""
-          setIsFullscreen(false)
-        }
-      })
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch((err) => console.error("Fullscreen error:", err))
+    } else {
+      document.exitFullscreen().catch((err) => console.error("Exit fullscreen error:", err))
     }
-  }, [isAndroid])
+  }, [])
 
   useEffect(() => {
-    const isAndroidDevice = /Android/.test(navigator.userAgent)
-    setIsAndroid(isAndroidDevice)
-    if (isAndroidDevice) {
-      const meta = document.querySelector('meta[name="viewport"]')
-      if (meta) {
-        meta.setAttribute("content", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
-      }
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
     }
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
   }, [])
 
   return (
     <div
       ref={containerRef}
-      className={`min-h-screen flex flex-col typewriter-container font-sans ${
-        darkMode
-          ? "dark bg-[#121212] text-[#E0E0E0]"
-          : (isFullscreen ? "bg-[#f8f5f0]" : "bg-[#f3efe9]") + " text-gray-900"
-      } transition-colors duration-300 ${isAndroid ? "android-typewriter" : ""} ${isFullscreen && isAndroid ? "fullscreen" : ""} ${orientation}`}
-      data-mode={mode}
-      data-device-category={deviceCategory}
-      data-fullscreen={isFullscreen ? "true" : "false"}
-      style={{
-        overflow: "hidden",
-        ...(isAndroid && isKeyboardVisibleAndroid ? { paddingBottom: `${keyboardHeight}px` } : {}),
-      }}
+      className={`min-h-screen flex flex-col typewriter-container font-sans outline-none ${
+        darkMode ? "dark bg-[#121212] text-[#E0E0E0]" : "bg-[#f3efe9] text-gray-900"
+      }`}
+      tabIndex={-1}
+      onClick={focusInput} // Dieser Handler ist entscheidend für die Fokus-Wiederherstellung
     >
       <ApiKeyWarning />
-      {!(isFullscreen && isSmallScreen) && (
-        <header
-          className={`border-b ${
-            darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
-          } transition-colors duration-300`}
-        >
-          <ControlBar
-            wordCount={statistics.wordCount}
-            pageCount={statistics.pageCount}
-            toggleFullscreen={toggleFullscreen}
-            hiddenInputRef={hiddenInputRef}
-            isFullscreen={isFullscreen}
-            openSettings={openSettings}
-          />
-        </header>
-      )}
-      {isFullscreen && isSmallScreen && (
+      <header
+        className={`border-b ${
+          darkMode ? "border-gray-700" : "border-[#d3d0cb]"
+        } transition-colors duration-300 flex-shrink-0`}
+      >
         <ControlBar
           wordCount={statistics.wordCount}
           pageCount={statistics.pageCount}
@@ -378,19 +204,17 @@ export default function TypewriterPage() {
           isFullscreen={isFullscreen}
           openSettings={openSettings}
         />
-      )}
-      <main className={`flex-1 flex flex-col p-4 md:p-6 lg:p-8 ${darkMode ? "bg-gray-900" : ""} overflow-hidden`}>
+      </header>
+
+      <main className="flex-1 flex flex-col p-4 md:p-6 lg:p-8 overflow-hidden">
         <section
-          ref={contentRef}
           className={`flex-1 flex flex-col ${
-            darkMode ? "bg-gray-800 shadow-xl" : (isFullscreen ? "bg-white" : "bg-[#fcfcfa]") + " shadow-md"
+            darkMode ? "bg-gray-800 shadow-xl" : "bg-[#fcfcfa] shadow-md"
           } rounded-lg overflow-hidden transition-colors duration-300 relative`}
         >
           <WritingArea
             lines={lines}
             activeLine={activeLine}
-            setActiveLine={setActiveLine}
-            addLineToStack={addLineToStack}
             maxCharsPerLine={maxCharsPerLine}
             fontSize={fontSize}
             stackFontSize={stackFontSize}
@@ -405,15 +229,6 @@ export default function TypewriterPage() {
           />
         </section>
       </main>
-      {!(isFullscreen && isSmallScreen) && (
-        <footer
-          className={`p-3 border-t ${
-            darkMode ? "border-gray-700 text-gray-400 bg-gray-900" : "border-[#d3d0cb] text-gray-600"
-          } text-center text-sm font-sans`}
-        >
-          Typewriter — Konzentriere dich auf dein Schreiben
-        </footer>
-      )}
 
       <NavigationIndicator darkMode={darkMode} />
       <SaveNotification />
@@ -430,7 +245,6 @@ export default function TypewriterPage() {
         </div>
       )}
       <SettingsModal isOpen={showSettings} onClose={closeSettings} darkMode={darkMode} />
-      <OfflineIndicator darkMode={darkMode} />
     </div>
   )
 }

@@ -62,13 +62,15 @@ export interface TypewriterState {
   isLoading: boolean
   /** Breite des Schreib-Containers in Pixeln */
   containerWidth: number
+  /** Ob der Flow Mode (kein Löschen) aktiviert ist */
+  flowMode: boolean
 }
 
 /**
  * Aktionen für den Typewriter-Store
  */
 export interface TypewriterActions {
-  /** Funktion zum Setzen der aktiven Zeile */
+  /** Funktion zum Setzen der aktiven Zeile (nur für internes Laden) */
   setActiveLine: (text: string) => void
   /** Funktion zum Hinzufügen der aktiven Zeile zum Stack */
   addLineToStack: () => void
@@ -108,4 +110,8 @@ export interface TypewriterActions {
   loadLastSession: () => Promise<void>
   /** Funktion zum Setzen der Container-Breite */
   setContainerWidth: (width: number) => void
+  /** Schaltet den Flow Mode (kein Löschen) um */
+  toggleFlowMode: () => void
+  /** Verarbeitet einen Tastendruck für die Eingabe */
+  handleKeyPress: (key: string) => void
 }

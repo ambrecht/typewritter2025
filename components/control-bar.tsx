@@ -80,17 +80,15 @@ function ControlBar({
   // Refokussieren des Eingabefelds nach Button-Aktionen
   const refocusInput = useCallback(() => {
     setTimeout(() => {
-      if (isAndroid) {
-        if (hiddenInputRef.current) {
-          hiddenInputRef.current.focus()
+      if (hiddenInputRef.current) {
+        hiddenInputRef.current.focus()
+        if (isAndroid) {
           const length = hiddenInputRef.current.value.length
           hiddenInputRef.current.setSelectionRange(length, length)
         }
-      } else {
-        showKeyboard()
       }
     }, 150)
-  }, [isAndroid, hiddenInputRef, showKeyboard])
+  }, [isAndroid, hiddenInputRef])
 
   // Copy text to clipboard
   const copyToClipboard = () => {
