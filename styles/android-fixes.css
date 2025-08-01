@@ -1,0 +1,336 @@
+/**
+ * Spezifische CSS-Anpassungen für Android-Geräte
+ */
+
+/* ===== Grundlegende Anpassungen ===== */
+.android-typewriter {
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Highlight-Effekt bei Tap */
+  touch-action: manipulation; /* Verbessert Touch-Reaktion */
+}
+
+/* ===== Aktive Zeile ===== */
+.android-typewriter .active-line {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+/* ===== Tastaturanpassungen ===== */
+@media screen and (max-height: 450px) {
+  .android-typewriter .writing-container {
+    padding-bottom: 60px; /* Zusätzlicher Platz für die Tastatur */
+  }
+
+  .android-typewriter .active-line {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* ===== Eingabefeld-Optimierungen ===== */
+.android-typewriter input[type="text"] {
+  font-size: 16px; /* Verhindert Zoom auf mobilen Geräten */
+  -webkit-appearance: none; /* Entfernt Standard-Styling auf Android */
+  appearance: none;
+}
+
+/* ===== Vollbildmodus ===== */
+.android-typewriter.fullscreen .active-line {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+/* ===== Tastatur-Anpassungen ===== */
+.keyboard-visible .writing-container {
+  height: calc(100vh - 300px); /* Ungefähre Höhe der Tastatur */
+  overflow-y: auto;
+}
+
+.keyboard-visible .active-line {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: inherit;
+}
+
+/* ===== Touch-Ziele ===== */
+.android-typewriter button {
+  min-height: 44px; /* Empfohlene Mindesthöhe für Touch-Ziele */
+  min-width: 44px; /* Empfohlene Mindestbreite für Touch-Ziele */
+}
+
+/* ===== Scrollbar-Anpassungen ===== */
+.android-typewriter .writing-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.android-typewriter .writing-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.android-typewriter .writing-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.android-typewriter.dark .writing-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== Textdarstellung ===== */
+.active-line {
+  overflow-x: hidden;
+  white-space: normal;
+  word-wrap: break-word;
+  position: relative;
+  z-index: 50;
+  /* Verbesserte visuelle Trennung */
+  border-top-width: 2px !important;
+}
+
+/* Verbessere den visuellen Kontrast im Dark Mode */
+.dark .active-line {
+  border-top-color: rgba(55, 65, 81, 0.8) !important;
+}
+
+/* Verbessere den visuellen Kontrast im Light Mode */
+.active-line {
+  border-top-color: rgba(214, 211, 205, 0.8) !important;
+}
+
+/* Füge einen subtilen Indikator für die aktive Zeile hinzu */
+.active-line::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent, rgba(245, 158, 11, 0.3), transparent);
+}
+
+.dark .active-line::before {
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.3), transparent);
+}
+
+/* ===== Typewriter-Ästhetik ===== */
+.writing-container {
+  font-family: "Georgia", serif;
+  line-height: 1.6;
+  transition: all 0.3s ease;
+}
+
+.active-line {
+  font-family: "Georgia", serif;
+  box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* ===== Cursor-Animation ===== */
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* ===== Farbschemata ===== */
+.typewriter-container {
+  background-color: #f8f5f0;
+}
+
+.typewriter-container.dark {
+  background-color: #1a1a1a;
+}
+
+/* ===== Übergänge ===== */
+.writing-container,
+.active-line {
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ===== Orientierungsanpassungen ===== */
+.landscape .active-line {
+  max-width: 100%;
+  overflow-x: hidden;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* ===== Einstellungen-Modal ===== */
+.android-settings-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background-color: inherit;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Formularelemente ===== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 24px;
+  background: transparent;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #666;
+  cursor: pointer;
+  margin-top: -14px;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+  background: #aaa;
+}
+
+.dark input[type="range"]::-webkit-slider-runnable-track {
+  background: #444;
+}
+
+input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+}
+
+/* ===== Buttons ===== */
+.android-button {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+/* ===== Modals ===== */
+.android-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.android-modal-content {
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dark .android-modal-content {
+  background-color: #1a1a1a;
+}
+
+/* ===== Verbesserte Touch-Ziele für Android ===== */
+@media (pointer: coarse) {
+  /* Größere Touch-Ziele gemäß Google UX-Guidelines (48x48px) */
+  button,
+  .interactive-element,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  .android-button {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px;
+    touch-action: manipulation;
+  }
+
+  /* Größere Abstände zwischen interaktiven Elementen */
+  .button-group > * {
+    margin: 0 8px;
+  }
+
+  /* Verbesserte Fokus-Styles für Touch */
+  button:focus,
+  [role="button"]:focus,
+  input:focus {
+    outline: 2px solid #60a5fa;
+    outline-offset: 2px;
+  }
+
+  /* Größere Checkboxen und Radio-Buttons */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  /* Größere Slider */
+  input[type="range"] {
+    min-height: 44px;
+  }
+
+  /* Größere Dropdown-Menüs */
+  select {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px;
+  }
+}
+
+/* Spezifische Anpassungen für Android-Geräte */
+.android-typewriter button,
+.android-typewriter [role="button"],
+.android-typewriter input[type="button"],
+.android-typewriter input[type="submit"],
+.android-typewriter input[type="reset"],
+.android-typewriter .android-button {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 12px;
+  touch-action: manipulation;
+}
+
+/* Verbesserte Tap-Highlight-Farbe für Android */
+.android-typewriter * {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}

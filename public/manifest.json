@@ -1,0 +1,27 @@
+{
+  "name": "Typewriter App",
+  "short_name": "Typewriter",
+  "description": "Eine ablenkungsfreie Schreibumgebung für konzentriertes Arbeiten",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3efe9",
+  "theme_color": "#f59e0b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "de",
+  "dir": "ltr"
+}

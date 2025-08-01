@@ -1,0 +1,383 @@
+import { create } from "zustand"
+import { persist, createJSONStorage } from "zustand/middleware"
+import type { TypewriterState, TypewriterActions, LineBreakConfig } from "@/types"
+import { calculateTextStatistics } from "@/utils/text-statistics"
+import { saveText, getLastSession } from "@/utils/api"
+import { measureTextWidth } from "@/utils/canvas-utils"
+
+/**
+ * @constant initialState
+ * @description Der initiale Zustand der Typewriter-Anwendung.
+ * Wird für den Start und beim Zurücksetzen der Sitzung verwendet.
+ */
+const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoading" | "containerWidth"> = {
+  lines: [],
+  activeLine: "",
+  maxCharsPerLine: 56, // Dient als Referenz und Fallback
+  statistics: { wordCount: 0, letterCount: 0, pageCount: 0 },
+  lineBreakConfig: { maxCharsPerLine: 56, autoMaxChars: true },
+  fontSize: 24,
+  stackFontSize: 18,
+  darkMode: false,
+  mode: "typing",
+  selectedLineIndex: null,
+  flowMode: false, // Neuer Zustand für den Flow Mode
+}
+
+/**
+ * @function useTypewriterStore
+ * @description Der zentrale Zustand-Store für die Typewriter-Anwendung, implementiert mit Zustand.
+ * Verwaltet den gesamten Anwendungszustand, inklusive Aktionen zur Zustandsänderung und Persistenz im LocalStorage.
+ *
+ * @returns Ein Hook zur Verwendung des Stores in React-Komponenten.
+ */
+export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
+  persist(
+    (set, get) => ({
+      // --- STATE PROPERTIES ---
+      ...initialState,
+      containerWidth: 800, // Standardbreite, wird bei UI-Mount aktualisiert
+      lastSaveStatus: null,
+      isSaving: false,
+      isLoading: false,
+
+      // --- ACTIONS ---
+
+      /**
+       * Schaltet den Flow Mode um. Im Flow Mode kann nicht gelöscht werden.
+       */
+      toggleFlowMode: () => set((state) => ({ flowMode: !state.flowMode })),
+
+      /**
+       * Verarbeitet einen Tastendruck. Dies ist die ZENTRALE Funktion für alle Eingaben.
+       * Sie ersetzt die direkte Interaktion mit einem <textarea>-Element.
+       * @param {string} key - Die von der Tastatur gedrückte Taste (z.B. "a", "Backspace", "Enter").
+       */
+      handleKeyPress: (key: string) => {
+        const { flowMode, activeLine, lines, containerWidth, fontSize, lineBreakConfig } = get()
+
+        // 1. Behandelt die "Enter"-Taste
+        if (key === "Enter") {
+          get().addLineToStack()
+          return
+        }
+
+        // 2. Behandelt die "Backspace"-Taste
+        if (key === "Backspace") {
+          // Löschen ist im Flow Mode nicht erlaubt.
+          if (flowMode) {
+            return
+          }
+
+          // Das Löschen wirkt sich NUR auf die activeLine aus.
+          // Wenn die activeLine leer ist, passiert nichts.
+          if (activeLine.length > 0) {
+            const newActiveLine = activeLine.slice(0, -1)
+            set({
+              activeLine: newActiveLine,
+              statistics: calculateTextStatistics([...lines, newActiveLine].join("\n")),
+            })
+          }
+          // Die fehlerhafte Logik, die Zeilen aus dem Stack zurückgeholt hat, wurde entfernt.
+          return
+        }
+
+        // 3. Behandelt alle anderen (druckbaren) Zeichen
+        // Ignoriere Funktionstasten wie "Shift", "Control", "ArrowLeft" etc.
+        if (key.length === 1) {
+          const newActiveLineContent = activeLine + key
+
+          // Wenn der automatische Umbruch deaktiviert ist, einfach Text anhängen.
+          if (!lineBreakConfig.autoMaxChars) {
+            set({
+              activeLine: newActiveLineContent,
+              statistics: calculateTextStatistics([...lines, newActiveLineContent].join("\n")),
+            })
+            return
+          }
+
+          const font = `${fontSize}px "Lora", serif`
+          // The containerWidth from the store is now the clientWidth of the text area,
+          // which already accounts for padding. No subtraction needed.
+          const availableWidth = containerWidth
+          const textWidth = measureTextWidth(newActiveLineContent, font)
+
+          if (textWidth <= availableWidth) {
+            set({
+              activeLine: newActiveLineContent,
+              statistics: calculateTextStatistics([...lines, newActiveLineContent].join("\n")),
+            })
+          } else {
+            // Der Text ist zu lang, führe einen Umbruch durch.
+            const lastSpaceIndex = newActiveLineContent.lastIndexOf(" ")
+            let lineToAdd: string
+            let remainder: string
+
+            if (lastSpaceIndex > 0) {
+              // Weicher Umbruch am letzten Leerzeichen
+              lineToAdd = newActiveLineContent.substring(0, lastSpaceIndex)
+              remainder = newActiveLineContent.substring(lastSpaceIndex + 1)
+            } else {
+              // Harter Umbruch, wenn kein Leerzeichen gefunden wurde
+              lineToAdd = newActiveLineContent
+              remainder = ""
+            }
+
+            const newLines = [...lines, lineToAdd]
+            set({
+              lines: newLines,
+              activeLine: remainder,
+              statistics: calculateTextStatistics([...newLines, remainder].join("\n")),
+            })
+          }
+        }
+      },
+
+      /**
+       * Aktualisiert die Breite des Schreib-Containers.
+       * Wichtig für die Berechnung des automatischen Zeilenumbruchs.
+       * @param {number} width - Die neue Breite des Containers in Pixeln.
+       */
+      setContainerWidth: (width: number) => set({ containerWidth: width }),
+
+      /**
+       * Setzt den Text der aktiven Zeile und führt bei Bedarf einen automatischen Zeilenumbruch durch.
+       * Dies ist die Kernlogik für das "fließende" Schreiben.
+       * @param {string} text - Der neue Text aus dem Eingabefeld.
+       */
+      setActiveLine: (text) => {
+        const newFullText = [...get().lines, text].join("\n")
+        set({
+          activeLine: text,
+          statistics: calculateTextStatistics(newFullText),
+        })
+      },
+
+      /**
+       * Fügt die aktuelle `activeLine` zum `lines`-Array hinzu und leert die `activeLine`.
+       * Wird bei "Enter" oder beim automatischen Umbruch aufgerufen.
+       */
+      addLineToStack: () => {
+        const { activeLine, lines } = get()
+        // Verhindere das Hinzufügen mehrerer aufeinanderfolgender leerer Zeilen.
+        if (activeLine.trim() === "" && lines.length > 0 && lines[lines.length - 1].trim() === "") {
+          return
+        }
+        const newLines = [...lines, activeLine]
+        const newText = newLines.join("\n")
+        set({
+          lines: newLines,
+          activeLine: "",
+          statistics: calculateTextStatistics(newText),
+        })
+      },
+
+      /**
+       * Aktualisiert die Konfiguration für den Zeilenumbruch.
+       * @param {Partial<LineBreakConfig>} config - Ein Objekt mit den zu aktualisierenden Konfigurationswerten.
+       */
+      updateLineBreakConfig: (config: Partial<LineBreakConfig>) => {
+        const newConfig = { ...get().lineBreakConfig, ...config }
+        set({
+          lineBreakConfig: newConfig,
+          maxCharsPerLine: newConfig.maxCharsPerLine,
+        })
+      },
+
+      /**
+       * Setzt die Schriftgröße für die aktive Zeile.
+       * @param {number} size - Die neue Schriftgröße in Pixeln.
+       */
+      setFontSize: (size: number) => set({ fontSize: size }),
+
+      /**
+       * Setzt die Schriftgröße für den Zeilenstack.
+       * @param {number} size - Die neue Schriftgröße in Pixeln.
+       */
+      setStackFontSize: (size: number) => set({ stackFontSize: size }),
+
+      /**
+       * Schaltet den Dark Mode um.
+       */
+      toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+
+      /**
+       * Leert nur die aktuelle Eingabezeile.
+       */
+      clearCurrentInput: () => set({ activeLine: "" }),
+
+      /**
+       * Leert den gesamten Text (Zeilenstack und aktive Zeile).
+       */
+      clearAllLines: () =>
+        set({ lines: [], activeLine: "", statistics: { wordCount: 0, letterCount: 0, pageCount: 0 } }),
+
+      /**
+       * Setzt die gesamte Sitzung auf den initialen Zustand zurück.
+       */
+      resetSession: () => set({ ...initialState, containerWidth: get().containerWidth }),
+
+      /**
+       * Setzt eine feste Zeilenlänge und deaktiviert den automatischen Umbruch.
+       * @param {number} length - Die feste Anzahl an Zeichen pro Zeile.
+       */
+      setFixedLineLength: (length: number) => {
+        get().updateLineBreakConfig({ maxCharsPerLine: length, autoMaxChars: false })
+      },
+
+      /**
+       * Setzt den Anwendungsmodus ('typing' oder 'navigating').
+       * @param {"typing" | "navigating"} mode - Der neue Modus.
+       */
+      setMode: (mode) => set({ mode }),
+
+      /**
+       * Setzt den Index der ausgewählten Zeile im Navigationsmodus.
+       * @param {number | null} index - Der Index der Zeile oder `null`.
+       */
+      setSelectedLineIndex: (index) => set({ selectedLineIndex: index }),
+
+      /**
+       * Navigiert eine Zeile nach oben im Stack.
+       */
+      navigateUp: () => {
+        const { lines, selectedLineIndex } = get()
+        if (lines.length === 0) return
+        const newIndex = selectedLineIndex === null ? lines.length - 1 : Math.max(0, selectedLineIndex - 1)
+        set({ mode: "navigating", selectedLineIndex: newIndex })
+      },
+
+      /**
+       * Navigiert eine Zeile nach unten im Stack oder beendet den Navigationsmodus.
+       */
+      navigateDown: () => {
+        const { lines, selectedLineIndex } = get()
+        if (selectedLineIndex === null || selectedLineIndex >= lines.length - 1) {
+          get().resetNavigation()
+        } else {
+          set({ selectedLineIndex: selectedLineIndex + 1 })
+        }
+      },
+
+      /**
+       * Springt mehrere Zeilen vorwärts.
+       * @param {number} count - Die Anzahl der zu springenden Zeilen.
+       */
+      navigateForward: (count: number) => {
+        const { lines, selectedLineIndex } = get()
+        if (selectedLineIndex === null) return
+        const newIndex = Math.min(lines.length - 1, selectedLineIndex + count)
+        set({ selectedLineIndex: newIndex })
+      },
+
+      /**
+       * Springt mehrere Zeilen rückwärts.
+       * @param {number} count - Die Anzahl der zu springenden Zeilen.
+       */
+      navigateBackward: (count: number) => {
+        const { selectedLineIndex } = get()
+        if (selectedLineIndex === null) return
+        const newIndex = Math.max(0, selectedLineIndex - count)
+        set({ selectedLineIndex: newIndex })
+      },
+
+      /**
+       * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
+       */
+      resetNavigation: () => {
+        set({ mode: "typing", selectedLineIndex: null })
+      },
+
+      /**
+       * Speichert die aktuelle Sitzung über die API.
+       */
+      saveSession: async () => {
+        const { lines, activeLine } = get()
+        const fullText = [...lines, activeLine].join("\n")
+        set({ isSaving: true, lastSaveStatus: null })
+        try {
+          const result = await saveText(fullText)
+          set({ lastSaveStatus: result })
+        } catch (error) {
+          set({
+            lastSaveStatus: {
+              success: false,
+              message: error instanceof Error ? error.message : "Unbekannter Fehler",
+            },
+          })
+        } finally {
+          set({ isSaving: false })
+        }
+      },
+
+      /**
+       * Lädt die letzte gespeicherte Sitzung von der API.
+       */
+      loadLastSession: async () => {
+        set({ isLoading: true, lastSaveStatus: null })
+        try {
+          const result = await getLastSession()
+          if (result.success && typeof result.text === "string") {
+            const newLines = result.text.split("\n")
+            const newActiveLine = newLines.pop() || ""
+            set({
+              lines: newLines,
+              activeLine: newActiveLine,
+              statistics: calculateTextStatistics(result.text),
+              lastSaveStatus: { success: true, message: "Erfolgreich geladen" },
+            })
+          } else {
+            set({ lastSaveStatus: { success: false, message: result.message || "Laden fehlgeschlagen" } })
+          }
+        } catch (error) {
+          set({
+            lastSaveStatus: {
+              success: false,
+              message: error instanceof Error ? error.message : "Unbekannter Fehler",
+            },
+          })
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+    }),
+    {
+      // Konfiguration für die Persistenz-Middleware
+      name: "typewriter-storage", // Eindeutiger Name für den LocalStorage-Key
+      storage: createJSONStorage(() => localStorage), // Verwende LocalStorage
+      /**
+       * Wird nach dem Laden des Zustands aus dem Storage ausgeführt.
+       * Ermöglicht die Migration von alten Datenformaten.
+       */
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Migrationslogik für ein veraltetes Datenformat, bei dem Zeilen Objekte waren.
+          if (
+            state.lines &&
+            state.lines.length > 0 &&
+            typeof state.lines[0] === "object" &&
+            state.lines[0] !== null &&
+            "text" in state.lines[0]
+          ) {
+            console.log("Veraltetes Datenformat erkannt. Migriere 'lines'-Zustand.")
+            state.lines = state.lines.map((line: any) => (typeof line.text === "string" ? line.text : ""))
+          }
+          // Stelle sicher, dass flowMode nach dem Laden existiert
+          if (typeof state.flowMode === "undefined") {
+            state.flowMode = false
+          }
+        }
+      },
+      /**
+       * Definiert, welche Teile des Zustands im LocalStorage gespeichert werden sollen.
+       * Flüchtige Zustände wie `isSaving` oder `isLoading` werden ausgeschlossen.
+       */
+      partialize: (state) =>
+        Object.fromEntries(
+          Object.entries(state).filter(
+            ([key]) => !["isSaving", "isLoading", "lastSaveStatus", "containerWidth"].includes(key),
+          ),
+        ),
+    },
+  ),
+)
