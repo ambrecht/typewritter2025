@@ -38,6 +38,7 @@ export default function TypewriterPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
+  const lastKeyRef = useRef<{ key: string; time: number } | null>(null)
 
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -91,6 +92,19 @@ export default function TypewriterPage() {
   // Globale Tastatur-Listener
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      const now = performance.now()
+      if (
+        event.repeat ||
+        event.isComposing ||
+        (event as any).keyCode === 229 ||
+        (lastKeyRef.current &&
+          lastKeyRef.current.key === event.key &&
+          now - lastKeyRef.current.time < 50)
+      ) {
+        return
+      }
+      lastKeyRef.current = { key: event.key, time: now }
+
       const target = event.target as HTMLElement
       // Diese Bedingung blockiert jetzt NICHT mehr, wenn unser hidden-input den Fokus hat.
       if (target.closest('[role="dialog"], .settings-panel, input, textarea:not(#hidden-input)')) {
