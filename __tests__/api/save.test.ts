@@ -1,6 +1,12 @@
-import { POST } from "@/app/api/save/route"
-import { NextRequest } from "next/server"
-import jest from "jest"
+// Mock Next.js server utilities
+jest.mock("next/server", () => ({
+  NextResponse: {
+    json: (data: any, init?: any) => ({
+      status: init?.status ?? 200,
+      json: () => Promise.resolve(data),
+    }),
+  },
+}))
 
 // Mock the API key storage
 jest.mock("@/lib/api-key-storage", () => ({
@@ -12,13 +18,15 @@ jest.mock("@/lib/api-config", () => ({
   getApiUrl: jest.fn(() => "https://api.test.com/save"),
 }))
 
+import { POST } from "@/app/api/save/route"
+
 describe("/api/save", () => {
   beforeEach(() => {
     global.fetch = jest.fn()
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    jest.clearAllMocks()
   })
 
   it("should save text successfully", async () => {
@@ -28,11 +36,9 @@ describe("/api/save", () => {
       text: () => Promise.resolve(JSON.stringify({ id: 123 })),
     })
 
-    const request = new NextRequest("http://localhost:3000/api/save", {
-      method: "POST",
-      body: JSON.stringify({ text: "Test text" }),
-      headers: { "Content-Type": "application/json" },
-    })
+    const request = {
+      json: () => Promise.resolve({ text: "Test text" }),
+    } as any
 
     const response = await POST(request)
     const data = await response.json()
@@ -44,11 +50,9 @@ describe("/api/save", () => {
   })
 
   it("should return 400 for invalid input", async () => {
-    const request = new NextRequest("http://localhost:3000/api/save", {
-      method: "POST",
-      body: JSON.stringify({ text: "" }),
-      headers: { "Content-Type": "application/json" },
-    })
+    const request = {
+      json: () => Promise.resolve({ text: "" }),
+    } as any
 
     const response = await POST(request)
     const data = await response.json()
@@ -65,11 +69,9 @@ describe("/api/save", () => {
       text: () => Promise.resolve(JSON.stringify({ message: "Server error" })),
     })
 
-    const request = new NextRequest("http://localhost:3000/api/save", {
-      method: "POST",
-      body: JSON.stringify({ text: "Test text" }),
-      headers: { "Content-Type": "application/json" },
-    })
+    const request = {
+      json: () => Promise.resolve({ text: "Test text" }),
+    } as any
 
     const response = await POST(request)
     const data = await response.json()

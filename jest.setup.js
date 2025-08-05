@@ -2,6 +2,9 @@
 
 import "@testing-library/jest-dom"
 
+// Provide minimal Request implementation for next/server
+global.Request = class {}
+
 // Mock Next.js router
 jest.mock("next/navigation", () => ({
   useRouter() {
