@@ -56,7 +56,7 @@ export default function WritingArea({
   const internalLinesContainerRef = useRef<HTMLDivElement>(null)
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
 
-  const visibleLines = useVisibleLines(lines, 200, mode, selectedLineIndex, isFullscreen)
+  const visibleLines = useVisibleLines(lines, 200, mode, selectedLineIndex)
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
