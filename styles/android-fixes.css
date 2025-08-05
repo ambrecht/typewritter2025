@@ -10,7 +10,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Highlight-Effekt bei Tap */
   touch-action: manipulation; /* Verbessert Touch-Reaktion */
 }
