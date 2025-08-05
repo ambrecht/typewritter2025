@@ -1,19 +1,14 @@
-import { POST } from "@/app/api/save/route"
-import { NextRequest } from "next/server"
-import jest from "jest"
-
-// Mock the API key storage
-jest.mock("@/lib/api-key-storage", () => ({
-  getApiKey: jest.fn(() => "test-api-key"),
-}))
-
 // Mock the API config
 jest.mock("@/lib/api-config", () => ({
   getApiUrl: jest.fn(() => "https://api.test.com/save"),
 }))
 
+import { NextRequest } from "next/server"
+import { POST } from "@/app/api/save/route"
+
 describe("/api/save", () => {
   beforeEach(() => {
+    process.env.API_KEY = "test-api-key"
     global.fetch = jest.fn()
   })
 
