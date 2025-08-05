@@ -96,12 +96,20 @@ const SidebarProvider = React.forwardRef<
         : setOpen((open) => !open)
     }, [isMobile, setOpen, setOpenMobile])
 
+    const pressedKeysRef = React.useRef<Set<string>>(new Set())
+
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.repeat || event.isComposing || (event as any).keyCode === 229) {
+        if (
+          event.repeat ||
+          event.isComposing ||
+          (event as any).keyCode === 229 ||
+          pressedKeysRef.current.has(event.key)
+        ) {
           return
         }
+        pressedKeysRef.current.add(event.key)
         if (
           event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
           (event.metaKey || event.ctrlKey)
@@ -111,8 +119,16 @@ const SidebarProvider = React.forwardRef<
         }
       }
 
+      const handleKeyUp = (event: KeyboardEvent) => {
+        pressedKeysRef.current.delete(event.key)
+      }
+
       window.addEventListener("keydown", handleKeyDown)
-      return () => window.removeEventListener("keydown", handleKeyDown)
+      window.addEventListener("keyup", handleKeyUp)
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown)
+        window.removeEventListener("keyup", handleKeyUp)
+      }
     }, [toggleSidebar])
 
     // We add a state so that we can do data-state="expanded" or "collapsed".

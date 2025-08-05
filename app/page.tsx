@@ -38,7 +38,7 @@ export default function TypewriterPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
-  const lastKeyRef = useRef<{ key: string; time: number } | null>(null)
+  const pressedKeysRef = useRef<Set<string>>(new Set())
 
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -92,18 +92,15 @@ export default function TypewriterPage() {
   // Globale Tastatur-Listener
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
-      const now = performance.now()
       if (
         event.repeat ||
         event.isComposing ||
         (event as any).keyCode === 229 ||
-        (lastKeyRef.current &&
-          lastKeyRef.current.key === event.key &&
-          now - lastKeyRef.current.time < 50)
+        pressedKeysRef.current.has(event.key)
       ) {
         return
       }
-      lastKeyRef.current = { key: event.key, time: now }
+      pressedKeysRef.current.add(event.key)
 
       const target = event.target as HTMLElement
       // Diese Bedingung blockiert jetzt NICHT mehr, wenn unser hidden-input den Fokus hat.
@@ -136,8 +133,16 @@ export default function TypewriterPage() {
       }
     }
 
+    const handleGlobalKeyUp = (event: KeyboardEvent) => {
+      pressedKeysRef.current.delete(event.key)
+    }
+
     document.addEventListener("keydown", handleGlobalKeyDown)
-    return () => document.removeEventListener("keydown", handleGlobalKeyDown)
+    document.addEventListener("keyup", handleGlobalKeyUp)
+    return () => {
+      document.removeEventListener("keydown", handleGlobalKeyDown)
+      document.removeEventListener("keyup", handleGlobalKeyUp)
+    }
   }, [
     mode,
     navigateUp,

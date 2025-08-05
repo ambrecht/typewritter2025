@@ -67,6 +67,7 @@ const Carousel = React.forwardRef<
     )
     const [canScrollPrev, setCanScrollPrev] = React.useState(false)
     const [canScrollNext, setCanScrollNext] = React.useState(false)
+    const pressedKeysRef = React.useRef<Set<string>>(new Set())
 
     const onSelect = React.useCallback((api: CarouselApi) => {
       if (!api) {
@@ -87,9 +88,15 @@ const Carousel = React.forwardRef<
 
     const handleKeyDown = React.useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.repeat || event.isComposing || (event as any).keyCode === 229) {
+        if (
+          event.repeat ||
+          event.isComposing ||
+          (event as any).keyCode === 229 ||
+          pressedKeysRef.current.has(event.key)
+        ) {
           return
         }
+        pressedKeysRef.current.add(event.key)
         if (event.key === "ArrowLeft") {
           event.preventDefault()
           scrollPrev()
@@ -100,6 +107,10 @@ const Carousel = React.forwardRef<
       },
       [scrollPrev, scrollNext]
     )
+
+    const handleKeyUp = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+      pressedKeysRef.current.delete(event.key)
+    }, [])
 
     React.useEffect(() => {
       if (!api || !setApi) {
@@ -140,6 +151,7 @@ const Carousel = React.forwardRef<
         <div
           ref={ref}
           onKeyDownCapture={handleKeyDown}
+          onKeyUpCapture={handleKeyUp}
           className={cn("relative", className)}
           role="region"
           aria-roledescription="carousel"
