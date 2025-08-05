@@ -65,7 +65,7 @@ export default function WritingArea({
 
       <div
         ref={linesContainerRef}
-        className={`flex-1 px-4 md:px-6 pt-6 writing-container flex flex-col justify-end ${
+        className={`flex-1 px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${
           darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
         }`}
         style={{
