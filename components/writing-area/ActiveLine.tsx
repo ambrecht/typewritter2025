@@ -16,6 +16,7 @@ interface ActiveLineProps {
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
   isAndroid?: boolean
   isFullscreen?: boolean
+  activeLineRef?: React.RefObject<HTMLDivElement>
 }
 
 /**
@@ -45,6 +46,7 @@ export function ActiveLine({
   showCursor,
   maxCharsPerLine,
   hiddenInputRef,
+  activeLineRef,
 }: ActiveLineProps) {
   useAutoResizeTextarea(hiddenInputRef, activeLine)
 
@@ -56,6 +58,7 @@ export function ActiveLine({
 
   return (
     <div
+      ref={activeLineRef}
       className={fixedActiveLineClass}
       style={{
         minHeight: `${fontSize * 1.5 + 24}px`,

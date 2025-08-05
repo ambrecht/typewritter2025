@@ -30,6 +30,8 @@ interface WritingAreaProps {
   selectedLineIndex: number | null
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement>
+  maxVisibleLines: number
+  activeLineRef?: React.RefObject<HTMLDivElement>
 }
 
 /**
@@ -52,11 +54,13 @@ export default function WritingArea({
   selectedLineIndex,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
+  maxVisibleLines,
+  activeLineRef,
 }: WritingAreaProps) {
   const internalLinesContainerRef = useRef<HTMLDivElement>(null)
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
 
-  const visibleLines = useVisibleLines(lines, 200, mode, selectedLineIndex, isFullscreen)
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
@@ -93,6 +97,7 @@ export default function WritingArea({
           showCursor={showCursor}
           maxCharsPerLine={maxCharsPerLine}
           hiddenInputRef={hiddenInputRef} // Pass the ref
+          activeLineRef={activeLineRef}
           isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
           isFullscreen={isFullscreen}
         />
