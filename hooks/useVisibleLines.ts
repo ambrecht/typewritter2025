@@ -31,21 +31,19 @@ export function useVisibleLines(
   }, [lines.length, isFullscreen])
 
   const calculateVisibleLines = useMemo(() => {
-    const effectiveMaxVisibleLines = Math.max(20, maxVisibleLines)
-
     if (lines.length === 0) return []
 
     let result
-    if (!useVirtualization || lines.length <= effectiveMaxVisibleLines) {
+    if (!useVirtualization || lines.length <= maxVisibleLines) {
       if (mode === "typing") {
-        if (lines.length <= effectiveMaxVisibleLines) {
+        if (lines.length <= maxVisibleLines) {
           result = lines
         } else {
-          const start = Math.max(0, lines.length - effectiveMaxVisibleLines)
+          const start = Math.max(0, lines.length - maxVisibleLines)
           result = lines.slice(start)
         }
       } else {
-        const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
+        const visibleCount = Math.min(maxVisibleLines, lines.length)
         const contextLines = Math.floor(visibleCount / 2)
         const start = Math.max(0, (selectedLineIndex ?? 0) - contextLines)
         const end = Math.min(lines.length - 1, start + visibleCount - 1)
@@ -58,7 +56,7 @@ export function useVisibleLines(
         const visibleEnd = Math.min(lines.length - 1, selectedLineIndex + contextLines)
         result = lines.slice(visibleStart, visibleEnd + 1)
       } else {
-        const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
+        const visibleCount = Math.min(maxVisibleLines, lines.length)
         if (lines.length <= visibleCount) {
           result = lines
         } else {
