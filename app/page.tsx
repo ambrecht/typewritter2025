@@ -39,6 +39,9 @@ export default function TypewriterPage() {
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
 
+  // Ref zur Entdoppelung schneller gleicher Tastendrücke (z.B. Android IME)
+  const lastKeyRef = useRef<{ key: string; time: number }>({ key: "", time: 0 })
+
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
@@ -96,6 +99,15 @@ export default function TypewriterPage() {
       if (target.closest('[role="dialog"], .settings-panel, input, textarea:not(#hidden-input)')) {
         return
       }
+
+      const now = Date.now()
+      if (
+        event.key === lastKeyRef.current.key &&
+        now - lastKeyRef.current.time < 50
+      ) {
+        return
+      }
+      lastKeyRef.current = { key: event.key, time: now }
 
       if (event.key.startsWith("Arrow")) {
         event.preventDefault()
