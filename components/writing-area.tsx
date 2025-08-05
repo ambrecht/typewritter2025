@@ -3,8 +3,8 @@
 import { useEffect } from "react"
 import type { LineBreakConfig } from "@/types"
 
-import { useVisibleLines } from "../hooks/useVisibleLines"
-import { useContainerDimensions } from "../hooks/useContainerDimensions"
+import { useVisibleLines } from "@/hooks/useVisibleLines"
+import { useContainerDimensions } from "@/hooks/useContainerDimensions"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
