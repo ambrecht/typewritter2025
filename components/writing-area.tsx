@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useRef } from "react"
+import { useEffect } from "react"
 import type { LineBreakConfig } from "@/types"
 
 import { useVisibleLines } from "../hooks/useVisibleLines"
+import { useContainerDimensions } from "../hooks/useContainerDimensions"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
@@ -53,10 +54,16 @@ export default function WritingArea({
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
 }: WritingAreaProps) {
-  const internalLinesContainerRef = useRef<HTMLDivElement>(null)
-  const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
+  const { linesContainerRef, maxVisibleLines } = useContainerDimensions(stackFontSize)
 
-  const visibleLines = useVisibleLines(lines, 200, mode, selectedLineIndex, isFullscreen)
+  // Synchronize internal ref with external one if provided
+  useEffect(() => {
+    if (externalLinesContainerRef) {
+      externalLinesContainerRef.current = linesContainerRef.current
+    }
+  }, [externalLinesContainerRef, linesContainerRef])
+
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
@@ -82,6 +89,7 @@ export default function WritingArea({
           mode={mode}
           selectedLineIndex={selectedLineIndex}
           isFullscreen={isFullscreen}
+          linesContainerRef={linesContainerRef}
         />
       </div>
 

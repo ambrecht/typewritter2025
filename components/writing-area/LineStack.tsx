@@ -1,4 +1,5 @@
 import { memo } from "react"
+import type React from "react"
 
 interface LineStackProps {
   visibleLines: { line: string; index: number }[]
@@ -7,6 +8,7 @@ interface LineStackProps {
   mode: "typing" | "navigating"
   selectedLineIndex: number | null
   isFullscreen?: boolean
+  linesContainerRef?: React.RefObject<HTMLDivElement>
 }
 
 /**
@@ -20,8 +22,12 @@ export const LineStack = memo(function LineStack({
   mode,
   selectedLineIndex,
   isFullscreen = false,
+  linesContainerRef,
 }: LineStackProps) {
   const isAndroid = typeof navigator !== "undefined" && navigator.userAgent.includes("Android")
+
+  // Reference the container ref to avoid unused variable warnings
+  void linesContainerRef
 
   return (
     <div
