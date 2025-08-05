@@ -33,37 +33,45 @@ export function useVisibleLines(
   const calculateVisibleLines = useMemo(() => {
     const effectiveMaxVisibleLines = Math.max(20, maxVisibleLines)
 
-    if (lines.length === 0) return []
+    if (lines.length === 0) return [] as { line: string; index: number }[]
 
-    let result
+    let result: { line: string; index: number }[]
     if (!useVirtualization || lines.length <= effectiveMaxVisibleLines) {
       if (mode === "typing") {
         if (lines.length <= effectiveMaxVisibleLines) {
-          result = lines
+          result = lines.map((line, index) => ({ line, index }))
         } else {
           const start = Math.max(0, lines.length - effectiveMaxVisibleLines)
-          result = lines.slice(start)
+          result = lines
+            .slice(start)
+            .map((line, idx) => ({ line, index: start + idx }))
         }
       } else {
         const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
         const contextLines = Math.floor(visibleCount / 2)
         const start = Math.max(0, (selectedLineIndex ?? 0) - contextLines)
         const end = Math.min(lines.length - 1, start + visibleCount - 1)
-        result = lines.slice(start, end + 1)
+        result = lines
+          .slice(start, end + 1)
+          .map((line, idx) => ({ line, index: start + idx }))
       }
     } else {
       if (mode === "navigating" && selectedLineIndex !== null) {
         const contextLines = isFullscreen ? 20 : isAndroid ? 15 : 10
         const visibleStart = Math.max(0, selectedLineIndex - contextLines)
         const visibleEnd = Math.min(lines.length - 1, selectedLineIndex + contextLines)
-        result = lines.slice(visibleStart, visibleEnd + 1)
+        result = lines
+          .slice(visibleStart, visibleEnd + 1)
+          .map((line, idx) => ({ line, index: visibleStart + idx }))
       } else {
         const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
         if (lines.length <= visibleCount) {
-          result = lines
+          result = lines.map((line, index) => ({ line, index }))
         } else {
           const visibleStart = Math.max(0, lines.length - visibleCount)
-          result = lines.slice(visibleStart)
+          result = lines
+            .slice(visibleStart)
+            .map((line, idx) => ({ line, index: visibleStart + idx }))
         }
       }
     }

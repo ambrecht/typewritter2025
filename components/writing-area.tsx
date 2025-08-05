@@ -76,7 +76,7 @@ export default function WritingArea({
         aria-live="polite"
       >
         <LineStack
-          visibleLines={visibleLines.map((line, index) => ({ line, index: lines.indexOf(line) }))}
+          visibleLines={visibleLines}
           darkMode={darkMode}
           stackFontSize={stackFontSize}
           mode={mode}

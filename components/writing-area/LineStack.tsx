@@ -38,13 +38,13 @@ export const LineStack = memo(function LineStack({
         margin: "0",
       }}
     >
-      {visibleLines.map(({ line, index }) => {
+      {visibleLines.map(({ line, index }, i) => {
         const isSelected = index === selectedLineIndex
         const selectedClass = isSelected
           ? `${darkMode ? "bg-gray-700" : "bg-amber-100"} rounded-md p-1 -m-1 ring-2 ${darkMode ? "ring-blue-500" : "ring-amber-400"}`
           : ""
 
-        const isLastActive = index === visibleLines.length - 1 && mode === "typing"
+        const isLastActive = i === visibleLines.length - 1 && mode === "typing"
         const lastActiveStyle = isLastActive
           ? {
               fontWeight: 500,
