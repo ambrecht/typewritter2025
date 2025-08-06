@@ -1,6 +1,13 @@
+jest.mock("next/server", () => ({
+  NextResponse: {
+    json: (body: any, init?: ResponseInit) => ({
+      status: init?.status || 200,
+      json: async () => body,
+    }),
+  },
+}))
+
 import { POST } from "@/app/api/save/route"
-import { NextRequest } from "next/server"
-import jest from "jest"
 
 // Mock the API key storage
 jest.mock("@/lib/api-key-storage", () => ({
@@ -18,7 +25,7 @@ describe.skip("/api/save", () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    jest.clearAllMocks()
   })
 
   it("should save text successfully", async () => {
@@ -28,11 +35,9 @@ describe.skip("/api/save", () => {
       text: () => Promise.resolve(JSON.stringify({ id: 123 })),
     })
 
-    const request = new NextRequest("http://localhost:3000/api/save", {
-      method: "POST",
-      body: JSON.stringify({ text: "Test text" }),
-      headers: { "Content-Type": "application/json" },
-    })
+    const request = {
+      json: async () => ({ text: "Test text" }),
+    } as any
 
     const response = await POST(request)
     const data = await response.json()
@@ -44,11 +49,9 @@ describe.skip("/api/save", () => {
   })
 
   it("should return 400 for invalid input", async () => {
-    const request = new NextRequest("http://localhost:3000/api/save", {
-      method: "POST",
-      body: JSON.stringify({ text: "" }),
-      headers: { "Content-Type": "application/json" },
-    })
+    const request = {
+      json: async () => ({ text: "" }),
+    } as any
 
     const response = await POST(request)
     const data = await response.json()
@@ -65,11 +68,9 @@ describe.skip("/api/save", () => {
       text: () => Promise.resolve(JSON.stringify({ message: "Server error" })),
     })
 
-    const request = new NextRequest("http://localhost:3000/api/save", {
-      method: "POST",
-      body: JSON.stringify({ text: "Test text" }),
-      headers: { "Content-Type": "application/json" },
-    })
+    const request = {
+      json: async () => ({ text: "Test text" }),
+    } as any
 
     const response = await POST(request)
     const data = await response.json()

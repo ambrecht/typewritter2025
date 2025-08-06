@@ -31,23 +31,19 @@ export function useVisibleLines(
   }, [lines.length, isFullscreen])
 
   const calculateVisibleLines = useMemo(() => {
-    const effectiveMaxVisibleLines = Math.max(20, maxVisibleLines)
+    if (lines.length === 0) return []
 
-    if (lines.length === 0) return [] as { line: string; index: number }[]
-
-    let result: { line: string; index: number }[]
-    if (!useVirtualization || lines.length <= effectiveMaxVisibleLines) {
+    let result
+    if (!useVirtualization || lines.length <= maxVisibleLines) {
       if (mode === "typing") {
-        if (lines.length <= effectiveMaxVisibleLines) {
-          result = lines.map((line, index) => ({ line, index }))
-        } else {
-          const start = Math.max(0, lines.length - effectiveMaxVisibleLines)
+        if (lines.length <= maxVisibleLines) {
           result = lines
-            .slice(start)
-            .map((line, idx) => ({ line, index: start + idx }))
+        } else {
+          const start = Math.max(0, lines.length - maxVisibleLines)
+          result = lines.slice(start)
         }
       } else {
-        const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
+        const visibleCount = Math.min(maxVisibleLines, lines.length)
         const contextLines = Math.floor(visibleCount / 2)
         const start = Math.max(0, (selectedLineIndex ?? 0) - contextLines)
         const end = Math.min(lines.length - 1, start + visibleCount - 1)
@@ -64,7 +60,7 @@ export function useVisibleLines(
           .slice(visibleStart, visibleEnd + 1)
           .map((line, idx) => ({ line, index: visibleStart + idx }))
       } else {
-        const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
+        const visibleCount = Math.min(maxVisibleLines, lines.length)
         if (lines.length <= visibleCount) {
           result = lines.map((line, index) => ({ line, index }))
         } else {

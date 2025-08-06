@@ -1,11 +1,10 @@
 "use client"
 
-import type React from "react"
 import { useEffect } from "react"
 import type { LineBreakConfig } from "@/types"
 
-import { useVisibleLines } from "../hooks/useVisibleLines"
-import { useContainerDimensions } from "../hooks/useContainerDimensions"
+import { useVisibleLines } from "@/hooks/useVisibleLines"
+import { useContainerDimensions } from "@/hooks/useContainerDimensions"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
@@ -58,14 +57,15 @@ export default function WritingArea({
   maxVisibleLines,
   activeLineRef,
 }: WritingAreaProps) {
-  const { linesContainerRef, maxVisibleLines } = useContainerDimensions(stackFontSize)
+  const { linesContainerRef, activeLineRef, maxVisibleLines } = useContainerDimensions(stackFontSize)
 
-  // Synchronize internal ref with external one if provided
   useEffect(() => {
     if (externalLinesContainerRef) {
       externalLinesContainerRef.current = linesContainerRef.current
     }
   }, [externalLinesContainerRef, linesContainerRef])
+
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
   const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
@@ -108,6 +108,7 @@ export default function WritingArea({
           activeLineRef={activeLineRef}
           isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
           isFullscreen={isFullscreen}
+          activeLineRef={activeLineRef}
         />
       )}
     </div>

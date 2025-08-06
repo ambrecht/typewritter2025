@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useEffect } from "react"
 
 /**
@@ -17,7 +16,7 @@ interface ActiveLineProps {
   containerRef?: React.RefObject<HTMLDivElement | null>
   isAndroid?: boolean
   isFullscreen?: boolean
-  activeLineRef?: React.RefObject<HTMLDivElement>
+  activeLineRef?: React.RefObject<HTMLDivElement | null>
 }
 
 /**
