@@ -288,30 +288,6 @@ function ControlBar({
     </div>
   )
 
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleOpenFlowSettings}
-          className={buttonClass}
-          aria-label="Flow Mode"
-          title="Flow Mode"
-        >
-          <Rocket className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size={buttonSize}
-          onClick={handleOpenSettings}
-          className={buttonClass}
-          aria-label="Einstellungen"
-          title="Einstellungen"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-      </div>
-    )
-  }
 
   // Standard-Layout
   return (

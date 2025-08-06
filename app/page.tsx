@@ -21,6 +21,8 @@ export default function TypewriterPage() {
   const {
     lines,
     activeLine,
+    setActiveLine,
+    addLineToStack,
     maxCharsPerLine,
     statistics,
     lineBreakConfig,
@@ -44,6 +46,9 @@ export default function TypewriterPage() {
     stopFlowMode,
     updateFlowMode,
     saveSession,
+    handleKeyPress,
+    setContainerWidth,
+    setMaxVisibleLines,
   } = useTypewriterStore()
 
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -73,6 +78,10 @@ export default function TypewriterPage() {
   const { focusInputSafely } = useAndroidKeyboard({
     inputRef: hiddenInputRef,
   })
+
+  const focusInput = useCallback(() => {
+    focusInputSafely()
+  }, [focusInputSafely])
 
   useResponsiveTypography({
     initialFontSize: fontSize,
@@ -123,7 +132,7 @@ export default function TypewriterPage() {
     if (mode === "typing" && selectedLineIndex === null) {
       focusInput()
     }
-  }, [isAndroid, focusInputSafely])
+  }, [mode, selectedLineIndex, focusInput])
 
   // Globale Tastatur-Listener
   useEffect(() => {
@@ -200,10 +209,6 @@ export default function TypewriterPage() {
   ])
 
   const openSettings = useCallback(() => setShowSettings(true), [])
-  const closeSettings = useCallback(() => {
-    setShowSettings(false)
-    focusInput()
-  }, [focusInput])
 
   // Effekt für Layout-Anpassungen
   useEffect(() => {
@@ -310,7 +315,7 @@ export default function TypewriterPage() {
           openSettings={openSettings}
           openFlowSettings={openFlowSettings}
         />
-      </header>
+      )}
 
       <main className="flex-1 flex flex-col p-4 md:p-6 lg:p-8 overflow-hidden">
         <section
