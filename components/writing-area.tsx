@@ -65,14 +65,10 @@ export default function WritingArea({
     }
   }, [externalLinesContainerRef, linesContainerRef])
 
-  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
-
-  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
-
-    return (
-      <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
-        <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
-        <NavigationHint darkMode={darkMode} />
+  return (
+    <div className="flex-1 flex flex-col relative overflow-x-hidden overflow-y-auto font-serif">
+      <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
+      <NavigationHint darkMode={darkMode} />
 
       <div
         ref={linesContainerRef}
@@ -82,7 +78,8 @@ export default function WritingArea({
         style={{
           fontSize: `${stackFontSize}px`,
           lineHeight: isFullscreen ? "1.3" : "1.4",
-          overflow: "hidden",
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
         aria-live="polite"
       >

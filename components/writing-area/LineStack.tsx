@@ -33,7 +33,8 @@ export const LineStack = memo(function LineStack({
     <div
       className="line-stack"
       style={{
-        overflow: "hidden",
+        overflowY: "auto",
+        overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
         justifyContent: mode === "navigating" ? "center" : "flex-end",
