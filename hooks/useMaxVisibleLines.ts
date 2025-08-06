@@ -1,6 +1,7 @@
 "use client"
 
-import { useLayoutEffect, useState, RefObject } from "react"
+import { useLayoutEffect, useState, RefObject, useEffect } from "react"
+import { useTypewriterStore } from "@/store/typewriter-store"
 
 /**
  * Berechnet die maximale Anzahl sichtbarer Zeilen basierend auf der Viewport-Höhe
@@ -9,8 +10,9 @@ import { useLayoutEffect, useState, RefObject } from "react"
 export function useMaxVisibleLines(
   inputRef: RefObject<HTMLElement>,
   lineHeight: number,
-) {
+  ) {
   const [maxVisible, setMaxVisible] = useState(0)
+  const setMaxVisibleLines = useTypewriterStore((state) => state.setMaxVisibleLines)
 
   useLayoutEffect(() => {
     const HEADER_HEIGHT = 40
@@ -25,6 +27,10 @@ export function useMaxVisibleLines(
     window.addEventListener("resize", resize)
     return () => window.removeEventListener("resize", resize)
   }, [inputRef, lineHeight])
+
+  useEffect(() => {
+    setMaxVisibleLines(maxVisible)
+  }, [maxVisible, setMaxVisibleLines])
 
   return maxVisible
 }
