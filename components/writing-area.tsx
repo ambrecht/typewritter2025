@@ -31,7 +31,8 @@ interface WritingAreaProps {
   selectedLineIndex: number | null
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement>
-  offset: number
+  maxVisibleLines: number
+  activeLineRef?: React.RefObject<HTMLDivElement>
 }
 
 /**
@@ -54,12 +55,13 @@ export default function WritingArea({
   selectedLineIndex,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
-  offset,
+  maxVisibleLines,
+  activeLineRef,
 }: WritingAreaProps) {
   const internalLinesContainerRef = useRef<HTMLDivElement>(null)
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
 
-  const visibleLines = useVisibleLines(lines, 200, mode, selectedLineIndex)
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
     return (
       <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
@@ -88,19 +90,19 @@ export default function WritingArea({
             />
           </div>
 
-          {mode === "typing" && (
-            <ActiveLine
-              activeLine={activeLine}
-              darkMode={darkMode}
-              fontSize={fontSize}
-              showCursor={showCursor}
-              maxCharsPerLine={maxCharsPerLine}
-              hiddenInputRef={hiddenInputRef} // Pass the ref
-              isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
-              isFullscreen={isFullscreen}
-            />
-          )}
-        </div>
-      </div>
-    )
-  }
+      {mode === "typing" && (
+        <ActiveLine
+          activeLine={activeLine}
+          darkMode={darkMode}
+          fontSize={fontSize}
+          showCursor={showCursor}
+          maxCharsPerLine={maxCharsPerLine}
+          hiddenInputRef={hiddenInputRef} // Pass the ref
+          activeLineRef={activeLineRef}
+          isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
+          isFullscreen={isFullscreen}
+        />
+      )}
+    </div>
+  )
+}

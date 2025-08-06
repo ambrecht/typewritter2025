@@ -34,9 +34,13 @@ export default function TypewriterPage() {
     offset,
   } = useTypewriterStore()
 
-  const containerRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const activeLineRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
+
+  const [maxVisibleLines, setMaxVisibleLines] = useState(200)
 
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -147,6 +151,30 @@ export default function TypewriterPage() {
       if (linesContainerRef.current) {
         setContainerWidth(linesContainerRef.current.clientWidth)
       }
+
+      const viewportHeight = viewportRef.current?.clientHeight ?? window.innerHeight
+      const inputHeight = activeLineRef.current?.offsetHeight ?? 0
+      const optionsHeight = headerRef.current?.offsetHeight ?? 0
+
+      let lineHeight = 0
+      if (linesContainerRef.current) {
+        const stackLine = (linesContainerRef.current.querySelector(
+          ".line-stack div",
+        ) as HTMLElement | null) ||
+          (linesContainerRef.current.querySelector(
+            ".line-stack",
+          ) as HTMLElement | null)
+        if (stackLine) {
+          lineHeight = parseFloat(getComputedStyle(stackLine).lineHeight)
+        }
+      }
+      if (lineHeight) {
+        const maxLines = Math.floor(
+          (viewportHeight - inputHeight - optionsHeight) / lineHeight,
+        )
+        setMaxVisibleLines(maxLines)
+      }
+
       if (typeof window !== "undefined") {
         setOrientation(window.innerWidth > window.innerHeight ? "landscape" : "portrait")
         setIsSmallScreen(window.innerWidth < 768)
@@ -165,7 +193,7 @@ export default function TypewriterPage() {
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch((err) => console.error("Fullscreen error:", err))
+      viewportRef.current?.requestFullscreen().catch((err) => console.error("Fullscreen error:", err))
     } else {
       document.exitFullscreen().catch((err) => console.error("Exit fullscreen error:", err))
     }
@@ -181,7 +209,7 @@ export default function TypewriterPage() {
 
   return (
     <div
-      ref={containerRef}
+      ref={viewportRef}
       className={`min-h-screen flex flex-col typewriter-container font-sans outline-none ${
         darkMode ? "dark bg-[#121212] text-[#E0E0E0]" : "bg-[#f3efe9] text-gray-900"
       }`}
@@ -190,6 +218,7 @@ export default function TypewriterPage() {
     >
       <ApiKeyWarning />
       <header
+        ref={headerRef}
         className={`border-b ${
           darkMode ? "border-gray-700" : "border-[#d3d0cb]"
         } transition-colors duration-300 flex-shrink-0`}
@@ -224,7 +253,8 @@ export default function TypewriterPage() {
             selectedLineIndex={selectedLineIndex}
             isFullscreen={isFullscreen}
             linesContainerRef={linesContainerRef}
-            offset={offset}
+            maxVisibleLines={maxVisibleLines}
+            activeLineRef={activeLineRef}
           />
         </section>
       </main>
