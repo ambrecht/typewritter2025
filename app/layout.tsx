@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter, Lora } from "next/font/google"
 import "./globals.css"
 import "../styles/android-fixes.css"
@@ -70,12 +70,9 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  viewport: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no",
   generator: "Next.js",
   applicationName: "Typewriter App",
   referrer: "origin-when-cross-origin",
-  colorScheme: "light dark",
-  themeColor: "#f5f5f4",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
@@ -87,6 +84,15 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Typewriter",
   },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  colorScheme: "light dark",
+  themeColor: "#f5f5f4",
 }
 
 export default function RootLayout({
