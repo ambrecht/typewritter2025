@@ -11,15 +11,20 @@ import { useState, useEffect, useMemo } from "react"
  * @param mode - Aktueller Modus (typing oder navigating)
  * @param selectedLineIndex - Index der ausgewählten Zeile im Navigationsmodus
  * @param isFullscreen - Ob der Vollbildmodus aktiv ist
- * @returns Die aktuell sichtbaren Zeilen mit ihren globalen Indizes
+ * @returns Die aktuell sichtbaren Zeilen mit IDs
  */
+export interface VisibleLine {
+  id: number
+  text: string
+}
+
 export function useVisibleLines(
   lines: string[],
   maxVisibleLines: number,
   mode: "typing" | "navigating",
   selectedLineIndex: number | null,
   isFullscreen = false,
-) {
+): VisibleLine[] {
   const [isAndroid, setIsAndroid] = useState(false)
   const [useVirtualization, setUseVirtualization] = useState(false)
 
@@ -64,7 +69,7 @@ export function useVisibleLines(
       }
     }
 
-    return lines.slice(start, end + 1).map((line, i) => ({ line, index: start + i }))
+    return lines.slice(start, end + 1).map((text, i) => ({ id: start + i, text }))
   }, [lines, maxVisibleLines, mode, selectedLineIndex, useVirtualization, isAndroid, isFullscreen])
 
   return calculateVisibleLines
