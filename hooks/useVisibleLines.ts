@@ -20,9 +20,60 @@ export function useVisibleLines(
   mode: "typing" | "navigating",
   selectedLineIndex: number | null,
 ) {
-  return useMemo(() => {
-    if (mode === "typing" || selectedLineIndex === null) {
-      return lines.slice(-maxVisibleLines)
+  const [isAndroid, setIsAndroid] = useState(false)
+  const [useVirtualization, setUseVirtualization] = useState(false)
+
+  useEffect(() => {
+    const isAndroidDevice = navigator.userAgent.includes("Android")
+    setIsAndroid(isAndroidDevice)
+    const threshold = isFullscreen ? 200 : isAndroidDevice ? 100 : 80
+    setUseVirtualization(lines.length > threshold)
+  }, [lines.length, isFullscreen])
+
+  const calculateVisibleLines = useMemo(() => {
+    const effectiveMaxVisibleLines = Math.max(20, maxVisibleLines)
+
+    if (lines.length === 0) return [] as { line: string; index: number }[]
+
+    let result: { line: string; index: number }[]
+    if (!useVirtualization || lines.length <= effectiveMaxVisibleLines) {
+      if (mode === "typing") {
+        if (lines.length <= effectiveMaxVisibleLines) {
+          result = lines.map((line, index) => ({ line, index }))
+        } else {
+          const start = Math.max(0, lines.length - effectiveMaxVisibleLines)
+          result = lines
+            .slice(start)
+            .map((line, idx) => ({ line, index: start + idx }))
+        }
+      } else {
+        const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
+        const contextLines = Math.floor(visibleCount / 2)
+        const start = Math.max(0, (selectedLineIndex ?? 0) - contextLines)
+        const end = Math.min(lines.length - 1, start + visibleCount - 1)
+        result = lines
+          .slice(start, end + 1)
+          .map((line, idx) => ({ line, index: start + idx }))
+      }
+    } else {
+      if (mode === "navigating" && selectedLineIndex !== null) {
+        const contextLines = isFullscreen ? 20 : isAndroid ? 15 : 10
+        const visibleStart = Math.max(0, selectedLineIndex - contextLines)
+        const visibleEnd = Math.min(lines.length - 1, selectedLineIndex + contextLines)
+        result = lines
+          .slice(visibleStart, visibleEnd + 1)
+          .map((line, idx) => ({ line, index: visibleStart + idx }))
+      } else {
+        const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
+        if (lines.length <= visibleCount) {
+          result = lines.map((line, index) => ({ line, index }))
+        } else {
+          const visibleStart = Math.max(0, lines.length - visibleCount)
+          result = lines
+            .slice(visibleStart)
+            .map((line, idx) => ({ line, index: visibleStart + idx }))
+        }
+      }
     }
 
     const half = Math.floor(maxVisibleLines / 2)
