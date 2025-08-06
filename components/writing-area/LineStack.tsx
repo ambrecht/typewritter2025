@@ -37,7 +37,9 @@ export const LineStack = memo(function LineStack({
         overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
-        justifyContent: mode === "navigating" ? "center" : "flex-end",
+        // Beginne im Tippmodus oben links, damit die erste Zeile an der Oberkante startet
+        // und neue Zeilen darunter erscheinen
+        justifyContent: mode === "navigating" ? "center" : "flex-start",
         maxHeight: "100%",
         lineHeight: isFullscreen ? "1.2" : isAndroid ? "1.3" : "1.5",
         gap: "0",

@@ -1,70 +1,51 @@
-export interface LineBreakConfig {
-  maxCharsPerLine: number
-  autoMaxChars: boolean
+export interface LineBreakOptions {
+  maxCharsPerLine: number;
+  autoMaxChars: boolean;
 }
 
-/**
- * Estimate an optimal line length based on container width and font size.
- * Ensures a sensible minimum and maximum number of characters.
- */
-export const calculateOptimalLineLength = (
-  containerWidth: number,
-  fontSize: number,
-): number => {
-  const avgCharWidth = fontSize > 0 ? fontSize * 0.6 : 14.4
-  const calculated =
-    containerWidth > 0 && fontSize > 0 ? Math.floor(containerWidth / avgCharWidth) : 80
-  return Math.max(20, Math.min(200, calculated))
+export function calculateOptimalLineLength(containerWidth: number, fontSize: number): number {
+  const width = containerWidth > 0 ? containerWidth : 800;
+  const size = fontSize > 0 ? fontSize : 16;
+  const approxCharWidth = size * 0.6;
+  return Math.max(20, Math.floor(width / approxCharWidth));
 }
 
-/**
- * Break a text into a line and the remaining text respecting word boundaries.
- */
-export const performLineBreak = (
+export function performLineBreak(
   text: string,
-  config: LineBreakConfig,
-): { line: string; remainder: string } => {
-  const { maxCharsPerLine } = config
+  { maxCharsPerLine }: LineBreakOptions,
+): { line: string; remainder: string } {
   if (text.length <= maxCharsPerLine) {
-    return { line: text, remainder: "" }
+    return { line: text, remainder: "" };
   }
-
-  const breakpoint = text.lastIndexOf(" ", maxCharsPerLine)
-  if (breakpoint === -1) {
+  let breakIndex = text.lastIndexOf(" ", maxCharsPerLine);
+  if (breakIndex === -1) {
+    breakIndex = maxCharsPerLine;
     return {
-      line: text.slice(0, maxCharsPerLine),
-      remainder: text.slice(maxCharsPerLine),
-    }
+      line: text.slice(0, breakIndex),
+      remainder: text.slice(breakIndex),
+    };
   }
-
   return {
-    line: text.slice(0, breakpoint),
-    remainder: text.slice(breakpoint + 1),
-  }
+    line: text.slice(0, breakIndex),
+    remainder: text.slice(breakIndex + 1),
+  };
 }
 
-/**
- * Break an entire block of text into lines based on the given configuration.
- */
-export const breakTextIntoLines = (text: string, config: LineBreakConfig): string[] => {
-  const result: string[] = []
-  const paragraphs = text.split("\n")
-
-  for (const paragraph of paragraphs) {
-    let remaining = paragraph
-    if (remaining === "") {
-      result.push("")
-      continue
+export function breakTextIntoLines(text: string, options: LineBreakOptions): string[] {
+  const result: string[] = [];
+  const segments = text.split("\n");
+  for (const segment of segments) {
+    if (segment === "") {
+      result.push("");
+      continue;
     }
-
-    while (remaining.length > 0) {
-      const { line, remainder } = performLineBreak(remaining, config)
-      result.push(line)
-      remaining = remainder
-      if (remainder === "") break
+    let remainder = segment;
+    while (remainder.length > 0) {
+      const { line, remainder: rest } = performLineBreak(remainder, options);
+      result.push(line);
+      if (!rest) break;
+      remainder = rest;
     }
   }
-
-  return result
+  return result;
 }
-

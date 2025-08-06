@@ -39,6 +39,7 @@ export default function TypewriterPage() {
   const activeLineRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
+  const pressedKeysRef = useRef<Set<string>>(new Set())
 
   // Ref zur Entdoppelung schneller gleicher Tastendrücke (z.B. Android IME)
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: "", time: 0 })
@@ -95,6 +96,16 @@ export default function TypewriterPage() {
   // Globale Tastatur-Listener
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.repeat ||
+        event.isComposing ||
+        (event as any).keyCode === 229 ||
+        pressedKeysRef.current.has(event.key)
+      ) {
+        return
+      }
+      pressedKeysRef.current.add(event.key)
+
       const target = event.target as HTMLElement
       // Diese Bedingung blockiert jetzt NICHT mehr, wenn unser hidden-input den Fokus hat.
       if (target.closest('[role="dialog"], .settings-panel, input, textarea:not(#hidden-input)')) {
@@ -135,8 +146,16 @@ export default function TypewriterPage() {
       }
     }
 
+    const handleGlobalKeyUp = (event: KeyboardEvent) => {
+      pressedKeysRef.current.delete(event.key)
+    }
+
     document.addEventListener("keydown", handleGlobalKeyDown)
-    return () => document.removeEventListener("keydown", handleGlobalKeyDown)
+    document.addEventListener("keyup", handleGlobalKeyUp)
+    return () => {
+      document.removeEventListener("keydown", handleGlobalKeyDown)
+      document.removeEventListener("keyup", handleGlobalKeyUp)
+    }
   }, [
     mode,
     adjustOffset,
