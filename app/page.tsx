@@ -218,8 +218,7 @@ export default function TypewriterPage() {
     >
       <ApiKeyWarning />
       <header
-        ref={headerRef}
-        className={`border-b ${
+        className={`h-10 border-b ${
           darkMode ? "border-gray-700" : "border-[#d3d0cb]"
         } transition-colors duration-300 flex-shrink-0`}
       >

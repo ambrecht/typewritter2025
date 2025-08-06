@@ -277,7 +277,7 @@ function ControlBar({
   // Standard-Layout
   return (
     <div
-      className={`flex flex-wrap gap-2 sm:gap-4 items-center justify-between p-2 sm:p-3 ${
+      className={`flex h-full items-center justify-between gap-2 sm:gap-4 px-2 sm:px-3 ${
         darkMode ? "text-gray-200 bg-gray-900" : "text-[#222] bg-[#f3efe9]"
       } text-sm font-sans`}
     >
