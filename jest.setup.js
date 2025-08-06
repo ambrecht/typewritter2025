@@ -44,6 +44,25 @@ const localStorageMock = {
 }
 global.localStorage = localStorageMock
 
+// Mock fetch and provide Web API classes using node-fetch
+const nodeFetch = require("node-fetch")
+global.fetch = jest.fn()
+global.Request = nodeFetch.Request
+global.Response = nodeFetch.Response
+global.Headers = nodeFetch.Headers
+
+if (typeof global.Response.json !== "function") {
+  global.Response.json = (body, init) => {
+    const headers = new global.Headers(init && init.headers)
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json")
+    }
+    return new global.Response(JSON.stringify(body), {
+      ...init,
+      headers,
+    })
+  }
+}
 
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
