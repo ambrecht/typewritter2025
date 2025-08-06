@@ -4,18 +4,15 @@ Eine minimalistische, ablenkungsfreie Schreibumgebung, die für konzentriertes A
 
 ## Inhaltsverzeichnis
 
-- [Architektur-Überblick](#architektur-überblick)
-- [Projektstruktur](#projektstruktur)
-- [Technologie-Stack](#technologie-stack)
-- [Lokale Entwicklung](#lokale-entwicklung)
-- [Deployment](#deployment)
-- [Wichtige Konzepte](#wichtige-konzepte)
-  - [State Management (Zustand)](#state-management-zustand)
-  - [Automatischer Zeilenumbruch](#automatischer-zeilenumbruch)
-  - [Responsive Typografie](#responsive-typografie)
-- [API-Konfiguration](#api-konfiguration)
-- [PWA-Features](#pwa-features)
-- [Testing](#testing)
+- ✍️ **Ablenkungsfreies Schreiben**: Minimalistisches Interface ohne Störungen
+- 📱 **Responsive Design**: Optimiert für Desktop, Tablet und Mobile
+- 🌙 **Dark Mode**: Augenschonender dunkler Modus
+- 📏 **Intelligente Zeilenumbrüche**: Automatische Anpassung an Bildschirmgröße
+- 💾 **Cloud-Speicherung**: Sichere Speicherung in der Cloud
+- 📱 **PWA-Support**: Installierbar als Progressive Web App
+- 🔄 **Offline-Funktionalität**: Arbeiten auch ohne Internetverbindung
+- 🚀 **Flow Mode**: Zielorientiertes Schreiben mit Timer oder Wortzahl
+- ⌨️ **Tastaturnavigation**: Navigation durch vorherige Zeilen mit Pfeiltasten
 
 ## Architektur-Überblick
 

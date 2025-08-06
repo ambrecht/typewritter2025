@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from "@jest/globals"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import { act, renderHook } from "@testing-library/react"
 

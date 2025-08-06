@@ -14,6 +14,7 @@ import {
   Save,
   Download,
   Trash2,
+  Rocket,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTypewriterStore } from "@/store/typewriter-store"
@@ -34,6 +35,7 @@ interface ControlBarProps {
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
   isFullscreen?: boolean
   openSettings: () => void
+  openFlowSettings: () => void
 }
 
 function ControlBar({
@@ -43,6 +45,7 @@ function ControlBar({
   hiddenInputRef,
   isFullscreen = false,
   openSettings,
+  openFlowSettings,
 }: ControlBarProps) {
   const {
     darkMode,
@@ -157,6 +160,13 @@ function ControlBar({
     e.stopPropagation()
     hideKeyboard()
     openSettings()
+  }
+
+  const handleOpenFlowSettings = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    hideKeyboard()
+    openFlowSettings()
   }
 
   const handleSave = async (e: React.MouseEvent) => {
@@ -278,16 +288,27 @@ function ControlBar({
     </div>
   )
 
-  // Vollbild-Layout für kleine Bildschirme
-  if (isFullscreen && isSmallScreen) {
-    return (
-      <div
-        className={`fixed top-2 right-2 z-50 flex gap-1 rounded-lg p-1 ${
-          darkMode ? "bg-gray-800/70 backdrop-blur-sm" : "bg-white/70 backdrop-blur-sm"
-        }`}
-      >
-        {renderButtonGroup(primaryButtons, false)}
-        {renderButtonGroup(secondaryButtons, false)}
+        <Button
+          variant="outline"
+          size={buttonSize}
+          onClick={handleOpenFlowSettings}
+          className={buttonClass}
+          aria-label="Flow Mode"
+          title="Flow Mode"
+        >
+          <Rocket className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size={buttonSize}
+          onClick={handleOpenSettings}
+          className={buttonClass}
+          aria-label="Einstellungen"
+          title="Einstellungen"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
       </div>
     )
   }

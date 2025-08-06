@@ -10,6 +10,10 @@ import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
 import OfflineIndicator from "@/components/offline-indicator"
 import SaveNotification from "@/components/save-notification"
 import SettingsModal from "@/components/settings-modal"
+import FlowSettingsModal from "@/components/flow-settings-modal"
+import FlowModeOverlay from "@/components/flow-mode-overlay"
+
+// Importiere die ApiKeyWarning-Komponente am Anfang der Datei
 import ApiKeyWarning from "@/components/api-key-warning"
 import { debounce } from "@/utils/debounce" // Korrekter Import
 
@@ -35,8 +39,11 @@ export default function TypewriterPage() {
     navigateForward,
     navigateBackward,
     resetNavigation,
-    handleKeyPress,
-    offset,
+    flowMode,
+    startFlowMode,
+    stopFlowMode,
+    updateFlowMode,
+    saveSession,
   } = useTypewriterStore()
 
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -57,6 +64,9 @@ export default function TypewriterPage() {
     typeof window !== "undefined" && window.innerWidth > window.innerHeight ? "landscape" : "portrait",
   )
   const [showSettings, setShowSettings] = useState(false)
+  const [showFlowSettings, setShowFlowSettings] = useState(false)
+
+  // Neue States für das Navigations-Overlay
   const [showNavigationHint, setShowNavigationHint] = useState(false)
   const navigationHintTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -89,12 +99,29 @@ export default function TypewriterPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const focusInput = useCallback(() => {
-    if (isAndroid) {
-      focusInputSafely()
-    } else {
-      // Stelle sicher, dass der Fokus gesetzt wird, auch wenn das Fenster nicht aktiv war
-      setTimeout(() => hiddenInputRef.current?.focus(), 0)
+  const openFlowSettings = useCallback(() => {
+    setShowFlowSettings(true)
+  }, [])
+
+  const closeSettings = useCallback(() => {
+    console.log("Einstellungen schließen (Hauptkomponente)")
+    setShowSettings(false)
+    // Verzögere den Fokus, um sicherzustellen, dass das Modal vollständig geschlossen ist
+    setTimeout(() => {
+      focusInput()
+    }, 300)
+  }, [focusInput])
+
+  const closeFlowSettings = useCallback(() => {
+    setShowFlowSettings(false)
+    setTimeout(() => focusInput(), 300)
+  }, [focusInput])
+
+  // Modul 4: Rückkehr zur aktuellen Schreibposition bei Eingabe
+  useEffect(() => {
+    // Wenn wir in den Schreibmodus zurückkehren, fokussiere das Eingabefeld
+    if (mode === "typing" && selectedLineIndex === null) {
+      focusInput()
     }
   }, [isAndroid, focusInputSafely])
 
@@ -251,11 +278,29 @@ export default function TypewriterPage() {
       onClick={focusInput} // Dieser Handler ist entscheidend für die Fokus-Wiederherstellung
     >
       <ApiKeyWarning />
-      <header
-        className={`h-10 border-b ${
-          darkMode ? "border-gray-700" : "border-[#d3d0cb]"
-        } transition-colors duration-300 flex-shrink-0`}
-      >
+
+      {/* Rest des Codes bleibt unverändert */}
+      {/* Header nur anzeigen, wenn nicht im Vollbildmodus auf kleinen Bildschirmen */}
+      {!(isFullscreen && isSmallScreen) && (
+        <header
+          className={`border-b ${
+            darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
+          } transition-colors duration-300`}
+        >
+          <ControlBar
+            wordCount={statistics.wordCount}
+            pageCount={statistics.pageCount}
+            toggleFullscreen={toggleFullscreen}
+            hiddenInputRef={hiddenInputRef}
+            isFullscreen={isFullscreen}
+            openSettings={openSettings}
+            openFlowSettings={openFlowSettings}
+          />
+        </header>
+      )}
+
+      {/* Im Vollbildmodus auf kleinen Bildschirmen: ControlBar in der rechten oberen Ecke */}
+      {isFullscreen && isSmallScreen && (
         <ControlBar
           wordCount={statistics.wordCount}
           pageCount={statistics.pageCount}
@@ -263,6 +308,7 @@ export default function TypewriterPage() {
           hiddenInputRef={hiddenInputRef}
           isFullscreen={isFullscreen}
           openSettings={openSettings}
+          openFlowSettings={openFlowSettings}
         />
       </header>
 
@@ -288,14 +334,17 @@ export default function TypewriterPage() {
             selectedLineIndex={selectedLineIndex}
             isFullscreen={isFullscreen}
             linesContainerRef={linesContainerRef}
-            maxVisibleLines={maxVisibleLines}
-            activeLineRef={activeLineRef}
+            disableBackspace={flowMode.enabled && flowMode.noBackspace}
           />
         </section>
       </main>
 
       <NavigationIndicator darkMode={darkMode} />
       <SaveNotification />
+
+      <FlowModeOverlay />
+
+      {/* Offline-Indikator */}
       <OfflineIndicator darkMode={darkMode} />
       {mode === "navigating" && showNavigationHint && (
         <div
@@ -309,6 +358,10 @@ export default function TypewriterPage() {
         </div>
       )}
       <SettingsModal isOpen={showSettings} onClose={closeSettings} darkMode={darkMode} />
+      <FlowSettingsModal isOpen={showFlowSettings} onClose={closeFlowSettings} darkMode={darkMode} />
+
+      {/* Offline-Indikator hinzufügen */}
+      <OfflineIndicator darkMode={darkMode} />
     </div>
   )
 }

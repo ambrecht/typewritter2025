@@ -32,9 +32,8 @@ interface WritingAreaProps {
   mode: "typing" | "navigating"
   selectedLineIndex: number | null
   isFullscreen: boolean
-  linesContainerRef?: React.RefObject<HTMLDivElement>
-  maxVisibleLines: number
-  activeLineRef?: React.RefObject<HTMLDivElement>
+  linesContainerRef?: React.RefObject<HTMLDivElement | null>
+  disableBackspace?: boolean
 }
 
 /**
@@ -59,10 +58,49 @@ export default function WritingArea({
   selectedLineIndex,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
-  maxVisibleLines,
-  activeLineRef,
+  disableBackspace = false,
 }: WritingAreaProps) {
-  const { linesContainerRef, activeLineRef, maxVisibleLines } = useContainerDimensions(stackFontSize)
+  // Verwende Hooks für Container-Dimensionen
+  const {
+    linesContainerRef: internalLinesContainerRef,
+    activeLineRef,
+    lineRefs,
+    maxVisibleLines,
+  } = useContainerDimensions(stackFontSize)
+
+  // Verwende den externen Ref, wenn vorhanden, sonst den internen
+  const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
+
+  // Verwende Hooks für Tastatureingaben
+  const { handleChange, handleKeyDown } = useKeyboardHandling({
+    setActiveLine,
+    addLineToStack,
+    lineBreakConfig,
+    hiddenInputRef,
+    linesContainerRef,
+    disableBackspace,
+  })
+
+  // Berechne die sichtbaren Zeilen - der Hook gibt jetzt direkt das Ergebnis zurück
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
+
+  // State für die Container-Höhe
+  const [containerHeight, setContainerHeight] = useState(0)
+
+  // Ref für die letzte Neuberechnung
+  const lastRecalculation = useRef(Date.now())
+
+  // Messe die Container-Höhe
+  useEffect(() => {
+    if (!linesContainerRef.current) return
+
+    const updateHeight = () => {
+      const height = linesContainerRef.current?.clientHeight || 0
+      if (Math.abs(height - containerHeight) > 5) {
+        // Nur bei signifikanter Änderung aktualisieren
+        setContainerHeight(height)
+      }
+    }
 
   useEffect(() => {
     if (externalLinesContainerRef) {
