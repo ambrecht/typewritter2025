@@ -29,6 +29,16 @@ export interface ParagraphRange {
 }
 
 /**
+ * Repräsentiert eine Zeile im Textstack
+ */
+export interface Line {
+  /** Eindeutige ID der Zeile */
+  id: number
+  /** Der Textinhalt der Zeile */
+  text: string
+}
+
+/**
  * Repräsentiert eine einfache Zeile Text
  */
 export interface FormattedLine {
@@ -112,8 +122,6 @@ export interface TypewriterState {
   containerWidth: number
   /** Ob der Flow Mode (kein Löschen) aktiviert ist */
   flowMode: boolean
-  /** Offset für die Berechnung der sichtbaren Zeilen */
-  offset: number
 }
 
 /**

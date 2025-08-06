@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useEffect, useState, useRef } from "react"
-import type { LineBreakConfig, ParagraphRange, FormattedLine } from "@/types"
+import type { LineBreakConfig, ParagraphRange, FormattedLine, Line } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
 import { useContainerDimensions } from "@/hooks/useContainerDimensions"

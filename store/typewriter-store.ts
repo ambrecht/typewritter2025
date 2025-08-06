@@ -22,12 +22,14 @@ const initialState: Omit<
   fontSize: 24,
   stackFontSize: 18,
   darkMode: false,
+  paragraphRanges: [],
+  inParagraph: false,
+  currentParagraphStart: 0,
   mode: "typing",
   selectedLineIndex: null,
   offset: 0,
   maxVisibleLines: 0,
   flowMode: false, // Neuer Zustand für den Flow Mode
-  offset: 0,
 }
 
 let nextLineId = 1
@@ -408,7 +410,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         if (state) {
           if (state.lines && state.lines.length > 0) {
             if (typeof state.lines[0] === "string") {
-              state.lines = (state.lines as string[]).map((text) => ({
+              state.lines = (state.lines as unknown as string[]).map((text) => ({
                 id: nextLineId++,
                 text,
               }))
