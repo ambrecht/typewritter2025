@@ -1,13 +1,12 @@
+// Mock Next.js server utilities
 jest.mock("next/server", () => ({
   NextResponse: {
-    json: (body: any, init?: ResponseInit) => ({
-      status: init?.status || 200,
-      json: async () => body,
+    json: (data: any, init?: any) => ({
+      status: init?.status ?? 200,
+      json: () => Promise.resolve(data),
     }),
   },
 }))
-
-import { POST } from "@/app/api/save/route"
 
 // Mock the API key storage
 jest.mock("@/lib/api-key-storage", () => ({
@@ -19,7 +18,9 @@ jest.mock("@/lib/api-config", () => ({
   getApiUrl: jest.fn(() => "https://api.test.com/save"),
 }))
 
-describe.skip("/api/save", () => {
+import { POST } from "@/app/api/save/route"
+
+describe("/api/save", () => {
   beforeEach(() => {
     global.fetch = jest.fn()
   })
@@ -36,7 +37,7 @@ describe.skip("/api/save", () => {
     })
 
     const request = {
-      json: async () => ({ text: "Test text" }),
+      json: () => Promise.resolve({ text: "Test text" }),
     } as any
 
     const response = await POST(request)
@@ -50,7 +51,7 @@ describe.skip("/api/save", () => {
 
   it("should return 400 for invalid input", async () => {
     const request = {
-      json: async () => ({ text: "" }),
+      json: () => Promise.resolve({ text: "" }),
     } as any
 
     const response = await POST(request)
@@ -69,7 +70,7 @@ describe.skip("/api/save", () => {
     })
 
     const request = {
-      json: async () => ({ text: "Test text" }),
+      json: () => Promise.resolve({ text: "Test text" }),
     } as any
 
     const response = await POST(request)
