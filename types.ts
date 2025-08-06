@@ -31,11 +31,21 @@ export interface TextStatistics {
 }
 
 /**
+ * Repräsentiert eine einzelne Zeile im Stack
+ */
+export interface Line {
+  /** Eindeutige ID der Zeile */
+  id: number
+  /** Inhalt der Zeile */
+  text: string
+}
+
+/**
  * Typewriter-Anwendungszustand
  */
 export interface TypewriterState {
   /** Array bereits geschriebener Zeilen */
-  lines: string[]
+  lines: Line[]
   /** Aktuell bearbeitete Zeile */
   activeLine: string
   /** Maximale Anzahl von Zeichen pro Zeile */
@@ -64,6 +74,8 @@ export interface TypewriterState {
   containerWidth: number
   /** Ob der Flow Mode (kein Löschen) aktiviert ist */
   flowMode: boolean
+  /** Offset für die Berechnung der sichtbaren Zeilen */
+  offset: number
 }
 
 /**
@@ -110,6 +122,8 @@ export interface TypewriterActions {
   loadLastSession: () => Promise<void>
   /** Funktion zum Setzen der Container-Breite */
   setContainerWidth: (width: number) => void
+  /** Funktion zum Setzen des Offsets für die sichtbaren Zeilen */
+  setOffset: (offset: number) => void
   /** Schaltet den Flow Mode (kein Löschen) um */
   toggleFlowMode: () => void
   /** Verarbeitet einen Tastendruck für die Eingabe */

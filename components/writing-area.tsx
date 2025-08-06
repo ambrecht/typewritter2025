@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useRef } from "react"
-import type { LineBreakConfig } from "@/types"
+import type { LineBreakConfig, Line } from "@/types"
 
 import { useVisibleLines } from "../hooks/useVisibleLines"
 import { useMaxVisibleLines } from "@/hooks/useMaxVisibleLines"
@@ -18,7 +18,7 @@ import { ActiveLine } from "./writing-area/ActiveLine"
  * da die Eingabelogik nun global gehandhabt wird.
  */
 interface WritingAreaProps {
-  lines: string[]
+  lines: Line[]
   activeLine: string
   maxCharsPerLine: number
   fontSize: number
@@ -31,6 +31,7 @@ interface WritingAreaProps {
   selectedLineIndex: number | null
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement>
+  offset: number
 }
 
 /**
@@ -53,6 +54,7 @@ export default function WritingArea({
   selectedLineIndex,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
+  offset,
 }: WritingAreaProps) {
   const internalLinesContainerRef = useRef<HTMLDivElement>(null)
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
@@ -60,7 +62,7 @@ export default function WritingArea({
   const lineHeight = stackFontSize * (isFullscreen ? 1.3 : 1.4)
   const activeLineRef = useRef<HTMLDivElement>(null)
   const maxVisibleLines = useMaxVisibleLines(activeLineRef, lineHeight)
-  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, offset)
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
