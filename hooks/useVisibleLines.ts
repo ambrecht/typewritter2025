@@ -11,7 +11,7 @@ import { useState, useEffect, useMemo } from "react"
  * @param mode - Aktueller Modus (typing oder navigating)
  * @param selectedLineIndex - Index der ausgewählten Zeile im Navigationsmodus
  * @param isFullscreen - Ob der Vollbildmodus aktiv ist
- * @returns Die aktuell sichtbaren Zeilen
+ * @returns Die aktuell sichtbaren Zeilen mit ihren globalen Indizes
  */
 export function useVisibleLines(
   lines: string[],
@@ -35,40 +35,36 @@ export function useVisibleLines(
 
     if (lines.length === 0) return []
 
-    let result
+    let start = 0
+    let end = lines.length - 1
+
     if (!useVirtualization || lines.length <= effectiveMaxVisibleLines) {
       if (mode === "typing") {
-        if (lines.length <= effectiveMaxVisibleLines) {
-          result = lines
-        } else {
-          const start = Math.max(0, lines.length - effectiveMaxVisibleLines)
-          result = lines.slice(start)
+        if (lines.length > effectiveMaxVisibleLines) {
+          start = Math.max(0, lines.length - effectiveMaxVisibleLines)
         }
+        end = lines.length - 1
       } else {
         const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
         const contextLines = Math.floor(visibleCount / 2)
-        const start = Math.max(0, (selectedLineIndex ?? 0) - contextLines)
-        const end = Math.min(lines.length - 1, start + visibleCount - 1)
-        result = lines.slice(start, end + 1)
+        start = Math.max(0, (selectedLineIndex ?? 0) - contextLines)
+        end = Math.min(lines.length - 1, start + visibleCount - 1)
       }
     } else {
       if (mode === "navigating" && selectedLineIndex !== null) {
         const contextLines = isFullscreen ? 20 : isAndroid ? 15 : 10
-        const visibleStart = Math.max(0, selectedLineIndex - contextLines)
-        const visibleEnd = Math.min(lines.length - 1, selectedLineIndex + contextLines)
-        result = lines.slice(visibleStart, visibleEnd + 1)
+        start = Math.max(0, selectedLineIndex - contextLines)
+        end = Math.min(lines.length - 1, selectedLineIndex + contextLines)
       } else {
         const visibleCount = Math.min(effectiveMaxVisibleLines, lines.length)
-        if (lines.length <= visibleCount) {
-          result = lines
-        } else {
-          const visibleStart = Math.max(0, lines.length - visibleCount)
-          result = lines.slice(visibleStart)
+        if (lines.length > visibleCount) {
+          start = Math.max(0, lines.length - visibleCount)
         }
+        end = Math.min(lines.length - 1, start + visibleCount - 1)
       }
     }
 
-    return result
+    return lines.slice(start, end + 1).map((line, i) => ({ line, index: start + i }))
   }, [lines, maxVisibleLines, mode, selectedLineIndex, useVirtualization, isAndroid, isFullscreen])
 
   return calculateVisibleLines
