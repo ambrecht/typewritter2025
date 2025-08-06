@@ -50,7 +50,7 @@ export function ActiveLine({
 }: ActiveLineProps) {
   useAutoResizeTextarea(hiddenInputRef, activeLine)
 
-  const fixedActiveLineClass = `flex-shrink-0 font-serif border-t z-10 active-line relative sticky bottom-0 ${
+  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif border-t z-10 active-line relative ${
     darkMode
       ? "bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
       : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.1)]"

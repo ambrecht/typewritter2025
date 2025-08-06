@@ -64,46 +64,46 @@ export default function WritingArea({
   const maxVisibleLines = useMaxVisibleLines(activeLineRef, lineHeight)
   const visibleLines = useVisibleLines(lines, maxVisibleLines, offset)
 
-  return (
-    <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
-      <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
-      <NavigationHint darkMode={darkMode} />
+    return (
+      <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
+        <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
+        <NavigationHint darkMode={darkMode} />
 
-      <div
-        ref={linesContainerRef}
-        className={`flex-1 px-4 md:px-6 pt-6 writing-container flex flex-col justify-end ${
-          darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
-        }`}
-        style={{
-          fontSize: `${stackFontSize}px`,
-          lineHeight: isFullscreen ? "1.3" : "1.4",
-          overflow: "hidden",
-        }}
-        aria-live="polite"
-      >
-        <LineStack
-          visibleLines={visibleLines}
-          darkMode={darkMode}
-          stackFontSize={stackFontSize}
-          mode={mode}
-          selectedLineIndex={selectedLineIndex}
-          isFullscreen={isFullscreen}
-        />
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          <div
+            ref={linesContainerRef}
+            className={`flex-1 overflow-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-end ${
+              darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
+            }`}
+            style={{
+              fontSize: `${stackFontSize}px`,
+              lineHeight: isFullscreen ? "1.3" : "1.4",
+            }}
+            aria-live="polite"
+          >
+            <LineStack
+              visibleLines={visibleLines.map((line, index) => ({ line, index: lines.indexOf(line) }))}
+              darkMode={darkMode}
+              stackFontSize={stackFontSize}
+              mode={mode}
+              selectedLineIndex={selectedLineIndex}
+              isFullscreen={isFullscreen}
+            />
+          </div>
+
+          {mode === "typing" && (
+            <ActiveLine
+              activeLine={activeLine}
+              darkMode={darkMode}
+              fontSize={fontSize}
+              showCursor={showCursor}
+              maxCharsPerLine={maxCharsPerLine}
+              hiddenInputRef={hiddenInputRef} // Pass the ref
+              isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
+              isFullscreen={isFullscreen}
+            />
+          )}
+        </div>
       </div>
-
-      {mode === "typing" && (
-        <ActiveLine
-          activeLine={activeLine}
-          darkMode={darkMode}
-          fontSize={fontSize}
-          showCursor={showCursor}
-          maxCharsPerLine={maxCharsPerLine}
-          hiddenInputRef={hiddenInputRef} // Pass the ref
-          containerRef={activeLineRef}
-          isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
-          isFullscreen={isFullscreen}
-        />
-      )}
-    </div>
-  )
-}
+    )
+  }
