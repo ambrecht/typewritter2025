@@ -2,7 +2,7 @@ import { memo } from "react"
 import type { Line } from "@/types"
 
 interface LineStackProps {
-  visibleLines: { line: Line; index: number }[]
+  visibleLines: { id: number; text: string }[]
   darkMode: boolean
   stackFontSize: number
   mode: "typing" | "navigating"
@@ -39,13 +39,13 @@ export const LineStack = memo(function LineStack({
         margin: "0",
       }}
     >
-      {visibleLines.map(({ line, index }) => {
-        const isSelected = index === selectedLineIndex
+      {visibleLines.map(({ id, text }, i) => {
+        const isSelected = id === selectedLineIndex
         const selectedClass = isSelected
           ? `${darkMode ? "bg-gray-700" : "bg-amber-100"} rounded-md p-1 -m-1 ring-2 ${darkMode ? "ring-blue-500" : "ring-amber-400"}`
           : ""
 
-        const isLastActive = index === visibleLines.length - 1 && mode === "typing"
+        const isLastActive = i === visibleLines.length - 1 && mode === "typing"
         const lastActiveStyle = isLastActive
           ? {
               fontWeight: 500,
@@ -56,12 +56,12 @@ export const LineStack = memo(function LineStack({
 
         return (
           <div
-            key={line.id}
+            key={id}
             className={`whitespace-pre-wrap break-words mb-2 font-serif ${selectedClass}`}
-            data-line-index={index}
+            data-line-index={id}
             style={{ margin: "0", padding: "0", ...lastActiveStyle }}
           >
-            {line.text || " "} {/* Render a space for empty lines to maintain height */}
+            {text || " "} {/* Render a space for empty lines to maintain height */}
           </div>
         )
       })}
