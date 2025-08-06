@@ -5,7 +5,7 @@ import { useRef } from "react"
 import type { LineBreakConfig } from "@/types"
 
 import { useVisibleLines } from "../hooks/useVisibleLines"
-import { useViewportLayout } from "@/hooks/useViewportLayout"
+import { useMaxVisibleLines } from "@/hooks/useMaxVisibleLines"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
@@ -58,7 +58,8 @@ export default function WritingArea({
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
 
   const lineHeight = stackFontSize * (isFullscreen ? 1.3 : 1.4)
-  const { activeLineRef, maxVisibleLines } = useViewportLayout(lineHeight)
+  const activeLineRef = useRef<HTMLDivElement>(null)
+  const maxVisibleLines = useMaxVisibleLines(activeLineRef, lineHeight)
   const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
   return (
@@ -79,7 +80,7 @@ export default function WritingArea({
         aria-live="polite"
       >
         <LineStack
-          visibleLines={visibleLines.map((line, index) => ({ line, index: lines.indexOf(line) }))}
+          visibleLines={visibleLines}
           darkMode={darkMode}
           stackFontSize={stackFontSize}
           mode={mode}
