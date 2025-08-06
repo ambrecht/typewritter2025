@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useRef } from "react"
-import type { LineBreakConfig, Line } from "@/types"
+import { useEffect } from "react"
+import type { LineBreakConfig } from "@/types"
 
 import { useVisibleLines } from "../hooks/useVisibleLines"
-import { useMaxVisibleLines } from "@/hooks/useMaxVisibleLines"
+import { useContainerDimensions } from "../hooks/useContainerDimensions"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
@@ -58,8 +58,14 @@ export default function WritingArea({
   maxVisibleLines,
   activeLineRef,
 }: WritingAreaProps) {
-  const internalLinesContainerRef = useRef<HTMLDivElement>(null)
-  const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
+  const { linesContainerRef, maxVisibleLines } = useContainerDimensions(stackFontSize)
+
+  // Synchronize internal ref with external one if provided
+  useEffect(() => {
+    if (externalLinesContainerRef) {
+      externalLinesContainerRef.current = linesContainerRef.current
+    }
+  }, [externalLinesContainerRef, linesContainerRef])
 
   const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
@@ -68,27 +74,28 @@ export default function WritingArea({
         <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
         <NavigationHint darkMode={darkMode} />
 
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <div
-            ref={linesContainerRef}
-            className={`flex-1 overflow-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-end ${
-              darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
-            }`}
-            style={{
-              fontSize: `${stackFontSize}px`,
-              lineHeight: isFullscreen ? "1.3" : "1.4",
-            }}
-            aria-live="polite"
-          >
-            <LineStack
-              visibleLines={visibleLines.map((line, index) => ({ line, index: lines.indexOf(line) }))}
-              darkMode={darkMode}
-              stackFontSize={stackFontSize}
-              mode={mode}
-              selectedLineIndex={selectedLineIndex}
-              isFullscreen={isFullscreen}
-            />
-          </div>
+      <div
+        ref={linesContainerRef}
+        className={`flex-1 px-4 md:px-6 pt-6 writing-container flex flex-col justify-end ${
+          darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
+        }`}
+        style={{
+          fontSize: `${stackFontSize}px`,
+          lineHeight: isFullscreen ? "1.3" : "1.4",
+          overflow: "hidden",
+        }}
+        aria-live="polite"
+      >
+        <LineStack
+          visibleLines={visibleLines.map((line, index) => ({ line, index: lines.indexOf(line) }))}
+          darkMode={darkMode}
+          stackFontSize={stackFontSize}
+          mode={mode}
+          selectedLineIndex={selectedLineIndex}
+          isFullscreen={isFullscreen}
+          linesContainerRef={linesContainerRef}
+        />
+      </div>
 
       {mode === "typing" && (
         <ActiveLine
