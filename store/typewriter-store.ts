@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import type { TypewriterState, TypewriterActions, LineBreakConfig } from "@/types"
+import type { TypewriterState, TypewriterActions, LineBreakConfig, Line } from "@/types"
 import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
 import { measureTextWidth } from "@/utils/canvas-utils"
@@ -10,7 +10,10 @@ import { measureTextWidth } from "@/utils/canvas-utils"
  * @description Der initiale Zustand der Typewriter-Anwendung.
  * Wird für den Start und beim Zurücksetzen der Sitzung verwendet.
  */
-const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoading" | "containerWidth"> = {
+const initialState: Omit<
+  TypewriterState,
+  "lastSaveStatus" | "isSaving" | "isLoading" | "containerWidth"
+> = {
   lines: [],
   activeLine: "",
   maxCharsPerLine: 56, // Dient als Referenz und Fallback
@@ -22,7 +25,10 @@ const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoa
   mode: "typing",
   selectedLineIndex: null,
   flowMode: false, // Neuer Zustand für den Flow Mode
+  offset: 0,
 }
+
+let nextLineId = 1
 
 /**
  * @function useTypewriterStore
@@ -75,7 +81,10 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
             const newActiveLine = activeLine.slice(0, -1)
             set({
               activeLine: newActiveLine,
-              statistics: calculateTextStatistics([...lines, newActiveLine].join("\n")),
+              statistics: calculateTextStatistics([
+                ...lines.map((l) => l.text),
+                newActiveLine,
+              ].join("\n")),
             })
           }
           // Die fehlerhafte Logik, die Zeilen aus dem Stack zurückgeholt hat, wurde entfernt.
@@ -91,7 +100,10 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           if (!lineBreakConfig.autoMaxChars) {
             set({
               activeLine: newActiveLineContent,
-              statistics: calculateTextStatistics([...lines, newActiveLineContent].join("\n")),
+              statistics: calculateTextStatistics([
+                ...lines.map((l) => l.text),
+                newActiveLineContent,
+              ].join("\n")),
             })
             return
           }
@@ -105,7 +117,10 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           if (textWidth <= availableWidth) {
             set({
               activeLine: newActiveLineContent,
-              statistics: calculateTextStatistics([...lines, newActiveLineContent].join("\n")),
+              statistics: calculateTextStatistics([
+                ...lines.map((l) => l.text),
+                newActiveLineContent,
+              ].join("\n")),
             })
           } else {
             // Der Text ist zu lang, führe einen Umbruch durch.
@@ -123,11 +138,18 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
               remainder = ""
             }
 
-            const newLines = [...lines, lineToAdd]
+            const newLines: Line[] = [
+              ...lines,
+              { id: nextLineId++, text: lineToAdd },
+            ]
             set({
               lines: newLines,
               activeLine: remainder,
-              statistics: calculateTextStatistics([...newLines, remainder].join("\n")),
+              offset: 0,
+              statistics: calculateTextStatistics([
+                ...newLines.map((l) => l.text),
+                remainder,
+              ].join("\n")),
             })
           }
         }
@@ -137,8 +159,14 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * Aktualisiert die Breite des Schreib-Containers.
        * Wichtig für die Berechnung des automatischen Zeilenumbruchs.
        * @param {number} width - Die neue Breite des Containers in Pixeln.
-       */
+      */
       setContainerWidth: (width: number) => set({ containerWidth: width }),
+
+      /**
+       * Setzt den Offset für die Sichtbarkeit des Zeilenstacks.
+       * @param {number} offset - Der neue Offset-Wert.
+       */
+      setOffset: (offset: number) => set({ offset }),
 
       /**
        * Setzt den Text der aktiven Zeile und führt bei Bedarf einen automatischen Zeilenumbruch durch.
@@ -146,7 +174,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * @param {string} text - Der neue Text aus dem Eingabefeld.
        */
       setActiveLine: (text) => {
-        const newFullText = [...get().lines, text].join("\n")
+        const newFullText = [...get().lines.map((l) => l.text), text].join("\n")
         set({
           activeLine: text,
           statistics: calculateTextStatistics(newFullText),
@@ -160,14 +188,22 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       addLineToStack: () => {
         const { activeLine, lines } = get()
         // Verhindere das Hinzufügen mehrerer aufeinanderfolgender leerer Zeilen.
-        if (activeLine.trim() === "" && lines.length > 0 && lines[lines.length - 1].trim() === "") {
+        if (
+          activeLine.trim() === "" &&
+          lines.length > 0 &&
+          lines[lines.length - 1].text.trim() === ""
+        ) {
           return
         }
-        const newLines = [...lines, activeLine]
-        const newText = newLines.join("\n")
+        const newLines: Line[] = [
+          ...lines,
+          { id: nextLineId++, text: activeLine },
+        ]
+        const newText = newLines.map((l) => l.text).join("\n")
         set({
           lines: newLines,
           activeLine: "",
+          offset: 0,
           statistics: calculateTextStatistics(newText),
         })
       },
@@ -210,12 +246,20 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * Leert den gesamten Text (Zeilenstack und aktive Zeile).
        */
       clearAllLines: () =>
-        set({ lines: [], activeLine: "", statistics: { wordCount: 0, letterCount: 0, pageCount: 0 } }),
+        set({
+          lines: [],
+          activeLine: "",
+          offset: 0,
+          statistics: { wordCount: 0, letterCount: 0, pageCount: 0 },
+        }),
 
       /**
        * Setzt die gesamte Sitzung auf den initialen Zustand zurück.
        */
-      resetSession: () => set({ ...initialState, containerWidth: get().containerWidth }),
+      resetSession: () => {
+        nextLineId = 1
+        set({ ...initialState, containerWidth: get().containerWidth })
+      },
 
       /**
        * Setzt eine feste Zeilenlänge und deaktiviert den automatischen Umbruch.
@@ -293,7 +337,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        */
       saveSession: async () => {
         const { lines, activeLine } = get()
-        const fullText = [...lines, activeLine].join("\n")
+        const fullText = [...lines.map((l) => l.text), activeLine].join("\n")
         set({ isSaving: true, lastSaveStatus: null })
         try {
           const result = await saveText(fullText)
@@ -318,11 +362,16 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         try {
           const result = await getLastSession()
           if (result.success && typeof result.text === "string") {
-            const newLines = result.text.split("\n")
-            const newActiveLine = newLines.pop() || ""
+            const newLinesStrings = result.text.split("\n")
+            const newActiveLine = newLinesStrings.pop() || ""
+            const lineObjects: Line[] = newLinesStrings.map((text) => ({
+              id: nextLineId++,
+              text,
+            }))
             set({
-              lines: newLines,
+              lines: lineObjects,
               activeLine: newActiveLine,
+              offset: 0,
               statistics: calculateTextStatistics(result.text),
               lastSaveStatus: { success: true, message: "Erfolgreich geladen" },
             })
@@ -351,20 +400,33 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        */
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Migrationslogik für ein veraltetes Datenformat, bei dem Zeilen Objekte waren.
-          if (
-            state.lines &&
-            state.lines.length > 0 &&
-            typeof state.lines[0] === "object" &&
-            state.lines[0] !== null &&
-            "text" in state.lines[0]
-          ) {
-            console.log("Veraltetes Datenformat erkannt. Migriere 'lines'-Zustand.")
-            state.lines = state.lines.map((line: any) => (typeof line.text === "string" ? line.text : ""))
+          if (state.lines && state.lines.length > 0) {
+            if (typeof state.lines[0] === "string") {
+              state.lines = (state.lines as string[]).map((text) => ({
+                id: nextLineId++,
+                text,
+              }))
+            } else if (
+              typeof state.lines[0] === "object" &&
+              state.lines[0] !== null
+            ) {
+              state.lines = (state.lines as any[]).map((line) => ({
+                id: typeof line.id === "number" ? line.id : nextLineId++,
+                text: typeof line.text === "string" ? line.text : "",
+              }))
+            }
+            const maxId = (state.lines as Line[]).reduce(
+              (max, line) => Math.max(max, line.id),
+              0,
+            )
+            nextLineId = maxId + 1
           }
           // Stelle sicher, dass flowMode nach dem Laden existiert
           if (typeof state.flowMode === "undefined") {
             state.flowMode = false
+          }
+          if (typeof state.offset === "undefined") {
+            state.offset = 0
           }
         }
       },

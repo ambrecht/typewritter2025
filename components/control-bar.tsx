@@ -92,7 +92,7 @@ function ControlBar({
 
   // Copy text to clipboard
   const copyToClipboard = () => {
-    const fullText = [...lines, activeLine].join("\n")
+    const fullText = [...lines.map((l) => l.text), activeLine].join("\n")
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard

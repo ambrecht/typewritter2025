@@ -17,7 +17,6 @@ export default function TypewriterPage() {
   const {
     lines,
     activeLine,
-    addLineToStack,
     maxCharsPerLine,
     statistics,
     lineBreakConfig,
@@ -33,6 +32,7 @@ export default function TypewriterPage() {
     navigateBackward,
     resetNavigation,
     handleKeyPress,
+    offset,
   } = useTypewriterStore()
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -226,6 +226,7 @@ export default function TypewriterPage() {
             selectedLineIndex={selectedLineIndex}
             isFullscreen={isFullscreen}
             linesContainerRef={linesContainerRef}
+            offset={offset}
           />
         </section>
       </main>

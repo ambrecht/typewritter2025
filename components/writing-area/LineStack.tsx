@@ -1,7 +1,8 @@
 import { memo } from "react"
+import type { Line } from "@/types"
 
 interface LineStackProps {
-  visibleLines: { line: string; index: number }[]
+  visibleLines: { line: Line; index: number }[]
   darkMode: boolean
   stackFontSize: number
   mode: "typing" | "navigating"
@@ -55,12 +56,12 @@ export const LineStack = memo(function LineStack({
 
         return (
           <div
-            key={index}
+            key={line.id}
             className={`whitespace-pre-wrap break-words mb-2 font-serif ${selectedClass}`}
             data-line-index={index}
             style={{ margin: "0", padding: "0", ...lastActiveStyle }}
           >
-            {line || " "} {/* Render a space for empty lines to maintain height */}
+            {line.text || " "} {/* Render a space for empty lines to maintain height */}
           </div>
         )
       })}
