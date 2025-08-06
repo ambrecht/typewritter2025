@@ -19,6 +19,24 @@ export interface LineBreakResult {
 }
 
 /**
+ * Repräsentiert einen Bereich von Zeilen, die einen Absatz bilden
+ */
+export interface ParagraphRange {
+  /** Startindex der Zeile (inklusive) */
+  start: number
+  /** Endindex der Zeile (inklusive) */
+  end: number
+}
+
+/**
+ * Repräsentiert eine einfache Zeile Text
+ */
+export interface FormattedLine {
+  /** Der Textinhalt der Zeile */
+  text: string
+}
+
+/**
  * Statistiken für den Text
  */
 export interface TextStatistics {
@@ -31,13 +49,23 @@ export interface TextStatistics {
 }
 
 /**
- * Repräsentiert eine einzelne Zeile im Stack
+ * Konfiguration für den Flow Mode
  */
-export interface Line {
-  /** Eindeutige ID der Zeile */
-  id: number
-  /** Inhalt der Zeile */
-  text: string
+export interface FlowModeConfig {
+  /** Ist der Flow Mode aktiv? */
+  enabled: boolean
+  /** Soll das Löschen mit Backspace deaktiviert sein? */
+  noBackspace: boolean
+  /** Sollen Satzzeichen automatisch entfernt werden? */
+  noPunctuation: boolean
+  /** Art des Timers: Zeit oder Wortanzahl */
+  timerType: "time" | "words"
+  /** Zielwert (Minuten oder Wörter) */
+  timerTarget: number
+  /** Startzeit des Timers (Millisekunden seit Epoch) */
+  timerStartTime?: number
+  /** Wortzahl zu Beginn des Timers */
+  initialWordCount?: number
 }
 
 /**
@@ -60,10 +88,20 @@ export interface TypewriterState {
   stackFontSize: number
   /** Ob der Dark Mode aktiviert ist */
   darkMode: boolean
+  /** Array von Absatzbereichen (für Abwärtskompatibilität) */
+  paragraphRanges: ParagraphRange[]
+  /** Ob wir uns derzeit in einem Absatz befinden (für Abwärtskompatibilität) */
+  inParagraph: boolean
+  /** Startindex des aktuellen Absatzes (für Abwärtskompatibilität) */
+  currentParagraphStart: number
   /** Aktueller Modus (Schreiben oder Navigieren) */
   mode: "typing" | "navigating"
   /** Index der aktuell ausgewählten Zeile (null, wenn keine ausgewählt ist) */
   selectedLineIndex: number | null
+  /** Aktueller Versatz für die Anzeige der Zeilen */
+  offset: number
+  /** Maximale Anzahl sichtbarer Zeilen */
+  maxVisibleLines: number
   /** Status der letzten Speicheroperation */
   lastSaveStatus: { success: boolean; message: string } | null
   /** Ob gerade gespeichert wird */
@@ -106,6 +144,10 @@ export interface TypewriterActions {
   setMode: (mode: "typing" | "navigating") => void
   /** Funktion zum Setzen des ausgewählten Zeilenindex */
   setSelectedLineIndex: (index: number | null) => void
+  /** Aktualisiert die maximale Anzahl sichtbarer Zeilen */
+  setMaxVisibleLines: (count: number) => void
+  /** Passt den Versatz der sichtbaren Zeilen an */
+  adjustOffset: (delta: number) => void
   /** Funktion zum Navigieren nach oben im Stack */
   navigateUp: () => void
   /** Funktion zum Navigieren nach unten im Stack */

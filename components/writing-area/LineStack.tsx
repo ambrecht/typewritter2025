@@ -1,19 +1,18 @@
+import type React from "react"
+import type { FormattedLine } from "@/types"
 import { memo } from "react"
-import type { Line } from "@/types"
 
 interface LineStackProps {
-  visibleLines: { line: Line; index: number }[]
+  visibleLines: { line: FormattedLine; index: number; key: string }[]
+  lineRefs: React.MutableRefObject<(HTMLDivElement | null)[]>
   darkMode: boolean
   stackFontSize: number
   mode: "typing" | "navigating"
   selectedLineIndex: number | null
   isFullscreen?: boolean
+  linesContainerRef?: React.RefObject<HTMLDivElement>
 }
 
-/**
- * Komponente für den Stack vorheriger Zeilen.
- * Zeigt einfache Textzeilen ohne Markdown-Formatierung an.
- */
 export const LineStack = memo(function LineStack({
   visibleLines,
   darkMode,
@@ -21,30 +20,41 @@ export const LineStack = memo(function LineStack({
   mode,
   selectedLineIndex,
   isFullscreen = false,
+  linesContainerRef,
 }: LineStackProps) {
   const isAndroid = typeof navigator !== "undefined" && navigator.userAgent.includes("Android")
+
+  // Reference the container ref to avoid unused variable warnings
+  void linesContainerRef
 
   return (
     <div
       className="line-stack"
       style={{
-        overflow: "hidden",
+        overflowY: "auto",
+        overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
-        justifyContent: mode === "navigating" ? "center" : "flex-end",
+        // Beginne im Tippmodus oben links, damit die erste Zeile an der Oberkante startet
+        // und neue Zeilen darunter erscheinen
+        justifyContent: mode === "navigating" ? "center" : "flex-start",
         maxHeight: "100%",
         lineHeight: isFullscreen ? "1.2" : isAndroid ? "1.3" : "1.5",
         gap: "0",
         padding: "0",
         margin: "0",
+        paddingBottom: "0",
+        marginBottom: "0",
       }}
     >
-      {visibleLines.map(({ line, index }) => {
-        const isSelected = index === selectedLineIndex
-        const selectedClass = isSelected
-          ? `${darkMode ? "bg-gray-700" : "bg-amber-100"} rounded-md p-1 -m-1 ring-2 ${darkMode ? "ring-blue-500" : "ring-amber-400"}`
-          : ""
+      {visibleLines.map(({ line, index, key }) => {
+        const props = renderFormattedLine(line, index, lineRefs) as any
+        const { as = "div", ...restProps } = props
 
+        // Verwende den generierten key, wenn vorhanden, sonst den Standard-key
+        const elementKey = key || props.key
+
+        // Prüfe, ob dies die zuletzt aktive Zeile ist (direkt über der aktuellen Schreibzeile)
         const isLastActive = index === visibleLines.length - 1 && mode === "typing"
         const lastActiveStyle = isLastActive
           ? {
@@ -54,15 +64,63 @@ export const LineStack = memo(function LineStack({
             }
           : {}
 
+        // Dynamisch das richtige Element basierend auf 'as' erstellen
+        const ElementType = as as React.ElementType
+
+        if (as === "hr") {
+          return <hr key={elementKey} className={props.className} data-line-index={index} style={{ margin: "0" }} />
+        }
+
+        if (ElementType === "div" && Array.isArray(props.children)) {
+          // Für Listen und Dialog mit mehreren Kindern
+          return (
+            <div
+              key={elementKey}
+              ref={(el: HTMLElement | null) => {
+                if (typeof props.ref === "function") {
+                  ;(props.ref as (instance: HTMLElement | null) => void)(el)
+                } else if (props.ref && "current" in props.ref) {
+                  ;(props.ref as React.MutableRefObject<HTMLElement | null>).current =
+                    el
+                }
+              }}
+              className={props.className}
+              data-line-index={index}
+              // Kein Abstand für maximale Platznutzung
+              style={{ margin: "0", padding: "0", ...lastActiveStyle }}
+            >
+              {/* Füge den Markdown-Indikator hinzu */}
+              <MarkdownIndicator type={line.type} darkMode={darkMode} />
+              {(props.children as any[]).map((child: any, i: number) => {
+                if (typeof child === "string") return child
+                const ChildType = child.type as React.ElementType
+                return <ChildType key={i} {...(child.props as any)} />
+              })}
+            </div>
+          )
+        }
+
+        // Und auch für einfache Elemente
+        const Element = ElementType as React.ElementType
         return (
-          <div
-            key={line.id}
-            className={`whitespace-pre-wrap break-words mb-2 font-serif ${selectedClass}`}
+          <Element
+            key={elementKey}
+            ref={(el: HTMLElement | null) => {
+              if (typeof props.ref === "function") {
+                ;(props.ref as (instance: HTMLElement | null) => void)(el)
+              } else if (props.ref && "current" in props.ref) {
+                ;(props.ref as React.MutableRefObject<HTMLElement | null>).current =
+                  el
+              }
+            }}
+            className={props.className}
             data-line-index={index}
             style={{ margin: "0", padding: "0", ...lastActiveStyle }}
           >
-            {line.text || " "} {/* Render a space for empty lines to maintain height */}
-          </div>
+            {/* Füge den Markdown-Indikator hinzu */}
+            <MarkdownIndicator type={line.type} darkMode={darkMode} />
+            {props.children as React.ReactNode}
+          </Element>
         )
       })}
     </div>

@@ -1,9 +1,17 @@
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
-import type { TypewriterState, TypewriterActions, LineBreakConfig, Line } from "@/types"
+import { persist } from "zustand/middleware"
+import { MarkdownType }
+  from "@/types"
+import type {
+  LineBreakConfig,
+  FormattedLine,
+  ParagraphRange,
+  TextStatistics,
+  FlowModeConfig,
+} from "@/types"
 import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
-import { measureTextWidth } from "@/utils/canvas-utils"
+import { parseMarkdownLine } from "@/utils/markdown-parser"
 
 /**
  * @constant initialState
@@ -22,8 +30,22 @@ const initialState: Omit<
   fontSize: 24,
   stackFontSize: 18,
   darkMode: false,
+  paragraphRanges: [],
+  inParagraph: false,
+  currentParagraphStart: -1,
+  activeLineType: MarkdownType.NORMAL,
+  flowMode: DEFAULT_FLOW_MODE,
+  soundEnabled: false,
+  soundVolume: 0.5,
+  soundsLoaded: false,
+  loadProgress: 0,
+  loadError: null,
+
+  // Neue Zustandsvariablen
   mode: "typing",
   selectedLineIndex: null,
+  offset: 0,
+  maxVisibleLines: 0,
   flowMode: false, // Neuer Zustand für den Flow Mode
   offset: 0,
 }
@@ -37,8 +59,120 @@ let nextLineId = 1
  *
  * @returns Ein Hook zur Verwendung des Stores in React-Komponenten.
  */
-export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
-  persist(
+const processParagraphMarkers = (
+  state: TypewriterState,
+  newLines: FormattedLine[],
+  lineIndex: number,
+): {
+  inParagraph: boolean
+  currentParagraphStart: number
+  paragraphRanges: ParagraphRange[]
+} => {
+  let inParagraph = state.inParagraph
+  let currentParagraphStart = state.currentParagraphStart
+  const paragraphRanges = [...state.paragraphRanges]
+
+  // Prüfe auf Absatzmarkierungen
+  const line = state.activeLine
+
+  // Wenn die Zeile genau *** ist, schalte den Absatzzustand um
+  if (line.trim() === "***") {
+    if (!inParagraph) {
+      // Starte einen neuen Absatz
+      inParagraph = true
+      currentParagraphStart = lineIndex
+    } else {
+      // Beende einen Absatz
+      inParagraph = false
+
+      // Füge den Absatzbereich hinzu
+      if (currentParagraphStart >= 0) {
+        paragraphRanges.push({
+          start: currentParagraphStart,
+          end: lineIndex - 1, // Ende ist die vorherige Zeile, nicht die Markierung
+        })
+        currentParagraphStart = -1
+      }
+    }
+    return { inParagraph, currentParagraphStart, paragraphRanges }
+  }
+
+  // Wenn die Zeile mit *** beginnt und endet, ist es ein Absatz
+  if (line.trim().startsWith("***") && line.trim().endsWith("***") && line.trim().length > 6) {
+    // Füge einen einzelnen Absatz hinzu
+    paragraphRanges.push({
+      start: lineIndex,
+      end: lineIndex,
+    })
+    return { inParagraph, currentParagraphStart, paragraphRanges }
+  }
+
+  return { inParagraph, currentParagraphStart, paragraphRanges }
+}
+
+export interface TypewriterActions {
+  setActiveLine: (text: string) => void
+  addLineToStack: () => void
+  updateLineBreakConfig: (config: Partial<LineBreakConfig>) => void
+  setFontSize: (size: number) => void
+  setStackFontSize: (size: number) => void
+  setFixedLineLength: (length: number) => void
+  toggleDarkMode: () => void
+  clearCurrentInput: () => void
+  clearAllLines: () => void
+  resetSession: () => void
+  saveSession: () => Promise<void>
+  updateFlowMode: (config: Partial<FlowModeConfig>) => void
+  startFlowMode: (timerType: "time" | "words", target: number) => void
+  stopFlowMode: () => void
+}
+
+export interface TypewriterState {
+  lines: FormattedLine[]
+  activeLine: string
+  maxCharsPerLine: number
+  statistics: TextStatistics
+  lineBreakConfig: LineBreakConfig
+  fontSize: number
+  stackFontSize: number
+  darkMode: boolean
+  paragraphRanges: ParagraphRange[]
+  inParagraph: boolean
+  currentParagraphStart: number
+  activeLineType: MarkdownType
+  flowMode: FlowModeConfig
+  // Sound Einstellungen
+  soundEnabled: boolean
+  soundVolume: number
+  soundsLoaded: boolean
+  loadProgress: number
+  loadError: string | null
+}
+
+// Füge die Sound-Aktionen zum Store hinzu
+type TypewriterStore = TypewriterState &
+  TypewriterActions & {
+    mode: "typing" | "navigating"
+    selectedLineIndex: number | null
+    isSaving: boolean
+    isLoading: boolean
+    lastSaveStatus: { success: boolean; message: string; timestamp: number } | null
+    setMode: (mode: "typing" | "navigating") => void
+    setSelectedLineIndex: (index: number | null) => void
+    navigateUp: () => void
+    navigateDown: () => void
+    navigateForward: (steps?: number) => void
+    navigateBackward: (steps?: number) => void
+    resetNavigation: () => void
+    saveSession: () => Promise<void>
+    loadLastSession: () => Promise<void>
+    toggleSoundEnabled: () => void
+    setSoundVolume: (value: number) => void
+    playTypewriterClick: () => void
+  }
+
+export const useTypewriterStore = create<TypewriterStore>()(
+  persist<TypewriterStore>(
     (set, get) => ({
       // --- STATE PROPERTIES ---
       ...initialState,
@@ -62,30 +196,25 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       handleKeyPress: (key: string) => {
         const { flowMode, activeLine, lines, containerWidth, fontSize, lineBreakConfig } = get()
 
-        // 1. Behandelt die "Enter"-Taste
-        if (key === "Enter") {
-          get().addLineToStack()
-          return
-        }
+          // Berechne Statistiken basierend auf dem gesamten Text
+          const statistics = computeTextStatistics(state.lines, processedText)
+          const { type } = parseMarkdownLine(processedText)
 
-        // 2. Behandelt die "Backspace"-Taste
-        if (key === "Backspace") {
-          // Löschen ist im Flow Mode nicht erlaubt.
-          if (flowMode) {
-            return
+          // Wenn wir im Navigationsmodus sind, wechseln wir zurück zum Schreibmodus
+          if (state.mode === "navigating") {
+            return {
+              activeLine: processedText,
+              activeLineType: type,
+              statistics,
+              mode: "typing",
+              selectedLineIndex: null,
+            }
           }
 
-          // Das Löschen wirkt sich NUR auf die activeLine aus.
-          // Wenn die activeLine leer ist, passiert nichts.
-          if (activeLine.length > 0) {
-            const newActiveLine = activeLine.slice(0, -1)
-            set({
-              activeLine: newActiveLine,
-              statistics: calculateTextStatistics([
-                ...lines.map((l) => l.text),
-                newActiveLine,
-              ].join("\n")),
-            })
+          return {
+            activeLine: processedText,
+            activeLineType: type,
+            statistics,
           }
           // Die fehlerhafte Logik, die Zeilen aus dem Stack zurückgeholt hat, wurde entfernt.
           return
@@ -96,17 +225,10 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         if (key.length === 1) {
           const newActiveLineContent = activeLine + key
 
-          // Wenn der automatische Umbruch deaktiviert ist, einfach Text anhängen.
-          if (!lineBreakConfig.autoMaxChars) {
-            set({
-              activeLine: newActiveLineContent,
-              statistics: calculateTextStatistics([
-                ...lines.map((l) => l.text),
-                newActiveLineContent,
-              ].join("\n")),
-            })
-            return
-          }
+          if (lines.length > 1) {
+            // Verarbeite mehrere Zeilen als einfache Textzeilen
+            const formattedLines = lines.map((line) => parseMarkdownLine(line))
+            const newLines = [...state.lines, ...formattedLines]
 
           const font = `${fontSize}px "Lora", serif`
           // The containerWidth from the store is now the clientWidth of the text area,
@@ -114,29 +236,22 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           const availableWidth = containerWidth
           const textWidth = measureTextWidth(newActiveLineContent, font)
 
-          if (textWidth <= availableWidth) {
-            set({
-              activeLine: newActiveLineContent,
-              statistics: calculateTextStatistics([
-                ...lines.map((l) => l.text),
-                newActiveLineContent,
-              ].join("\n")),
-            })
-          } else {
-            // Der Text ist zu lang, führe einen Umbruch durch.
-            const lastSpaceIndex = newActiveLineContent.lastIndexOf(" ")
-            let lineToAdd: string
-            let remainder: string
-
-            if (lastSpaceIndex > 0) {
-              // Weicher Umbruch am letzten Leerzeichen
-              lineToAdd = newActiveLineContent.substring(0, lastSpaceIndex)
-              remainder = newActiveLineContent.substring(lastSpaceIndex + 1)
-            } else {
-              // Harter Umbruch, wenn kein Leerzeichen gefunden wurde
-              lineToAdd = newActiveLineContent
-              remainder = ""
+            return {
+              lines: newLines,
+              activeLine: "",
+              activeLineType: MarkdownType.NORMAL,
+              ...paragraphInfo,
             }
+          } else {
+            // Erstelle eine einfache Textzeile
+            const formattedLine = parseMarkdownLine(state.activeLine)
+
+            // Füge die formatierte Zeile zum Stack hinzu
+            const newLines = [...state.lines, formattedLine]
+            const lineIndex = newLines.length - 1
+
+            // Verarbeite Absatzmarkierungen
+            const paragraphInfo = processParagraphMarkers(state, newLines, lineIndex)
 
             const newLines: Line[] = [
               ...lines,
@@ -144,13 +259,10 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
             ]
             set({
               lines: newLines,
-              activeLine: remainder,
-              offset: 0,
-              statistics: calculateTextStatistics([
-                ...newLines.map((l) => l.text),
-                remainder,
-              ].join("\n")),
-            })
+              activeLine: "",
+              activeLineType: MarkdownType.NORMAL,
+              ...paragraphInfo,
+            }
           }
         }
       },
@@ -278,30 +390,34 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       /**
        * Setzt den Index der ausgewählten Zeile im Navigationsmodus.
        * @param {number | null} index - Der Index der Zeile oder `null`.
-       */
+      */
       setSelectedLineIndex: (index) => set({ selectedLineIndex: index }),
+
+      /**
+       * Aktualisiert die maximale Anzahl sichtbarer Zeilen.
+       */
+      setMaxVisibleLines: (count: number) => set({ maxVisibleLines: count }),
+
+      /**
+       * Passt den Zeilenversatz an.
+       */
+      adjustOffset: (delta: number) => {
+        const { offset, lines, activeLine, maxVisibleLines } = get()
+        const allLines = [...lines, activeLine]
+        const maxOffset = Math.max(allLines.length - maxVisibleLines, 0)
+        const newOffset = Math.min(Math.max(offset + delta, 0), maxOffset)
+        set({ mode: "navigating", offset: newOffset })
+      },
 
       /**
        * Navigiert eine Zeile nach oben im Stack.
        */
-      navigateUp: () => {
-        const { lines, selectedLineIndex } = get()
-        if (lines.length === 0) return
-        const newIndex = selectedLineIndex === null ? lines.length - 1 : Math.max(0, selectedLineIndex - 1)
-        set({ mode: "navigating", selectedLineIndex: newIndex })
-      },
+      navigateUp: () => get().adjustOffset(-1),
 
       /**
        * Navigiert eine Zeile nach unten im Stack oder beendet den Navigationsmodus.
        */
-      navigateDown: () => {
-        const { lines, selectedLineIndex } = get()
-        if (selectedLineIndex === null || selectedLineIndex >= lines.length - 1) {
-          get().resetNavigation()
-        } else {
-          set({ selectedLineIndex: selectedLineIndex + 1 })
-        }
-      },
+      navigateDown: () => get().adjustOffset(1),
 
       /**
        * Springt mehrere Zeilen vorwärts.
@@ -329,7 +445,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
        */
       resetNavigation: () => {
-        set({ mode: "typing", selectedLineIndex: null })
+        set({ mode: "typing", selectedLineIndex: null, offset: 0 })
       },
 
       /**
@@ -361,13 +477,53 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         set({ isLoading: true, lastSaveStatus: null })
         try {
           const result = await getLastSession()
-          if (result.success && typeof result.text === "string") {
-            const newLinesStrings = result.text.split("\n")
-            const newActiveLine = newLinesStrings.pop() || ""
-            const lineObjects: Line[] = newLinesStrings.map((text) => ({
-              id: nextLineId++,
-              text,
+
+          if (result.success && result.text) {
+            // Teile den Text in Zeilen auf und entferne leere Zeilen am Ende
+            const textLines = result.text.split("\n")
+
+            // Verarbeite die Zeilen als einfache Textzeilen
+            const formattedLines = textLines.map((line) => ({
+              text: line,
+              type: MarkdownType.NORMAL,
             }))
+
+            // Berechne Absatzbereiche neu
+            const paragraphRanges: ParagraphRange[] = []
+            let inParagraph = false
+            let currentParagraphStart = -1
+
+            // Durchlaufe alle Zeilen und identifiziere Absätze
+            formattedLines.forEach((line, index) => {
+              if (line.text.trim() === "***") {
+                // Absatzmarker
+                if (!inParagraph) {
+                  // Starte einen neuen Absatz
+                  inParagraph = true
+                  currentParagraphStart = index + 1 // Der Absatz beginnt nach dem Marker
+                } else {
+                  // Beende einen Absatz
+                  if (currentParagraphStart >= 0 && index > currentParagraphStart) {
+                    paragraphRanges.push({
+                      start: currentParagraphStart,
+                      end: index - 1, // Ende ist die Zeile vor dem Marker
+                    })
+                  }
+                  inParagraph = false
+                  currentParagraphStart = -1
+                }
+              }
+            })
+
+            // Wenn wir am Ende noch in einem Absatz sind, füge ihn hinzu
+            if (inParagraph && currentParagraphStart >= 0) {
+              paragraphRanges.push({
+                start: currentParagraphStart,
+                end: formattedLines.length - 1,
+              })
+            }
+
+            // Setze den neuen Zustand
             set({
               lines: lineObjects,
               activeLine: newActiveLine,
@@ -434,12 +590,26 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * Definiert, welche Teile des Zustands im LocalStorage gespeichert werden sollen.
        * Flüchtige Zustände wie `isSaving` oder `isLoading` werden ausgeschlossen.
        */
-      partialize: (state) =>
-        Object.fromEntries(
-          Object.entries(state).filter(
-            ([key]) => !["isSaving", "isLoading", "lastSaveStatus", "containerWidth"].includes(key),
-          ),
-        ),
+      stopFlowMode: () =>
+        set((state) => ({
+          flowMode: {
+            ...state.flowMode,
+            enabled: false,
+            timerStartTime: undefined,
+            initialWordCount: undefined,
+          },
+        })),
+
+      // Platzhalterfunktionen für Soundeinstellungen
+      toggleSoundEnabled: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+      setSoundVolume: (value: number) => set(() => ({ soundVolume: value })),
+      playTypewriterClick: () => {
+        /* no-op */
+      },
+    }),
+    {
+      // Konfiguration für das persist-Middleware
+      name: "typewriter-storage",
     },
   ),
 )

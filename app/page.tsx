@@ -10,6 +10,10 @@ import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
 import OfflineIndicator from "@/components/offline-indicator"
 import SaveNotification from "@/components/save-notification"
 import SettingsModal from "@/components/settings-modal"
+import FlowSettingsModal from "@/components/flow-settings-modal"
+import FlowModeOverlay from "@/components/flow-mode-overlay"
+
+// Importiere die ApiKeyWarning-Komponente am Anfang der Datei
 import ApiKeyWarning from "@/components/api-key-warning"
 import { debounce } from "@/utils/debounce" // Korrekter Import
 
@@ -23,21 +27,34 @@ export default function TypewriterPage() {
     fontSize,
     stackFontSize,
     darkMode,
-    setContainerWidth,
+    updateLineBreakConfig,
+    setFontSize,
+    setStackFontSize,
+    setFixedLineLength,
+    paragraphRanges,
+    inParagraph,
     mode,
     selectedLineIndex,
-    navigateUp,
-    navigateDown,
+    adjustOffset,
     navigateForward,
     navigateBackward,
     resetNavigation,
-    handleKeyPress,
-    offset,
+    flowMode,
+    startFlowMode,
+    stopFlowMode,
+    updateFlowMode,
+    saveSession,
   } = useTypewriterStore()
 
-  const containerRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const activeLineRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
+  const pressedKeysRef = useRef<Set<string>>(new Set())
+
+  // Ref zur Entdoppelung schneller gleicher Tastendrücke (z.B. Android IME)
+  const lastKeyRef = useRef<{ key: string; time: number }>({ key: "", time: 0 })
 
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -47,6 +64,9 @@ export default function TypewriterPage() {
     typeof window !== "undefined" && window.innerWidth > window.innerHeight ? "landscape" : "portrait",
   )
   const [showSettings, setShowSettings] = useState(false)
+  const [showFlowSettings, setShowFlowSettings] = useState(false)
+
+  // Neue States für das Navigations-Overlay
   const [showNavigationHint, setShowNavigationHint] = useState(false)
   const navigationHintTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -79,29 +99,65 @@ export default function TypewriterPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const focusInput = useCallback(() => {
-    if (isAndroid) {
-      focusInputSafely()
-    } else {
-      // Stelle sicher, dass der Fokus gesetzt wird, auch wenn das Fenster nicht aktiv war
-      setTimeout(() => hiddenInputRef.current?.focus(), 0)
+  const openFlowSettings = useCallback(() => {
+    setShowFlowSettings(true)
+  }, [])
+
+  const closeSettings = useCallback(() => {
+    console.log("Einstellungen schließen (Hauptkomponente)")
+    setShowSettings(false)
+    // Verzögere den Fokus, um sicherzustellen, dass das Modal vollständig geschlossen ist
+    setTimeout(() => {
+      focusInput()
+    }, 300)
+  }, [focusInput])
+
+  const closeFlowSettings = useCallback(() => {
+    setShowFlowSettings(false)
+    setTimeout(() => focusInput(), 300)
+  }, [focusInput])
+
+  // Modul 4: Rückkehr zur aktuellen Schreibposition bei Eingabe
+  useEffect(() => {
+    // Wenn wir in den Schreibmodus zurückkehren, fokussiere das Eingabefeld
+    if (mode === "typing" && selectedLineIndex === null) {
+      focusInput()
     }
   }, [isAndroid, focusInputSafely])
 
   // Globale Tastatur-Listener
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.repeat ||
+        event.isComposing ||
+        (event as any).keyCode === 229 ||
+        pressedKeysRef.current.has(event.key)
+      ) {
+        return
+      }
+      pressedKeysRef.current.add(event.key)
+
       const target = event.target as HTMLElement
       // Diese Bedingung blockiert jetzt NICHT mehr, wenn unser hidden-input den Fokus hat.
       if (target.closest('[role="dialog"], .settings-panel, input, textarea:not(#hidden-input)')) {
         return
       }
 
+      const now = Date.now()
+      if (
+        event.key === lastKeyRef.current.key &&
+        now - lastKeyRef.current.time < 50
+      ) {
+        return
+      }
+      lastKeyRef.current = { key: event.key, time: now }
+
       if (event.key.startsWith("Arrow")) {
         event.preventDefault()
         showTemporaryNavigationHint()
-        if (event.key === "ArrowUp") navigateUp()
-        if (event.key === "ArrowDown") navigateDown()
+        if (event.key === "ArrowUp") adjustOffset(-1)
+        if (event.key === "ArrowDown") adjustOffset(1)
         if (event.key === "ArrowLeft") navigateBackward(10)
         if (event.key === "ArrowRight") navigateForward(10)
         return
@@ -122,12 +178,19 @@ export default function TypewriterPage() {
       }
     }
 
+    const handleGlobalKeyUp = (event: KeyboardEvent) => {
+      pressedKeysRef.current.delete(event.key)
+    }
+
     document.addEventListener("keydown", handleGlobalKeyDown)
-    return () => document.removeEventListener("keydown", handleGlobalKeyDown)
+    document.addEventListener("keyup", handleGlobalKeyUp)
+    return () => {
+      document.removeEventListener("keydown", handleGlobalKeyDown)
+      document.removeEventListener("keyup", handleGlobalKeyUp)
+    }
   }, [
     mode,
-    navigateUp,
-    navigateDown,
+    adjustOffset,
     navigateForward,
     navigateBackward,
     resetNavigation,
@@ -149,6 +212,30 @@ export default function TypewriterPage() {
       if (linesContainerRef.current) {
         setContainerWidth(linesContainerRef.current.clientWidth)
       }
+
+      const viewportHeight = viewportRef.current?.clientHeight ?? window.innerHeight
+      const inputHeight = activeLineRef.current?.offsetHeight ?? 0
+      const optionsHeight = headerRef.current?.offsetHeight ?? 0
+
+      let lineHeight = 0
+      if (linesContainerRef.current) {
+        const stackLine = (linesContainerRef.current.querySelector(
+          ".line-stack div",
+        ) as HTMLElement | null) ||
+          (linesContainerRef.current.querySelector(
+            ".line-stack",
+          ) as HTMLElement | null)
+        if (stackLine) {
+          lineHeight = parseFloat(getComputedStyle(stackLine).lineHeight)
+        }
+      }
+      if (lineHeight) {
+        const maxLines = Math.floor(
+          (viewportHeight - inputHeight - optionsHeight) / lineHeight,
+        )
+        setMaxVisibleLines(maxLines)
+      }
+
       if (typeof window !== "undefined") {
         setOrientation(window.innerWidth > window.innerHeight ? "landscape" : "portrait")
         setIsSmallScreen(window.innerWidth < 768)
@@ -167,7 +254,7 @@ export default function TypewriterPage() {
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch((err) => console.error("Fullscreen error:", err))
+      viewportRef.current?.requestFullscreen().catch((err) => console.error("Fullscreen error:", err))
     } else {
       document.exitFullscreen().catch((err) => console.error("Exit fullscreen error:", err))
     }
@@ -183,7 +270,7 @@ export default function TypewriterPage() {
 
   return (
     <div
-      ref={containerRef}
+      ref={viewportRef}
       className={`min-h-screen flex flex-col typewriter-container font-sans outline-none ${
         darkMode ? "dark bg-[#121212] text-[#E0E0E0]" : "bg-[#f3efe9] text-gray-900"
       }`}
@@ -191,11 +278,29 @@ export default function TypewriterPage() {
       onClick={focusInput} // Dieser Handler ist entscheidend für die Fokus-Wiederherstellung
     >
       <ApiKeyWarning />
-      <header
-        className={`border-b ${
-          darkMode ? "border-gray-700" : "border-[#d3d0cb]"
-        } transition-colors duration-300 flex-shrink-0`}
-      >
+
+      {/* Rest des Codes bleibt unverändert */}
+      {/* Header nur anzeigen, wenn nicht im Vollbildmodus auf kleinen Bildschirmen */}
+      {!(isFullscreen && isSmallScreen) && (
+        <header
+          className={`border-b ${
+            darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
+          } transition-colors duration-300`}
+        >
+          <ControlBar
+            wordCount={statistics.wordCount}
+            pageCount={statistics.pageCount}
+            toggleFullscreen={toggleFullscreen}
+            hiddenInputRef={hiddenInputRef}
+            isFullscreen={isFullscreen}
+            openSettings={openSettings}
+            openFlowSettings={openFlowSettings}
+          />
+        </header>
+      )}
+
+      {/* Im Vollbildmodus auf kleinen Bildschirmen: ControlBar in der rechten oberen Ecke */}
+      {isFullscreen && isSmallScreen && (
         <ControlBar
           wordCount={statistics.wordCount}
           pageCount={statistics.pageCount}
@@ -203,6 +308,7 @@ export default function TypewriterPage() {
           hiddenInputRef={hiddenInputRef}
           isFullscreen={isFullscreen}
           openSettings={openSettings}
+          openFlowSettings={openFlowSettings}
         />
       </header>
 
@@ -215,6 +321,8 @@ export default function TypewriterPage() {
           <WritingArea
             lines={lines}
             activeLine={activeLine}
+            setActiveLine={setActiveLine}
+            addLineToStack={addLineToStack}
             maxCharsPerLine={maxCharsPerLine}
             fontSize={fontSize}
             stackFontSize={stackFontSize}
@@ -226,13 +334,17 @@ export default function TypewriterPage() {
             selectedLineIndex={selectedLineIndex}
             isFullscreen={isFullscreen}
             linesContainerRef={linesContainerRef}
-            offset={offset}
+            disableBackspace={flowMode.enabled && flowMode.noBackspace}
           />
         </section>
       </main>
 
       <NavigationIndicator darkMode={darkMode} />
       <SaveNotification />
+
+      <FlowModeOverlay />
+
+      {/* Offline-Indikator */}
       <OfflineIndicator darkMode={darkMode} />
       {mode === "navigating" && showNavigationHint && (
         <div
@@ -246,6 +358,10 @@ export default function TypewriterPage() {
         </div>
       )}
       <SettingsModal isOpen={showSettings} onClose={closeSettings} darkMode={darkMode} />
+      <FlowSettingsModal isOpen={showFlowSettings} onClose={closeFlowSettings} darkMode={darkMode} />
+
+      {/* Offline-Indikator hinzufügen */}
+      <OfflineIndicator darkMode={darkMode} />
     </div>
   )
 }

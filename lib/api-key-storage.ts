@@ -7,19 +7,21 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 7 // 7 Tage
 // In-Memory Fallback für Serverless-Umgebungen
 let memoryApiKey = ""
 
-export function setApiKey(apiKey: string): void {
+export async function setApiKey(apiKey: string): Promise<void> {
   // Speichere in Memory als Fallback
   memoryApiKey = apiKey
 
   // Versuche in Cookies zu speichern (nur wenn verfügbar)
   try {
-    const cookieStore = cookies()
-    cookieStore.set(API_KEY_COOKIE_NAME, apiKey, {
-      maxAge: COOKIE_MAX_AGE,
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    })
+    const cookieStore = (await cookies()) as any
+    if (cookieStore?.set) {
+      cookieStore.set(API_KEY_COOKIE_NAME, apiKey, {
+        maxAge: COOKIE_MAX_AGE,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      })
+    }
   } catch (error) {
     // Cookies nicht verfügbar, verwende nur Memory
     console.warn("Cookies nicht verfügbar, verwende Memory-Speicherung")
@@ -35,12 +37,14 @@ export function hasApiKey(): boolean {
   return !!process.env.API_KEY
 }
 
-export function clearApiKey(): void {
+export async function clearApiKey(): Promise<void> {
   memoryApiKey = ""
 
   try {
-    const cookieStore = cookies()
-    cookieStore.delete(API_KEY_COOKIE_NAME)
+    const cookieStore = (await cookies()) as any
+    if (cookieStore?.delete) {
+      cookieStore.delete(API_KEY_COOKIE_NAME)
+    }
   } catch (error) {
     // Cookies nicht verfügbar
   }

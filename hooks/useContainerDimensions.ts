@@ -91,22 +91,6 @@ export function useContainerDimensions(stackFontSize: number) {
         // Zähle Berechnungen (nur für Debugging)
         calculationCount.current += 1
 
-        console.log(
-          `Container dimensions calculation (${calculationCount.current}):`,
-          "Container Height:",
-          containerHeight,
-          "Available Height:",
-          availableHeight,
-          "Line Height:",
-          lineHeight,
-          "Max Visible Lines:",
-          newMaxVisibleLines,
-          "Fullscreen:",
-          isFullscreen,
-          "Android:",
-          isAndroid,
-        )
-
         setMaxVisibleLines(newMaxVisibleLines)
         setContainerHeight(containerHeight)
 

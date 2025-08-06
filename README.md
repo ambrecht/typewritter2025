@@ -4,22 +4,24 @@ Eine minimalistische, ablenkungsfreie Schreibumgebung, die für konzentriertes A
 
 ## Inhaltsverzeichnis
 
-- [Architektur-Überblick](#architektur-überblick)
-- [Projektstruktur](#projektstruktur)
-- [Technologie-Stack](#technologie-stack)
-- [Lokale Entwicklung](#lokale-entwicklung)
-- [Deployment](#deployment)
-- [Wichtige Konzepte](#wichtige-konzepte)
-  - [State Management (Zustand)](#state-management-zustand)
-  - [Automatischer Zeilenumbruch](#automatischer-zeilenumbruch)
-  - [Responsive Typografie](#responsive-typografie)
-- [API-Konfiguration](#api-konfiguration)
-- [PWA-Features](#pwa-features)
-- [Testing](#testing)
+- ✍️ **Ablenkungsfreies Schreiben**: Minimalistisches Interface ohne Störungen
+- 📱 **Responsive Design**: Optimiert für Desktop, Tablet und Mobile
+- 🌙 **Dark Mode**: Augenschonender dunkler Modus
+- 📏 **Intelligente Zeilenumbrüche**: Automatische Anpassung an Bildschirmgröße
+- 💾 **Cloud-Speicherung**: Sichere Speicherung in der Cloud
+- 📱 **PWA-Support**: Installierbar als Progressive Web App
+- 🔄 **Offline-Funktionalität**: Arbeiten auch ohne Internetverbindung
+- 🚀 **Flow Mode**: Zielorientiertes Schreiben mit Timer oder Wortzahl
+- ⌨️ **Tastaturnavigation**: Navigation durch vorherige Zeilen mit Pfeiltasten
 
 ## Architektur-Überblick
 
-Die Anwendung ist eine Single-Page-Application (SPA), die mit dem **Next.js App Router** aufgebaut ist. Das Herzstück der Anwendung ist die `app/page.tsx`, die als Hauptcontainer dient und den globalen Zustand verwaltet.
+- **Framework**: Next.js 14 mit App Router
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **Icons**: Lucide React
+- **Testing**: Unit Tests
+- **Deployment**: Vercel
 
 -   **Zustandsverwaltung**: Der gesamte Anwendungszustand wird zentral in einem **Zustand-Store** (`store/typewriter-store.ts`) gehalten. Dies entkoppelt die UI-Komponenten von der Geschäftslogik.
 -   **Komponenten-Struktur**: Die UI ist in logische, wiederverwendbare Komponenten unterteilt (`components/`). Die Haupt-Schreibfläche (`WritingArea`) besteht aus weiteren Unterkomponenten (`ActiveLine`, `LineStack`).
@@ -138,7 +140,51 @@ Die App ist als Progressive Web App (PWA) konfiguriert:
 
 ## Testing
 
-Tests sind mit Jest und React Testing Library implementiert.
+Dieses Projekt verwendet **Jest** und **React Testing Library** für Unit Tests. Da kein Test-Script definiert ist, werden die Tests direkt mit `npx jest` ausgeführt.
+
+```bash
+# Alle Tests ausführen
+npx jest
+
+# Tests im Watch-Modus
+npx jest --watch
+
+# Testabdeckung generieren
+npx jest --coverage
+```
+
+Die Tests befinden sich im Verzeichnis `__tests__/`.
+
+## Sicherheit
+
+Die App implementiert verschiedene Sicherheitsmaßnahmen:
+
+- **Content Security Policy (CSP)**
+- **Strict Transport Security (HSTS)**
+- **X-Frame-Options**
+- **X-Content-Type-Options**
+- **Referrer Policy**
+
+## Performance-Optimierungen
+
+- **Image Optimization**: Next.js Image-Komponente
+- **Code Splitting**: Automatisch durch Next.js
+- **Service Worker**: Caching für bessere Performance
+- **Preconnect**: DNS-Prefetching für externe Ressourcen
+
+## Browser-Unterstützung
+
+- Chrome/Edge 88+
+- Firefox 85+
+- Safari 14+
+- Mobile Safari 14+
+- Chrome Mobile 88+
+
+## Lizenz
+
+[MIT License](LICENSE)
+
+## Support
 
 -   `pnpm test`: Führt alle Tests aus.
 -   `pnpm test:watch`: Startet Tests im Watch-Modus.

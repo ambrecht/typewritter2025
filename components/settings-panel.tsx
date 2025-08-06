@@ -374,7 +374,9 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           const newSize = Math.max(11, fontSize - 2)
           setFontSize(newSize)
           fontSizeValue.textContent = newSize.toString()
-          const exampleText = decreaseFontBtn.closest("div").nextElementSibling
+          const exampleText = decreaseFontBtn
+            .closest("div")
+            ?.nextElementSibling as HTMLElement | null
           if (exampleText) {
             exampleText.style.fontSize = `${newSize}px`
           }
@@ -384,7 +386,9 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           const newSize = Math.min(64, fontSize + 2)
           setFontSize(newSize)
           fontSizeValue.textContent = newSize.toString()
-          const exampleText = increaseFontBtn.closest("div").nextElementSibling
+          const exampleText = increaseFontBtn
+            .closest("div")
+            ?.nextElementSibling as HTMLElement | null
           if (exampleText) {
             exampleText.style.fontSize = `${newSize}px`
           }
@@ -401,7 +405,9 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           const newSize = Math.max(11, stackFontSize - 1)
           setStackFontSize(newSize)
           stackFontSizeValue.textContent = newSize.toString()
-          const exampleText = decreaseStackFontBtn.closest("div").nextElementSibling
+          const exampleText = decreaseStackFontBtn
+            .closest("div")
+            ?.nextElementSibling as HTMLElement | null
           if (exampleText) {
             exampleText.style.fontSize = `${newSize}px`
           }
@@ -411,7 +417,9 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           const newSize = Math.min(64, stackFontSize + 1)
           setStackFontSize(newSize)
           stackFontSizeValue.textContent = newSize.toString()
-          const exampleText = increaseStackFontBtn.closest("div").nextElementSibling
+          const exampleText = increaseStackFontBtn
+            .closest("div")
+            ?.nextElementSibling as HTMLElement | null
           if (exampleText) {
             exampleText.style.fontSize = `${newSize}px`
           }
@@ -438,7 +446,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           updateLineBreakConfig({ autoMaxChars: autoLineWidthCheckbox.checked })
 
           // Aktualisiere die Anzeige
-          const toggleBg = autoLineWidthCheckbox.nextElementSibling
+          const toggleBg = autoLineWidthCheckbox.nextElementSibling as HTMLElement | null
           if (toggleBg) {
             toggleBg.style.backgroundColor = autoLineWidthCheckbox.checked
               ? darkMode
@@ -448,7 +456,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 ? "#1f2937"
                 : "#e5e7eb"
 
-            const toggleHandle = toggleBg.firstElementChild
+            const toggleHandle = toggleBg.firstElementChild as HTMLElement | null
             if (toggleHandle) {
               toggleHandle.setAttribute(
                 "style",

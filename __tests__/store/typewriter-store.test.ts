@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from "@jest/globals"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import { act, renderHook } from "@testing-library/react"
 
@@ -35,35 +36,33 @@ describe("TypewriterStore", () => {
     })
 
     expect(result.current.lines).toHaveLength(1)
-    expect(result.current.lines[0].text).toBe("Test line")
+    expect(result.current.lines[0]).toBe("Test line")
     expect(result.current.activeLine).toBe("")
   })
 
-  it("should navigate through lines", () => {
+  it("should adjust offset", () => {
     const { result } = renderHook(() => useTypewriterStore())
 
-    // Add some lines
     act(() => {
       result.current.setActiveLine("Line 1")
       result.current.addLineToStack()
       result.current.setActiveLine("Line 2")
       result.current.addLineToStack()
+      result.current.setMaxVisibleLines(1)
     })
 
-    // Navigate up
     act(() => {
-      result.current.navigateUp()
+      result.current.adjustOffset(1)
     })
 
     expect(result.current.mode).toBe("navigating")
-    expect(result.current.selectedLineIndex).toBe(1)
+    expect(result.current.offset).toBe(1)
 
-    // Navigate up again
     act(() => {
-      result.current.navigateUp()
+      result.current.adjustOffset(-1)
     })
 
-    expect(result.current.selectedLineIndex).toBe(0)
+    expect(result.current.offset).toBe(0)
   })
 
   it("should update line break config", () => {

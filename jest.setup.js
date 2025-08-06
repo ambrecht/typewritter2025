@@ -1,6 +1,22 @@
 "use client"
 
 import "@testing-library/jest-dom"
+import { TextEncoder, TextDecoder } from "util"
+import { ReadableStream } from "stream/web"
+
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
+global.ReadableStream = ReadableStream
+
+const { fetch, Headers, Request, Response } = require("undici")
+
+global.fetch = fetch
+global.Headers = Headers
+global.Request = Request
+global.Response = Response
+
+// Provide minimal Request implementation for next/server
+global.Request = class {}
 
 // Mock Next.js router
 jest.mock("next/navigation", () => ({
@@ -28,8 +44,25 @@ const localStorageMock = {
 }
 global.localStorage = localStorageMock
 
-// Mock fetch
+// Mock fetch and provide Web API classes using node-fetch
+const nodeFetch = require("node-fetch")
 global.fetch = jest.fn()
+global.Request = nodeFetch.Request
+global.Response = nodeFetch.Response
+global.Headers = nodeFetch.Headers
+
+if (typeof global.Response.json !== "function") {
+  global.Response.json = (body, init) => {
+    const headers = new global.Headers(init && init.headers)
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json")
+    }
+    return new global.Response(JSON.stringify(body), {
+      ...init,
+      headers,
+    })
+  }
+}
 
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({

@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { getActiveLineTextClass } from "../../utils/lineClassUtils"
 
 /**
  * @interface ActiveLineProps
@@ -14,9 +15,12 @@ interface ActiveLineProps {
   showCursor: boolean
   maxCharsPerLine: number
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
-  containerRef?: React.RefObject<HTMLDivElement | null>
+  handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
+  activeLineRef: React.RefObject<HTMLDivElement | null>
   isAndroid?: boolean
   isFullscreen?: boolean
+  activeLineRef?: React.RefObject<HTMLDivElement | null>
 }
 
 /**
@@ -46,20 +50,59 @@ export function ActiveLine({
   showCursor,
   maxCharsPerLine,
   hiddenInputRef,
-  containerRef,
+  activeLineRef,
 }: ActiveLineProps) {
-  useAutoResizeTextarea(hiddenInputRef, activeLine)
 
-  const fixedActiveLineClass = `flex-shrink-0 font-serif border-t z-10 active-line relative sticky bottom-0 ${
+  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif border-t z-10 active-line relative ${
     darkMode
       ? "bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
-      : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.1)]"
+      : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
   }`
 
+  const activeLineTextClass = getActiveLineTextClass(darkMode)
+
+  const [cursorPosition, setCursorPosition] = useState(activeLine.length)
+  const [isFocused, setIsFocused] = useState(true)
+
+  useEffect(() => {
+    const updateCursor = () => {
+      if (hiddenInputRef.current) {
+        const pos = hiddenInputRef.current.selectionStart ?? activeLine.length
+        setCursorPosition(pos)
+      }
+    }
+
+    const handleFocus = () => setIsFocused(true)
+    const handleBlur = () => setIsFocused(false)
+
+    const input = hiddenInputRef.current
+    if (input) {
+      input.addEventListener("focus", handleFocus)
+      input.addEventListener("blur", handleBlur)
+      input.addEventListener("select", updateCursor)
+      input.addEventListener("keyup", updateCursor)
+      input.addEventListener("click", updateCursor)
+      input.addEventListener("input", updateCursor)
+    }
+
+    return () => {
+      if (input) {
+        input.removeEventListener("focus", handleFocus)
+        input.removeEventListener("blur", handleBlur)
+        input.removeEventListener("select", updateCursor)
+        input.removeEventListener("keyup", updateCursor)
+        input.removeEventListener("click", updateCursor)
+        input.removeEventListener("input", updateCursor)
+      }
+    }
+  }, [activeLine])
+
+  // Ändere die return-Anweisung, um die Schreibkopfzeile besser hervorzuheben
   return (
     <div
-      ref={containerRef}
+      ref={activeLineRef}
       className={fixedActiveLineClass}
+      onClick={() => hiddenInputRef.current?.focus()}
       style={{
         minHeight: `${fontSize * 1.5 + 24}px`,
         padding: "12px 1.25rem",
@@ -67,10 +110,36 @@ export function ActiveLine({
       }}
       data-testid="active-line"
     >
-      <div className="relative w-full h-full flex items-center">
-        {/* Die unsichtbare Textarea empfängt den Fokus, um die mobile Tastatur auszulösen.
-            `readOnly` verhindert direkte Eingabe und Cursor-Bewegung.
-            Die Eingabe wird global über den Keydown-Listener in page.tsx gehandhabt. */}
+      {/* Füge einen visuellen Indikator für die Schreibzeile hinzu */}
+      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center">
+        <div className={`h-3 w-3 rounded-full ${darkMode ? "bg-blue-500" : "bg-amber-500"} opacity-70`}></div>
+      </div>
+
+      <div className="relative pl-3">
+        {/* Visible text with cursor */}
+        <div
+          className={activeLineTextClass}
+          style={{ fontSize: `${fontSize}px`, lineHeight: "1.2" }}
+          aria-hidden="true"
+        >
+          {activeLine.slice(0, cursorPosition)}
+          <span
+            className={`inline-block h-[1.2em] ml-[1px] align-middle ${
+              showCursor && isFocused
+                ? darkMode
+                  ? "border-r-2 border-gray-200"
+                  : "border-r-2 border-[#222]"
+                : "border-r-2 border-transparent"
+            }`}
+            style={{
+              transform: "translateY(-0.1em)",
+              animation: showCursor && isFocused ? "pulse 1.5s infinite" : "none",
+            }}
+          />
+          {activeLine.slice(cursorPosition)}
+        </div>
+
+        {/* Textarea statt Input für Mehrzeilenunterstützung */}
         <textarea
           ref={hiddenInputRef}
           id="hidden-input" // WICHTIG: ID hinzugefügt
@@ -85,29 +154,7 @@ export function ActiveLine({
           rows={1}
           aria-label="Typewriter input area"
         />
-        {/* Das sichtbare Div, das den Text und den Cursor anzeigt. */}
-        <div
-          className={`whitespace-pre-wrap break-words w-full pointer-events-none ${
-            darkMode ? "text-gray-200" : "text-gray-800"
-          }`}
-          style={{
-            fontSize: `${fontSize}px`,
-            lineHeight: "1.5",
-            minHeight: `${fontSize * 1.5}px`,
-          }}
-          aria-hidden="true"
-        >
-          {activeLine}
-          {showCursor && (
-            <span
-              className={`inline-block w-0.5 ml-px align-text-bottom animate-pulse ${
-                darkMode ? "bg-gray-200" : "bg-gray-900"
-              }`}
-              style={{ height: `${fontSize * 1.2}px` }}
-            />
-          )}
-          {activeLine.length === 0 && <>&nbsp;</>}
-        </div>
+
       </div>
       {/* Fortschrittsbalken und Zeichenzähler */}
       <div className={`absolute bottom-0 left-0 h-1 ${darkMode ? "bg-gray-700" : "bg-[#e2dfda]"} w-full`}>
@@ -131,6 +178,7 @@ export function ActiveLine({
       <div className="absolute bottom-2 right-4 text-xs opacity-60 font-mono">
         {activeLine.length}/{maxCharsPerLine}
       </div>
+
     </div>
   )
 }
