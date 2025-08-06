@@ -90,6 +90,12 @@ export default function WritingArea({
   // Ref für die letzte Neuberechnung
   const lastRecalculation = useRef(Date.now())
 
+  const scrollToBottom = () => {
+    if (linesContainerRef.current) {
+      linesContainerRef.current.scrollTop = linesContainerRef.current.scrollHeight
+    }
+  }
+
   // Messe die Container-Höhe
   useEffect(() => {
     if (!linesContainerRef.current) return
@@ -102,12 +108,18 @@ export default function WritingArea({
       }
     }
 
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(linesContainerRef.current)
+
+    return () => observer.disconnect()
+  }, [containerHeight, linesContainerRef])
+
   useEffect(() => {
     if (externalLinesContainerRef) {
       externalLinesContainerRef.current = linesContainerRef.current
     }
 
-    // Reduziere auf eine verzögerte Operation
     const timeoutId = setTimeout(scrollToBottom, 150)
     return () => clearTimeout(timeoutId)
   }, [lines.length, mode])
@@ -169,7 +181,6 @@ export default function WritingArea({
           activeLineRef={activeLineRef}
           isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
           isFullscreen={isFullscreen}
-          activeLineRef={activeLineRef}
         />
       )}
     </div>
