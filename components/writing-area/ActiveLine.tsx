@@ -14,6 +14,7 @@ interface ActiveLineProps {
   showCursor: boolean
   maxCharsPerLine: number
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
+  containerRef?: React.RefObject<HTMLDivElement | null>
   isAndroid?: boolean
   isFullscreen?: boolean
 }
@@ -45,10 +46,11 @@ export function ActiveLine({
   showCursor,
   maxCharsPerLine,
   hiddenInputRef,
+  containerRef,
 }: ActiveLineProps) {
   useAutoResizeTextarea(hiddenInputRef, activeLine)
 
-  const fixedActiveLineClass = `flex-shrink-0 font-serif border-t z-10 active-line relative ${
+  const fixedActiveLineClass = `flex-shrink-0 font-serif border-t z-10 active-line relative sticky bottom-0 ${
     darkMode
       ? "bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
       : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.1)]"
@@ -56,6 +58,7 @@ export function ActiveLine({
 
   return (
     <div
+      ref={containerRef}
       className={fixedActiveLineClass}
       style={{
         minHeight: `${fontSize * 1.5 + 24}px`,

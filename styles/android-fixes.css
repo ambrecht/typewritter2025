@@ -53,11 +53,7 @@
 }
 
 /* ===== Tastatur-Anpassungen ===== */
-.keyboard-visible .writing-container {
-  height: calc(100vh - 300px); /* Ungefähre Höhe der Tastatur */
-  overflow-y: auto;
-}
-
+/* Kein Scrollen des Schreibbereichs bei sichtbarer Tastatur */
 .keyboard-visible .active-line {
   position: fixed;
   bottom: 0;
@@ -71,24 +67,6 @@
 .android-typewriter button {
   min-height: 44px; /* Empfohlene Mindesthöhe für Touch-Ziele */
   min-width: 44px; /* Empfohlene Mindestbreite für Touch-Ziele */
-}
-
-/* ===== Scrollbar-Anpassungen ===== */
-.android-typewriter .writing-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.android-typewriter .writing-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.android-typewriter .writing-container::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-}
-
-.android-typewriter.dark .writing-container::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* ===== Textdarstellung ===== */

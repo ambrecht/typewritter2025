@@ -5,6 +5,7 @@ import { useRef } from "react"
 import type { LineBreakConfig } from "@/types"
 
 import { useVisibleLines } from "../hooks/useVisibleLines"
+import { useViewportLayout } from "@/hooks/useViewportLayout"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
@@ -56,7 +57,9 @@ export default function WritingArea({
   const internalLinesContainerRef = useRef<HTMLDivElement>(null)
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
 
-  const visibleLines = useVisibleLines(lines, 200, mode, selectedLineIndex, isFullscreen)
+  const lineHeight = stackFontSize * (isFullscreen ? 1.3 : 1.4)
+  const { activeLineRef, maxVisibleLines } = useViewportLayout(lineHeight)
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
@@ -93,6 +96,7 @@ export default function WritingArea({
           showCursor={showCursor}
           maxCharsPerLine={maxCharsPerLine}
           hiddenInputRef={hiddenInputRef} // Pass the ref
+          containerRef={activeLineRef}
           isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
           isFullscreen={isFullscreen}
         />
