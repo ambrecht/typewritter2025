@@ -14,16 +14,25 @@ export function useMaxVisibleLines(
 
   useLayoutEffect(() => {
     const HEADER_HEIGHT = 40
-
-    const resize = () => {
+    const calculate = () => {
       const vh = window.innerHeight
       const inputH = inputRef.current?.offsetHeight ?? 0
       setMaxVisible(Math.floor((vh - HEADER_HEIGHT - inputH) / lineHeight))
     }
 
-    resize()
-    window.addEventListener("resize", resize)
-    return () => window.removeEventListener("resize", resize)
+    calculate()
+
+    const element = inputRef.current
+    const observer = new ResizeObserver(() => calculate())
+    if (element) observer.observe(element)
+
+    window.addEventListener("resize", calculate)
+
+    return () => {
+      window.removeEventListener("resize", calculate)
+      if (element) observer.unobserve(element)
+      observer.disconnect()
+    }
   }, [inputRef, lineHeight])
 
   return maxVisible
