@@ -26,8 +26,7 @@ export default function TypewriterPage() {
     setContainerWidth,
     mode,
     selectedLineIndex,
-    navigateUp,
-    navigateDown,
+    adjustOffset,
     navigateForward,
     navigateBackward,
     resetNavigation,
@@ -100,8 +99,8 @@ export default function TypewriterPage() {
       if (event.key.startsWith("Arrow")) {
         event.preventDefault()
         showTemporaryNavigationHint()
-        if (event.key === "ArrowUp") navigateUp()
-        if (event.key === "ArrowDown") navigateDown()
+        if (event.key === "ArrowUp") adjustOffset(-1)
+        if (event.key === "ArrowDown") adjustOffset(1)
         if (event.key === "ArrowLeft") navigateBackward(10)
         if (event.key === "ArrowRight") navigateForward(10)
         return
@@ -126,8 +125,7 @@ export default function TypewriterPage() {
     return () => document.removeEventListener("keydown", handleGlobalKeyDown)
   }, [
     mode,
-    navigateUp,
-    navigateDown,
+    adjustOffset,
     navigateForward,
     navigateBackward,
     resetNavigation,

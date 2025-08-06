@@ -64,6 +64,10 @@ export interface TypewriterState {
   mode: "typing" | "navigating"
   /** Index der aktuell ausgewählten Zeile (null, wenn keine ausgewählt ist) */
   selectedLineIndex: number | null
+  /** Aktueller Versatz für die Anzeige der Zeilen */
+  offset: number
+  /** Maximale Anzahl sichtbarer Zeilen */
+  maxVisibleLines: number
   /** Status der letzten Speicheroperation */
   lastSaveStatus: { success: boolean; message: string } | null
   /** Ob gerade gespeichert wird */
@@ -106,6 +110,10 @@ export interface TypewriterActions {
   setMode: (mode: "typing" | "navigating") => void
   /** Funktion zum Setzen des ausgewählten Zeilenindex */
   setSelectedLineIndex: (index: number | null) => void
+  /** Aktualisiert die maximale Anzahl sichtbarer Zeilen */
+  setMaxVisibleLines: (count: number) => void
+  /** Passt den Versatz der sichtbaren Zeilen an */
+  adjustOffset: (delta: number) => void
   /** Funktion zum Navigieren nach oben im Stack */
   navigateUp: () => void
   /** Funktion zum Navigieren nach unten im Stack */

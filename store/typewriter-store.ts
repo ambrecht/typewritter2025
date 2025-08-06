@@ -24,6 +24,8 @@ const initialState: Omit<
   darkMode: false,
   mode: "typing",
   selectedLineIndex: null,
+  offset: 0,
+  maxVisibleLines: 0,
   flowMode: false, // Neuer Zustand für den Flow Mode
   offset: 0,
 }
@@ -278,30 +280,34 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       /**
        * Setzt den Index der ausgewählten Zeile im Navigationsmodus.
        * @param {number | null} index - Der Index der Zeile oder `null`.
-       */
+      */
       setSelectedLineIndex: (index) => set({ selectedLineIndex: index }),
+
+      /**
+       * Aktualisiert die maximale Anzahl sichtbarer Zeilen.
+       */
+      setMaxVisibleLines: (count: number) => set({ maxVisibleLines: count }),
+
+      /**
+       * Passt den Zeilenversatz an.
+       */
+      adjustOffset: (delta: number) => {
+        const { offset, lines, activeLine, maxVisibleLines } = get()
+        const allLines = [...lines, activeLine]
+        const maxOffset = Math.max(allLines.length - maxVisibleLines, 0)
+        const newOffset = Math.min(Math.max(offset + delta, 0), maxOffset)
+        set({ mode: "navigating", offset: newOffset })
+      },
 
       /**
        * Navigiert eine Zeile nach oben im Stack.
        */
-      navigateUp: () => {
-        const { lines, selectedLineIndex } = get()
-        if (lines.length === 0) return
-        const newIndex = selectedLineIndex === null ? lines.length - 1 : Math.max(0, selectedLineIndex - 1)
-        set({ mode: "navigating", selectedLineIndex: newIndex })
-      },
+      navigateUp: () => get().adjustOffset(-1),
 
       /**
        * Navigiert eine Zeile nach unten im Stack oder beendet den Navigationsmodus.
        */
-      navigateDown: () => {
-        const { lines, selectedLineIndex } = get()
-        if (selectedLineIndex === null || selectedLineIndex >= lines.length - 1) {
-          get().resetNavigation()
-        } else {
-          set({ selectedLineIndex: selectedLineIndex + 1 })
-        }
-      },
+      navigateDown: () => get().adjustOffset(1),
 
       /**
        * Springt mehrere Zeilen vorwärts.
@@ -329,7 +335,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
        */
       resetNavigation: () => {
-        set({ mode: "typing", selectedLineIndex: null })
+        set({ mode: "typing", selectedLineIndex: null, offset: 0 })
       },
 
       /**
