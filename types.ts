@@ -19,6 +19,24 @@ export interface LineBreakResult {
 }
 
 /**
+ * Repräsentiert einen Bereich von Zeilen, die einen Absatz bilden
+ */
+export interface ParagraphRange {
+  /** Startindex der Zeile (inklusive) */
+  start: number
+  /** Endindex der Zeile (inklusive) */
+  end: number
+}
+
+/**
+ * Repräsentiert eine einfache Zeile Text
+ */
+export interface FormattedLine {
+  /** Der Textinhalt der Zeile */
+  text: string
+}
+
+/**
  * Statistiken für den Text
  */
 export interface TextStatistics {
@@ -60,6 +78,12 @@ export interface TypewriterState {
   stackFontSize: number
   /** Ob der Dark Mode aktiviert ist */
   darkMode: boolean
+  /** Array von Absatzbereichen (für Abwärtskompatibilität) */
+  paragraphRanges: ParagraphRange[]
+  /** Ob wir uns derzeit in einem Absatz befinden (für Abwärtskompatibilität) */
+  inParagraph: boolean
+  /** Startindex des aktuellen Absatzes (für Abwärtskompatibilität) */
+  currentParagraphStart: number
   /** Aktueller Modus (Schreiben oder Navigieren) */
   mode: "typing" | "navigating"
   /** Index der aktuell ausgewählten Zeile (null, wenn keine ausgewählt ist) */

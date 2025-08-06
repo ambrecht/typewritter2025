@@ -1,5 +1,6 @@
-import { memo } from "react"
 import type React from "react"
+import type { FormattedLine } from "@/types"
+import { memo } from "react"
 
 interface LineStackProps {
   visibleLines: { id: number; text: string }[]
@@ -11,10 +12,6 @@ interface LineStackProps {
   linesContainerRef?: React.RefObject<HTMLDivElement>
 }
 
-/**
- * Komponente für den Stack vorheriger Zeilen.
- * Zeigt einfache Textzeilen ohne Markdown-Formatierung an.
- */
 export const LineStack = memo(function LineStack({
   visibleLines,
   darkMode,
@@ -45,15 +42,13 @@ export const LineStack = memo(function LineStack({
         gap: "0",
         padding: "0",
         margin: "0",
+        paddingBottom: "0",
+        marginBottom: "0",
       }}
     >
-      {visibleLines.map(({ line, index }, i) => {
-        const isSelected = index === selectedLineIndex
-        const selectedClass = isSelected
-          ? `${darkMode ? "bg-gray-700" : "bg-amber-100"} rounded-md p-1 -m-1 ring-2 ${darkMode ? "ring-blue-500" : "ring-amber-400"}`
-          : ""
-
-        const isLastActive = i === visibleLines.length - 1 && mode === "typing"
+      {visibleLines.map(({ line, index, key }) => {
+        const elementKey = key || index
+        const isLastActive = index === visibleLines.length - 1 && mode === "typing"
         const lastActiveStyle = isLastActive
           ? {
               fontWeight: 500,
@@ -64,12 +59,13 @@ export const LineStack = memo(function LineStack({
 
         return (
           <div
-            key={id}
-            className={`whitespace-pre-wrap break-words mb-2 font-serif ${selectedClass}`}
-            data-line-index={id}
+            key={elementKey}
+            ref={(el) => (lineRefs.current[index] = el)}
+            className={`whitespace-pre-wrap break-words mb-2 font-serif ${darkMode ? "text-gray-200" : "text-gray-800"}`}
+            data-line-index={index}
             style={{ margin: "0", padding: "0", ...lastActiveStyle }}
           >
-            {text || " "} {/* Render a space for empty lines to maintain height */}
+            {line.text}
           </div>
         )
       })}

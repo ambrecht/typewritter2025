@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect } from "react"
-import type { LineBreakConfig } from "@/types"
+import type React from "react"
+import { useEffect, useState, useRef } from "react"
+import type { LineBreakConfig, ParagraphRange, FormattedLine } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
 import { useContainerDimensions } from "@/hooks/useContainerDimensions"
@@ -19,6 +20,8 @@ import { ActiveLine } from "./writing-area/ActiveLine"
 interface WritingAreaProps {
   lines: Line[]
   activeLine: string
+  setActiveLine: (line: string) => void
+  addLineToStack: () => void
   maxCharsPerLine: number
   fontSize: number
   stackFontSize: number
@@ -43,6 +46,8 @@ interface WritingAreaProps {
 export default function WritingArea({
   lines,
   activeLine,
+  setActiveLine,
+  addLineToStack,
   maxCharsPerLine,
   fontSize,
   stackFontSize,
@@ -63,7 +68,28 @@ export default function WritingArea({
     if (externalLinesContainerRef) {
       externalLinesContainerRef.current = linesContainerRef.current
     }
-  }, [externalLinesContainerRef, linesContainerRef])
+
+    // Reduziere auf eine verzögerte Operation
+    const timeoutId = setTimeout(scrollToBottom, 150)
+    return () => clearTimeout(timeoutId)
+  }, [lines.length, mode])
+
+  // Berechne die Höhe des aktiven Zeilenbereichs
+  // Reduziere die Höhe für Android und im Vollbildmodus
+  const activeLineHeight =
+    isFullscreen || (typeof navigator !== "undefined" && navigator.userAgent.includes("Android"))
+      ? fontSize * 1.8 + 16 // Stark reduzierte Höhe für Vollbildmodus und Android
+      : fontSize * 2.0 + 24 // Reduzierte Standard-Höhe
+
+  // Ersetze durch einfache CSS-Klassen-Umschaltung:
+  useEffect(() => {
+    if (linesContainerRef.current) {
+      linesContainerRef.current.classList.toggle("fullscreen-mode", isFullscreen)
+    }
+  }, [isFullscreen])
+
+  // Prüfe, ob es sich um ein Android-Gerät handelt
+  const isAndroid = typeof navigator !== "undefined" && navigator.userAgent.includes("Android")
 
   return (
     <div className="flex-1 flex flex-col relative overflow-x-hidden overflow-y-auto font-serif">

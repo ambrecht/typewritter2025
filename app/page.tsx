@@ -23,7 +23,12 @@ export default function TypewriterPage() {
     fontSize,
     stackFontSize,
     darkMode,
-    setContainerWidth,
+    updateLineBreakConfig,
+    setFontSize,
+    setStackFontSize,
+    setFixedLineLength,
+    paragraphRanges,
+    inParagraph,
     mode,
     selectedLineIndex,
     adjustOffset,
@@ -270,6 +275,8 @@ export default function TypewriterPage() {
           <WritingArea
             lines={lines}
             activeLine={activeLine}
+            setActiveLine={setActiveLine}
+            addLineToStack={addLineToStack}
             maxCharsPerLine={maxCharsPerLine}
             fontSize={fontSize}
             stackFontSize={stackFontSize}
