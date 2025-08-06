@@ -6,6 +6,7 @@ import type { LineBreakConfig, ParagraphRange, FormattedLine } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
 import { useContainerDimensions } from "@/hooks/useContainerDimensions"
+import { useKeyboardHandling } from "@/hooks/useKeyboardHandling"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
