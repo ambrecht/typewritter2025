@@ -39,11 +39,43 @@ export interface Line {
 }
 
 /**
+ * Unterstützte Markdown-Kategorien für eine formatierte Zeile
+ */
+export enum MarkdownType {
+  /** Normale Textzeile ohne spezielle Formatierung */
+  NORMAL = "normal",
+  /** Überschrift 1 ("#") */
+  HEADING1 = "heading1",
+  /** Überschrift 2 ("##") */
+  HEADING2 = "heading2",
+  /** Überschrift 3 ("###") */
+  HEADING3 = "heading3",
+  /** Blockzitat (">") */
+  BLOCKQUOTE = "blockquote",
+  /** Ungeordnete Liste ("-", "*" oder "+") */
+  UNORDERED_LIST = "unordered_list",
+  /** Geordnete Liste ("1.") */
+  ORDERED_LIST = "ordered_list",
+  /** Dialogzeile, beginnend mit einem Anführungszeichen */
+  DIALOG = "dialog",
+  /** Code-Block oder Inline-Code */
+  CODE = "code",
+  /** Absatzkennzeichnung */
+  PARAGRAPH = "paragraph",
+}
+
+/**
  * Repräsentiert eine einfache Zeile Text
  */
 export interface FormattedLine {
   /** Der Textinhalt der Zeile */
   text: string
+  /** Markdown-Typ der Zeile */
+  type: MarkdownType
+  /** Optionaler Ebenenwert für Überschriften oder Listen */
+  level?: number
+  /** Optionaler Index für geordnete Listen */
+  order?: number
 }
 
 /**

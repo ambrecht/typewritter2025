@@ -1,6 +1,8 @@
 import type React from "react"
 import type { FormattedLine } from "@/types"
 import { memo } from "react"
+import { MarkdownIndicator } from "./MarkdownIndicator"
+import { renderFormattedLine } from "./renderFormattedLine"
 
 interface LineStackProps {
   visibleLines: { line: FormattedLine; index: number; key: string }[]
