@@ -19,8 +19,7 @@ export const LineStack = memo(function LineStack({
     <div
       className="line-stack"
       style={{
-        overflowY: "auto",
-        overflowX: "hidden",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
         // Beginne im Tippmodus oben links, damit die erste Zeile an der Oberkante startet
