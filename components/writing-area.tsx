@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState, useRef } from "react"
+import { useEffect } from "react"
 import type { Line } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
@@ -59,51 +59,26 @@ export default function WritingArea({
     isFullscreen,
   )
 
-  // State für die Container-Höhe
-  const [containerHeight, setContainerHeight] = useState(0)
-
-  // Ref für die letzte Neuberechnung
-  const lastRecalculation = useRef(Date.now())
-
-  const scrollToBottom = () => {
-    if (linesContainerRef.current) {
-      linesContainerRef.current.scrollTop = linesContainerRef.current.scrollHeight
-    }
-  }
-
-  // Messe die Container-Höhe
-  useEffect(() => {
-    if (!linesContainerRef.current) return
-
-    const updateHeight = () => {
-      const height = linesContainerRef.current?.clientHeight || 0
-      if (Math.abs(height - containerHeight) > 5) {
-        // Nur bei signifikanter Änderung aktualisieren
-        setContainerHeight(height)
-      }
-    }
-
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
-    observer.observe(linesContainerRef.current)
-
-    return () => observer.disconnect()
-  }, [containerHeight, linesContainerRef])
-
   useEffect(() => {
     if (externalLinesContainerRef) {
       externalLinesContainerRef.current = linesContainerRef.current
     }
 
-    const timeoutId = setTimeout(scrollToBottom, 150)
+    const timeoutId = setTimeout(() => {
+      if (linesContainerRef.current) {
+        linesContainerRef.current.scrollTop =
+          linesContainerRef.current.scrollHeight
+      }
+    }, 150)
+
     return () => clearTimeout(timeoutId)
-  }, [lines.length, mode])
+  }, [lines.length, mode, externalLinesContainerRef, linesContainerRef])
 
   useEffect(() => {
     if (linesContainerRef.current) {
       linesContainerRef.current.classList.toggle("fullscreen-mode", isFullscreen)
     }
-  }, [isFullscreen])
+  }, [isFullscreen, linesContainerRef])
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
