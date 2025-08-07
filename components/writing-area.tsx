@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useEffect, useState, useRef } from "react"
-import type { LineBreakConfig, ParagraphRange, FormattedLine, Line } from "@/types"
+import type { LineBreakConfig, Line } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
 import { useContainerDimensions } from "@/hooks/useContainerDimensions"
@@ -65,7 +65,6 @@ export default function WritingArea({
   const {
     linesContainerRef: internalLinesContainerRef,
     activeLineRef,
-    lineRefs,
     maxVisibleLines,
   } = useContainerDimensions(stackFontSize)
 
@@ -160,12 +159,8 @@ export default function WritingArea({
       >
         <LineStack
           visibleLines={visibleLines}
-          darkMode={darkMode}
-          stackFontSize={stackFontSize}
           mode={mode}
-          selectedLineIndex={selectedLineIndex}
           isFullscreen={isFullscreen}
-          linesContainerRef={linesContainerRef}
         />
       </div>
 
