@@ -9,17 +9,39 @@ import { useTypewriterStore } from "@/store/typewriter-store"
  */
 export function useMaxVisibleLines(
   inputRef: RefObject<HTMLElement>,
-  lineHeight: number,
   ) {
   const [maxVisible, setMaxVisible] = useState(0)
   const setMaxVisibleLines = useTypewriterStore((state) => state.setMaxVisibleLines)
 
   useLayoutEffect(() => {
     const HEADER_HEIGHT = 40
+    const measureLineHeight = () => {
+      const sample = document.createElement("div")
+      sample.style.position = "absolute"
+      sample.style.visibility = "hidden"
+      sample.style.pointerEvents = "none"
+      sample.textContent = "M"
+
+      const inputEl = inputRef.current
+      if (inputEl) {
+        const computed = window.getComputedStyle(inputEl)
+        sample.style.font = computed.font
+        sample.style.lineHeight = computed.lineHeight
+      }
+
+      document.body.appendChild(sample)
+      const height = sample.getBoundingClientRect().height || 1
+      document.body.removeChild(sample)
+      return height
+    }
+
     const calculate = () => {
       const vh = window.innerHeight
       const inputH = inputRef.current?.offsetHeight ?? 0
-      setMaxVisible(Math.floor((vh - HEADER_HEIGHT - inputH) / lineHeight))
+      const lineHeight = measureLineHeight()
+      const max = Math.floor((vh - HEADER_HEIGHT - inputH) / lineHeight)
+      setMaxVisible(max)
+      return max
     }
 
     calculate()
@@ -29,13 +51,15 @@ export function useMaxVisibleLines(
     if (element) observer.observe(element)
 
     window.addEventListener("resize", calculate)
+    window.addEventListener("orientationchange", calculate)
 
     return () => {
       window.removeEventListener("resize", calculate)
+      window.removeEventListener("orientationchange", calculate)
       if (element) observer.unobserve(element)
       observer.disconnect()
     }
-  }, [inputRef, lineHeight])
+  }, [inputRef])
 
   useEffect(() => {
     setMaxVisibleLines(maxVisible)
