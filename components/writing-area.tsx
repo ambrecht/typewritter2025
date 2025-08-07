@@ -143,20 +143,18 @@ export default function WritingArea({
   const isAndroid = typeof navigator !== "undefined" && navigator.userAgent.includes("Android")
 
   return (
-    <div className="flex-1 flex flex-col relative overflow-x-hidden overflow-y-auto font-serif">
+    <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
       <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
       <NavigationHint darkMode={darkMode} />
 
       <div
         ref={linesContainerRef}
-        className={`flex-1 px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${
           darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
         }`}
         style={{
           fontSize: `${stackFontSize}px`,
           lineHeight: isFullscreen ? "1.3" : "1.4",
-          overflowY: "auto",
-          overflowX: "hidden",
         }}
         aria-live="polite"
       >
