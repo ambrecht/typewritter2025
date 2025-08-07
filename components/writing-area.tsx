@@ -2,15 +2,13 @@
 
 import type React from "react"
 import { useEffect, useState, useRef } from "react"
-import type { LineBreakConfig, Line } from "@/types"
+import type { Line } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
 import { useContainerDimensions } from "@/hooks/useContainerDimensions"
-import { useKeyboardHandling } from "@/hooks/useKeyboardHandling"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
-import { ActiveLine } from "./writing-area/ActiveLine"
 
 /**
  * @interface WritingAreaProps
@@ -21,20 +19,12 @@ import { ActiveLine } from "./writing-area/ActiveLine"
 interface WritingAreaProps {
   lines: Line[]
   activeLine: string
-  setActiveLine: (line: string) => void
-  addLineToStack: () => void
-  maxCharsPerLine: number
-  fontSize: number
   stackFontSize: number
-  hiddenInputRef: React.RefObject<HTMLTextAreaElement | null> // Add prop back
-  showCursor: boolean
-  lineBreakConfig: LineBreakConfig
   darkMode: boolean
   mode: "typing" | "navigating"
   selectedLineIndex: number | null
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement | null>
-  disableBackspace?: boolean
 }
 
 /**
@@ -46,43 +36,28 @@ interface WritingAreaProps {
 export default function WritingArea({
   lines,
   activeLine,
-  setActiveLine,
-  addLineToStack,
-  maxCharsPerLine,
-  fontSize,
   stackFontSize,
-  hiddenInputRef, // Add prop back
-  showCursor,
-  lineBreakConfig,
   darkMode,
   mode,
   selectedLineIndex,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
-  disableBackspace = false,
 }: WritingAreaProps) {
   // Verwende Hooks für Container-Dimensionen
-  const {
-    linesContainerRef: internalLinesContainerRef,
-    activeLineRef,
-    maxVisibleLines,
-  } = useContainerDimensions(stackFontSize)
+  const { linesContainerRef: internalLinesContainerRef, maxVisibleLines } =
+    useContainerDimensions(stackFontSize)
 
   // Verwende den externen Ref, wenn vorhanden, sonst den internen
   const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
 
-  // Verwende Hooks für Tastatureingaben
-  const { handleChange, handleKeyDown } = useKeyboardHandling({
-    setActiveLine,
-    addLineToStack,
-    lineBreakConfig,
-    hiddenInputRef,
-    linesContainerRef,
-    disableBackspace,
-  })
-
-  // Berechne die sichtbaren Zeilen - der Hook gibt jetzt direkt das Ergebnis zurück
-  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
+  // Berechne die sichtbaren Zeilen
+  const visibleLines = useVisibleLines(
+    lines,
+    maxVisibleLines,
+    mode,
+    selectedLineIndex,
+    isFullscreen,
+  )
 
   // State für die Container-Höhe
   const [containerHeight, setContainerHeight] = useState(0)
@@ -124,22 +99,11 @@ export default function WritingArea({
     return () => clearTimeout(timeoutId)
   }, [lines.length, mode])
 
-  // Berechne die Höhe des aktiven Zeilenbereichs
-  // Reduziere die Höhe für Android und im Vollbildmodus
-  const activeLineHeight =
-    isFullscreen || (typeof navigator !== "undefined" && navigator.userAgent.includes("Android"))
-      ? fontSize * 1.8 + 16 // Stark reduzierte Höhe für Vollbildmodus und Android
-      : fontSize * 2.0 + 24 // Reduzierte Standard-Höhe
-
-  // Ersetze durch einfache CSS-Klassen-Umschaltung:
   useEffect(() => {
     if (linesContainerRef.current) {
       linesContainerRef.current.classList.toggle("fullscreen-mode", isFullscreen)
     }
   }, [isFullscreen])
-
-  // Prüfe, ob es sich um ein Android-Gerät handelt
-  const isAndroid = typeof navigator !== "undefined" && navigator.userAgent.includes("Android")
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
@@ -163,20 +127,6 @@ export default function WritingArea({
           isFullscreen={isFullscreen}
         />
       </div>
-
-      {mode === "typing" && (
-        <ActiveLine
-          activeLine={activeLine}
-          darkMode={darkMode}
-          fontSize={fontSize}
-          showCursor={showCursor}
-          maxCharsPerLine={maxCharsPerLine}
-          hiddenInputRef={hiddenInputRef} // Pass the ref
-          activeLineRef={activeLineRef}
-          isAndroid={typeof navigator !== "undefined" && navigator.userAgent.includes("Android")}
-          isFullscreen={isFullscreen}
-        />
-      )}
     </div>
   )
 }
