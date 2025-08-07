@@ -346,9 +346,6 @@ export default function TypewriterPage() {
       )}
       <SettingsModal isOpen={showSettings} onClose={closeSettings} darkMode={darkMode} />
       <FlowSettingsModal isOpen={showFlowSettings} onClose={closeFlowSettings} darkMode={darkMode} />
-
-      {/* Offline-Indikator hinzufügen */}
-      <OfflineIndicator darkMode={darkMode} />
     </div>
   )
 }
