@@ -6,6 +6,7 @@ describe("Android key event sequence", () => {
   beforeEach(() => {
     useTypewriterStore.getState().resetSession()
     jest.useFakeTimers()
+    jest.setSystemTime(0)
   })
 
   afterEach(() => {
@@ -18,6 +19,7 @@ describe("Android key event sequence", () => {
     act(() => {
       fireEvent.keyDown(document.body, { key: "a" })
       jest.advanceTimersByTime(20)
+      jest.setSystemTime(20)
       fireEvent.keyDown(document.body, { key: "a" })
     })
 
@@ -29,7 +31,9 @@ describe("Android key event sequence", () => {
 
     act(() => {
       fireEvent.keyDown(document.body, { key: "a" })
+      fireEvent.keyUp(document.body, { key: "a" })
       jest.advanceTimersByTime(60)
+      jest.setSystemTime(60)
       fireEvent.keyDown(document.body, { key: "a" })
     })
 

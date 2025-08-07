@@ -36,10 +36,8 @@ export default function TypewriterPage() {
     paragraphRanges,
     inParagraph,
     mode,
-    selectedLineIndex,
+    offset,
     adjustOffset,
-    navigateForward,
-    navigateBackward,
     resetNavigation,
     flowMode,
     startFlowMode,
@@ -129,10 +127,10 @@ export default function TypewriterPage() {
   // Modul 4: Rückkehr zur aktuellen Schreibposition bei Eingabe
   useEffect(() => {
     // Wenn wir in den Schreibmodus zurückkehren, fokussiere das Eingabefeld
-    if (mode === "typing" && selectedLineIndex === null) {
+    if (mode === "typing") {
       focusInput()
     }
-  }, [mode, selectedLineIndex, focusInput])
+  }, [mode, focusInput])
 
   // Globale Tastatur-Listener
   useEffect(() => {
@@ -167,8 +165,8 @@ export default function TypewriterPage() {
         showTemporaryNavigationHint()
         if (event.key === "ArrowUp") adjustOffset(-1)
         if (event.key === "ArrowDown") adjustOffset(1)
-        if (event.key === "ArrowLeft") navigateBackward(10)
-        if (event.key === "ArrowRight") navigateForward(10)
+        if (event.key === "ArrowLeft") adjustOffset(-10)
+        if (event.key === "ArrowRight") adjustOffset(10)
         return
       }
 
@@ -200,8 +198,6 @@ export default function TypewriterPage() {
   }, [
     mode,
     adjustOffset,
-    navigateForward,
-    navigateBackward,
     resetNavigation,
     handleKeyPress,
     showTemporaryNavigationHint,
@@ -336,7 +332,7 @@ export default function TypewriterPage() {
             lineBreakConfig={lineBreakConfig}
             darkMode={darkMode}
             mode={mode}
-            selectedLineIndex={selectedLineIndex}
+            offset={offset}
             isFullscreen={isFullscreen}
             linesContainerRef={linesContainerRef}
             disableBackspace={flowMode.enabled && flowMode.noBackspace}

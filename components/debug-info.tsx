@@ -8,7 +8,7 @@ interface DebugInfoProps {
   fontSize: number
   darkMode: boolean
   mode: "typing" | "navigating"
-  selectedLineIndex: number | null
+  offset: number
   scrollPosition: number
 }
 
@@ -17,7 +17,7 @@ export default function DebugInfo({
   fontSize,
   darkMode,
   mode,
-  selectedLineIndex,
+  offset,
   scrollPosition,
 }: DebugInfoProps) {
   const { lineBreakConfig, maxCharsPerLine } = useTypewriterStore()
@@ -70,7 +70,7 @@ export default function DebugInfo({
         <div>
           Mode: <span className="font-mono">{mode}</span>
         </div>
-        <div>Selected Line: {selectedLineIndex !== null ? selectedLineIndex : "none"}</div>
+        <div>Offset: {offset}</div>
         <div>Scroll Position: {scrollPosition}px</div>
       </div>
     </div>

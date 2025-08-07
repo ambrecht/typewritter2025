@@ -26,7 +26,7 @@ export function useKeyboardNavigation({
   navigateDown,
   resetNavigation,
 }: UseKeyboardNavigationOptions) {
-  const { mode, selectedLineIndex } = useTypewriterStore()
+  const { mode } = useTypewriterStore()
 
   // Fokussiere das Eingabefeld
   const focusInput = useCallback(() => {
@@ -54,10 +54,10 @@ export function useKeyboardNavigation({
 
   // Fokussiere das Eingabefeld, wenn wir in den Schreibmodus zurückkehren
   useEffect(() => {
-    if (mode === "typing" && selectedLineIndex === null) {
+    if (mode === "typing") {
       focusInput()
     }
-  }, [mode, selectedLineIndex, focusInput])
+  }, [mode, focusInput])
 
   return {
     focusInput,

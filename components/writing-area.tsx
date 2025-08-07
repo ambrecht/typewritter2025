@@ -31,7 +31,7 @@ interface WritingAreaProps {
   lineBreakConfig: LineBreakConfig
   darkMode: boolean
   mode: "typing" | "navigating"
-  selectedLineIndex: number | null
+  offset: number
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement | null>
   disableBackspace?: boolean
@@ -56,7 +56,7 @@ export default function WritingArea({
   lineBreakConfig,
   darkMode,
   mode,
-  selectedLineIndex,
+  offset,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
   disableBackspace = false,
@@ -82,7 +82,7 @@ export default function WritingArea({
   })
 
   // Berechne die sichtbaren Zeilen - der Hook gibt jetzt direkt das Ergebnis zurück
-  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, selectedLineIndex, isFullscreen)
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, mode, offset, isFullscreen)
 
   // State für die Container-Höhe
   const [containerHeight, setContainerHeight] = useState(0)
