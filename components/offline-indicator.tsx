@@ -56,7 +56,7 @@ export default function OfflineIndicator({ darkMode }: OfflineIndicatorProps) {
         }
 
         setBackupStatus("saved")
-        setLastBackup(new Date().toLocaleTimeString())
+        setLastBackup(new Date().toLocaleTimeString('en-US'))
 
         // Status nach 3 Sekunden zurücksetzen
         setTimeout(() => {
