@@ -14,7 +14,6 @@ describe("TypewriterStore", () => {
     expect(result.current.lines).toEqual([])
     expect(result.current.activeLine).toBe("")
     expect(result.current.mode).toBe("typing")
-    expect(result.current.selectedLineIndex).toBeNull()
   })
 
   it("should set active line", () => {
@@ -96,7 +95,7 @@ describe("TypewriterStore", () => {
       result.current.setActiveLine("Test line")
       result.current.addLineToStack()
       result.current.setMode("navigating")
-      result.current.setSelectedLineIndex(0)
+      result.current.adjustOffset(1)
     })
 
     // Reset session
@@ -107,6 +106,6 @@ describe("TypewriterStore", () => {
     expect(result.current.lines).toEqual([])
     expect(result.current.activeLine).toBe("")
     expect(result.current.mode).toBe("typing")
-    expect(result.current.selectedLineIndex).toBeNull()
+    expect(result.current.offset).toBe(0)
   })
 })

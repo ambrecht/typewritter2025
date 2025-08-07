@@ -8,13 +8,6 @@ global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 global.ReadableStream = ReadableStream
 
-const { fetch, Headers, Request, Response } = require("undici")
-
-global.fetch = fetch
-global.Headers = Headers
-global.Request = Request
-global.Response = Response
-
 // Provide minimal Request implementation for next/server
 global.Request = class {}
 

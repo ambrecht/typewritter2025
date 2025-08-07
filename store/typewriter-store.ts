@@ -26,7 +26,6 @@ const initialState: Omit<
   inParagraph: false,
   currentParagraphStart: 0,
   mode: "typing",
-  selectedLineIndex: null,
   offset: 0,
   maxVisibleLines: 0,
   flowMode: false, // Neuer Zustand für den Flow Mode
@@ -280,12 +279,6 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       setMode: (mode) => set({ mode }),
 
       /**
-       * Setzt den Index der ausgewählten Zeile im Navigationsmodus.
-       * @param {number | null} index - Der Index der Zeile oder `null`.
-      */
-      setSelectedLineIndex: (index) => set({ selectedLineIndex: index }),
-
-      /**
        * Aktualisiert die maximale Anzahl sichtbarer Zeilen.
        */
       setMaxVisibleLines: (count: number) => set({ maxVisibleLines: count }),
@@ -312,32 +305,10 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       navigateDown: () => get().adjustOffset(1),
 
       /**
-       * Springt mehrere Zeilen vorwärts.
-       * @param {number} count - Die Anzahl der zu springenden Zeilen.
-       */
-      navigateForward: (count: number) => {
-        const { lines, selectedLineIndex } = get()
-        if (selectedLineIndex === null) return
-        const newIndex = Math.min(lines.length - 1, selectedLineIndex + count)
-        set({ selectedLineIndex: newIndex })
-      },
-
-      /**
-       * Springt mehrere Zeilen rückwärts.
-       * @param {number} count - Die Anzahl der zu springenden Zeilen.
-       */
-      navigateBackward: (count: number) => {
-        const { selectedLineIndex } = get()
-        if (selectedLineIndex === null) return
-        const newIndex = Math.max(0, selectedLineIndex - count)
-        set({ selectedLineIndex: newIndex })
-      },
-
-      /**
        * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
        */
       resetNavigation: () => {
-        set({ mode: "typing", selectedLineIndex: null, offset: 0 })
+        set({ mode: "typing", offset: 0 })
       },
 
       /**
