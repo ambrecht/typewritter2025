@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import WritingArea from "@/components/writing-area"
 import ControlBar from "@/components/control-bar"
+import OptionsBar from "@/components/options-bar"
+import ActiveInput from "@/components/active-input"
+import { ActiveLine } from "@/components/writing-area/ActiveLine"
 import NavigationIndicator from "@/components/navigation-indicator"
 import { useAndroidKeyboard } from "@/hooks/useAndroidKeyboard"
 import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
@@ -21,11 +24,8 @@ export default function TypewriterPage() {
   const {
     lines,
     activeLine,
-    setActiveLine,
-    addLineToStack,
     maxCharsPerLine,
     statistics,
-    lineBreakConfig,
     fontSize,
     stackFontSize,
     darkMode,
@@ -52,7 +52,7 @@ export default function TypewriterPage() {
   } = useTypewriterStore()
 
   const viewportRef = useRef<HTMLDivElement>(null)
-  const headerRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
   const activeLineRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
@@ -64,7 +64,6 @@ export default function TypewriterPage() {
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
-  const [isSmallScreen, setIsSmallScreen] = useState(false)
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(
     typeof window !== "undefined" && window.innerWidth > window.innerHeight ? "landscape" : "portrait",
   )
@@ -243,7 +242,6 @@ export default function TypewriterPage() {
 
       if (typeof window !== "undefined") {
         setOrientation(window.innerWidth > window.innerHeight ? "landscape" : "portrait")
-        setIsSmallScreen(window.innerWidth < 768)
       }
     }, 150)
 
@@ -276,36 +274,20 @@ export default function TypewriterPage() {
   return (
     <div
       ref={viewportRef}
-      className={`min-h-screen flex flex-col typewriter-container font-sans outline-none ${
+      className={`h-screen flex flex-col ${
         darkMode ? "dark bg-[#121212] text-[#E0E0E0]" : "bg-[#f3efe9] text-gray-900"
       }`}
       tabIndex={-1}
-      onClick={focusInput} // Dieser Handler ist entscheidend für die Fokus-Wiederherstellung
+      onClick={focusInput}
     >
       <ApiKeyWarning />
 
-      {/* Rest des Codes bleibt unverändert */}
-      {/* Header nur anzeigen, wenn nicht im Vollbildmodus auf kleinen Bildschirmen */}
-      {!(isFullscreen && isSmallScreen) && (
-        <header
-          className={`border-b ${
-            darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
-          } transition-colors duration-300`}
-        >
-          <ControlBar
-            wordCount={statistics.wordCount}
-            pageCount={statistics.pageCount}
-            toggleFullscreen={toggleFullscreen}
-            hiddenInputRef={hiddenInputRef}
-            isFullscreen={isFullscreen}
-            openSettings={openSettings}
-            openFlowSettings={openFlowSettings}
-          />
-        </header>
-      )}
-
-      {/* Im Vollbildmodus auf kleinen Bildschirmen: ControlBar in der rechten oberen Ecke */}
-      {isFullscreen && isSmallScreen && (
+      <OptionsBar
+        ref={headerRef}
+        className={`h-10 shrink-0 border-b ${
+          darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
+        } transition-colors duration-300`}
+      >
         <ControlBar
           wordCount={statistics.wordCount}
           pageCount={statistics.pageCount}
@@ -315,34 +297,34 @@ export default function TypewriterPage() {
           openSettings={openSettings}
           openFlowSettings={openFlowSettings}
         />
-      )}
+      </OptionsBar>
 
-      <main className="flex-1 flex flex-col p-4 md:p-6 lg:p-8 overflow-hidden">
-        <section
-          className={`flex-1 flex flex-col ${
-            darkMode ? "bg-gray-800 shadow-xl" : "bg-[#fcfcfa] shadow-md"
-          } rounded-lg overflow-hidden transition-colors duration-300 relative`}
-        >
-          <WritingArea
-            lines={lines}
-            activeLine={activeLine}
-            setActiveLine={setActiveLine}
-            addLineToStack={addLineToStack}
-            maxCharsPerLine={maxCharsPerLine}
-            fontSize={fontSize}
-            stackFontSize={stackFontSize}
-            hiddenInputRef={hiddenInputRef}
-            showCursor={showCursor}
-            lineBreakConfig={lineBreakConfig}
-            darkMode={darkMode}
-            mode={mode}
-            selectedLineIndex={selectedLineIndex}
-            isFullscreen={isFullscreen}
-            linesContainerRef={linesContainerRef}
-            disableBackspace={flowMode.enabled && flowMode.noBackspace}
-          />
-        </section>
-      </main>
+      <div className="flex-1 overflow-hidden">
+        <WritingArea
+          lines={lines}
+          activeLine={activeLine}
+          stackFontSize={stackFontSize}
+          darkMode={darkMode}
+          mode={mode}
+          selectedLineIndex={selectedLineIndex}
+          isFullscreen={isFullscreen}
+          linesContainerRef={linesContainerRef}
+        />
+      </div>
+
+      <ActiveInput className="shrink-0 sticky bottom-0">
+      <ActiveLine
+          activeLine={activeLine}
+          darkMode={darkMode}
+          fontSize={fontSize}
+          showCursor={showCursor}
+          maxCharsPerLine={maxCharsPerLine}
+          hiddenInputRef={hiddenInputRef}
+          activeLineRef={activeLineRef}
+          isAndroid={isAndroid}
+          isFullscreen={isFullscreen}
+        />
+      </ActiveInput>
 
       <NavigationIndicator darkMode={darkMode} />
       <SaveNotification />
