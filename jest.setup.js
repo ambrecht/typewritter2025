@@ -3,10 +3,14 @@
 import "@testing-library/jest-dom"
 import { TextEncoder, TextDecoder } from "util"
 import { ReadableStream } from "stream/web"
+const { MessageChannel } = require("worker_threads")
+const channel = new MessageChannel()
 
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 global.ReadableStream = ReadableStream
+global.MessageChannel = MessageChannel
+global.MessagePort = channel.port1.constructor
 
 const { fetch, Headers, Request, Response } = require("undici")
 
