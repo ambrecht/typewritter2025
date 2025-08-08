@@ -29,6 +29,7 @@ describe("Android key event sequence", () => {
 
     act(() => {
       fireEvent.keyDown(document.body, { key: "a" })
+      fireEvent.keyUp(document.body, { key: "a" })
       jest.advanceTimersByTime(60)
       fireEvent.keyDown(document.body, { key: "a" })
     })
