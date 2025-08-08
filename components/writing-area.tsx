@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
+import { useEffect, useCallback } from "react"
 import type { Line } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
@@ -22,7 +22,7 @@ interface WritingAreaProps {
   stackFontSize: number
   darkMode: boolean
   mode: "typing" | "navigating"
-  selectedLineIndex: number | null
+  offset: number
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement | null>
 }
@@ -39,7 +39,7 @@ export default function WritingArea({
   stackFontSize,
   darkMode,
   mode,
-  selectedLineIndex,
+  offset,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
 }: WritingAreaProps) {
@@ -47,52 +47,28 @@ export default function WritingArea({
   const { linesContainerRef: internalLinesContainerRef, maxVisibleLines } =
     useContainerDimensions(stackFontSize)
 
-  // Verwende den externen Ref, wenn vorhanden, sonst den internen
-  const linesContainerRef = externalLinesContainerRef || internalLinesContainerRef
-
-  // Berechne die sichtbaren Zeilen
-  const visibleLines = useVisibleLines(
-    lines,
-    maxVisibleLines,
-    mode,
-    selectedLineIndex,
-    isFullscreen,
+  // Kombiniere internen und externen Ref
+  const setLinesContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      internalLinesContainerRef.current = node
+      if (externalLinesContainerRef) {
+        externalLinesContainerRef.current = node
+      }
+    },
+    [externalLinesContainerRef, internalLinesContainerRef],
   )
 
+  // Berechne die sichtbaren Zeilen
+  const visibleLines = useVisibleLines(lines, maxVisibleLines, offset)
+
   useEffect(() => {
-    if (externalLinesContainerRef) {
-      externalLinesContainerRef.current = linesContainerRef.current
-    }
-
-    const timeoutId = setTimeout(() => {
-      const container = linesContainerRef.current
-      if (!container) return
-
-      const activeIndex = selectedLineIndex ?? lines.length - 1
-      const activeLineElement = container.querySelector<HTMLElement>(
-        `[data-line-index="${activeIndex}"]`,
+    if (internalLinesContainerRef.current) {
+      internalLinesContainerRef.current.classList.toggle(
+        "fullscreen-mode",
+        isFullscreen,
       )
-
-      if (activeLineElement) {
-        const containerRect = container.getBoundingClientRect()
-        const activeRect = activeLineElement.getBoundingClientRect()
-
-        if (activeRect.top < containerRect.top) {
-          activeLineElement.scrollIntoView({ block: "start" })
-        } else if (activeRect.bottom > containerRect.bottom) {
-          activeLineElement.scrollIntoView({ block: "end" })
-        }
-      }
-    }, 150)
-
-    return () => clearTimeout(timeoutId)
-  }, [lines.length, mode, selectedLineIndex, externalLinesContainerRef, linesContainerRef])
-
-  useEffect(() => {
-    if (linesContainerRef.current) {
-      linesContainerRef.current.classList.toggle("fullscreen-mode", isFullscreen)
     }
-  }, [isFullscreen, linesContainerRef])
+  }, [isFullscreen, internalLinesContainerRef])
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
@@ -100,7 +76,7 @@ export default function WritingArea({
       <NavigationHint darkMode={darkMode} />
 
       <div
-        ref={linesContainerRef}
+        ref={setLinesContainerRef}
         className={`flex-1 overflow-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${
           darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
         }`}

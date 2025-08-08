@@ -13,9 +13,7 @@ export interface VisibleLine {
 export function useVisibleLines(
   lines: Line[],
   maxVisibleLines: number,
-  mode: "typing" | "navigating",
-  selectedLineIndex: number | null,
-  _isFullscreen: boolean,
+  offset: number,
 ): VisibleLine[] {
   return useMemo(() => {
     if (lines.length === 0) return []
@@ -59,24 +57,11 @@ export function useVisibleLines(
       return { text: content, type, level, order }
     }
 
-    const buildResult = (start: number) =>
-      lines.slice(start, start + visibleCount).map((line, idx) => ({
-        line: parseLine(line.text),
-        index: start + idx,
-        key: String(line.id),
-      }))
-
-    if (mode === "typing") {
-      const start = Math.max(0, lines.length - visibleCount)
-      return buildResult(start)
-    }
-
-    const context = Math.floor(visibleCount / 2)
-    const center = selectedLineIndex ?? 0
-    let start = Math.max(0, center - context)
-    if (start + visibleCount > lines.length) {
-      start = Math.max(0, lines.length - visibleCount)
-    }
-    return buildResult(start)
-  }, [lines, maxVisibleLines, mode, selectedLineIndex])
+    const start = Math.max(0, lines.length - visibleCount - offset)
+    return lines.slice(start, start + visibleCount).map((line, idx) => ({
+      line: parseLine(line.text),
+      index: start + idx,
+      key: String(line.id),
+    }))
+  }, [lines, maxVisibleLines, offset])
 }

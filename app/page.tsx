@@ -37,6 +37,7 @@ export default function TypewriterPage() {
     inParagraph,
     mode,
     selectedLineIndex,
+    offset,
     adjustOffset,
     navigateForward,
     navigateBackward,
@@ -306,7 +307,7 @@ export default function TypewriterPage() {
           stackFontSize={stackFontSize}
           darkMode={darkMode}
           mode={mode}
-          selectedLineIndex={selectedLineIndex}
+          offset={offset}
           isFullscreen={isFullscreen}
           linesContainerRef={linesContainerRef}
         />
