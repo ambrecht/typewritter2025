@@ -25,7 +25,7 @@ const initialState: Omit<
   paragraphRanges: [],
   inParagraph: false,
   currentParagraphStart: 0,
-  mode: "typing",
+  mode: "write",
   selectedLineIndex: null,
   offset: 0,
   maxVisibleLines: 0,
@@ -271,9 +271,9 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       },
 
       /**
-       * Setzt den Anwendungsmodus ('typing' oder 'navigating').
-       * @param {"typing" | "navigating"} mode - Der neue Modus.
-       */
+       * Setzt den Anwendungsmodus ('write' oder 'nav').
+       * @param {"write" | "nav"} mode - Der neue Modus.
+      */
       setMode: (mode) => set({ mode }),
 
       /**
@@ -295,46 +295,30 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         const allLines = [...lines, activeLine]
         const maxOffset = Math.max(allLines.length - maxVisibleLines, 0)
         const newOffset = Math.min(Math.max(offset + delta, 0), maxOffset)
-        set({ mode: "navigating", offset: newOffset })
+        set({ offset: newOffset })
       },
 
       /**
        * Navigiert eine Zeile nach oben im Stack.
        */
-      navigateUp: () => get().adjustOffset(-1),
+      navigateUp: () => {
+        set({ mode: "nav" })
+        get().adjustOffset(-1)
+      },
 
       /**
        * Navigiert eine Zeile nach unten im Stack oder beendet den Navigationsmodus.
        */
-      navigateDown: () => get().adjustOffset(1),
-
-      /**
-       * Springt mehrere Zeilen vorwärts.
-       * @param {number} count - Die Anzahl der zu springenden Zeilen.
-       */
-      navigateForward: (count: number) => {
-        const { lines, selectedLineIndex } = get()
-        if (selectedLineIndex === null) return
-        const newIndex = Math.min(lines.length - 1, selectedLineIndex + count)
-        set({ selectedLineIndex: newIndex })
+      navigateDown: () => {
+        set({ mode: "nav" })
+        get().adjustOffset(1)
       },
 
-      /**
-       * Springt mehrere Zeilen rückwärts.
-       * @param {number} count - Die Anzahl der zu springenden Zeilen.
-       */
-      navigateBackward: (count: number) => {
-        const { selectedLineIndex } = get()
-        if (selectedLineIndex === null) return
-        const newIndex = Math.max(0, selectedLineIndex - count)
-        set({ selectedLineIndex: newIndex })
-      },
-
-      /**
-       * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
-       */
-      resetNavigation: () => {
-        set({ mode: "typing", selectedLineIndex: null, offset: 0 })
+        /**
+         * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
+         */
+        resetNavigation: () => {
+          set({ mode: "write", selectedLineIndex: null, offset: 0 })
       },
 
       /**

@@ -39,8 +39,7 @@ export default function TypewriterPage() {
     selectedLineIndex,
     offset,
     adjustOffset,
-    navigateForward,
-    navigateBackward,
+    setMode,
     resetNavigation,
     flowMode,
     startFlowMode,
@@ -127,7 +126,7 @@ export default function TypewriterPage() {
   // Modul 4: Rückkehr zur aktuellen Schreibposition bei Eingabe
   useEffect(() => {
     // Wenn wir in den Schreibmodus zurückkehren, fokussiere das Eingabefeld
-    if (mode === "typing" && selectedLineIndex === null) {
+    if (mode === "write" && selectedLineIndex === null) {
       focusInput()
     }
   }, [mode, selectedLineIndex, focusInput])
@@ -160,21 +159,30 @@ export default function TypewriterPage() {
       }
       lastKeyRef.current = { key: event.key, time: now }
 
-      if (event.key.startsWith("Arrow")) {
+      if (event.key === "Escape") {
         event.preventDefault()
-        showTemporaryNavigationHint()
-        if (event.key === "ArrowUp") adjustOffset(-1)
-        if (event.key === "ArrowDown") adjustOffset(1)
-        if (event.key === "ArrowLeft") navigateBackward(10)
-        if (event.key === "ArrowRight") navigateForward(10)
+        resetNavigation()
+        focusInput()
         return
       }
 
-      if (mode === "navigating") {
-        if (event.key === "Escape" || event.key === "Enter") {
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        event.preventDefault()
+        showTemporaryNavigationHint()
+        setMode("nav")
+        adjustOffset(event.key === "ArrowUp" ? -1 : 1)
+        return
+      }
+
+      if (mode === "nav") {
+        if (
+          event.key.length === 1 ||
+          event.key === "Backspace" ||
+          event.key === "Enter"
+        ) {
           event.preventDefault()
           resetNavigation()
-          focusInput() // Fokus nach Beenden der Navigation wiederherstellen
+          handleKeyPress(event.key)
         }
         return
       }
@@ -198,8 +206,7 @@ export default function TypewriterPage() {
   }, [
     mode,
     adjustOffset,
-    navigateForward,
-    navigateBackward,
+    setMode,
     resetNavigation,
     handleKeyPress,
     showTemporaryNavigationHint,
@@ -308,7 +315,7 @@ export default function TypewriterPage() {
 
       {/* Offline-Indikator */}
       <OfflineIndicator darkMode={darkMode} />
-      {mode === "navigating" && showNavigationHint && (
+      {mode === "nav" && showNavigationHint && (
         <div
           className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 py-1 px-2 rounded-full z-50 ${
             darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"
@@ -316,7 +323,7 @@ export default function TypewriterPage() {
           role="status"
           aria-live="polite"
         >
-          <span className="font-medium">ESC/Enter zum Beenden</span>
+          <span className="font-medium">ESC zum Beenden</span>
         </div>
       )}
       <SettingsModal isOpen={showSettings} onClose={closeSettings} darkMode={darkMode} />

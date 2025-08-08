@@ -13,7 +13,7 @@ describe("TypewriterStore", () => {
 
     expect(result.current.lines).toEqual([])
     expect(result.current.activeLine).toBe("")
-    expect(result.current.mode).toBe("typing")
+    expect(result.current.mode).toBe("write")
     expect(result.current.selectedLineIndex).toBeNull()
   })
 
@@ -53,10 +53,11 @@ describe("TypewriterStore", () => {
     })
 
     act(() => {
+      result.current.setMode("nav")
       result.current.adjustOffset(1)
     })
 
-    expect(result.current.mode).toBe("navigating")
+    expect(result.current.mode).toBe("nav")
     expect(result.current.offset).toBe(1)
 
     act(() => {
@@ -96,7 +97,7 @@ describe("TypewriterStore", () => {
     act(() => {
       result.current.setActiveLine("Test line")
       result.current.addLineToStack()
-      result.current.setMode("navigating")
+      result.current.setMode("nav")
       result.current.setSelectedLineIndex(0)
     })
 
@@ -107,7 +108,7 @@ describe("TypewriterStore", () => {
 
     expect(result.current.lines).toEqual([])
     expect(result.current.activeLine).toBe("")
-    expect(result.current.mode).toBe("typing")
+    expect(result.current.mode).toBe("write")
     expect(result.current.selectedLineIndex).toBeNull()
   })
 })

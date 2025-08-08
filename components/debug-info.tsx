@@ -7,7 +7,7 @@ interface DebugInfoProps {
   containerWidth: number
   fontSize: number
   darkMode: boolean
-  mode: "typing" | "navigating"
+  mode: "write" | "nav"
   selectedLineIndex: number | null
   scrollPosition: number
 }
