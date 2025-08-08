@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useRef } from "react"
 import type { Line } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
-import { useContainerDimensions } from "@/hooks/useContainerDimensions"
+import { useTypewriterStore } from "@/store/typewriter-store"
 import { CopyButton } from "./writing-area/CopyButton"
 import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
@@ -45,9 +45,8 @@ export default function WritingArea({
   linesContainerRef: externalLinesContainerRef,
   lineHpx,
 }: WritingAreaProps) {
-  // Verwende Hooks für Container-Dimensionen
-  const { linesContainerRef: internalLinesContainerRef, maxVisibleLines } =
-    useContainerDimensions(stackFontSize)
+  const internalLinesContainerRef = useRef<HTMLDivElement | null>(null)
+  const maxVisibleLines = useTypewriterStore((s) => s.maxVisibleLines)
 
   // Kombiniere internen und externen Ref
   const setLinesContainerRef = useCallback(
