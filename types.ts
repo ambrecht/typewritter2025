@@ -138,6 +138,8 @@ export interface TypewriterState {
   currentParagraphStart: number
   /** Aktueller Modus (Schreiben oder Navigieren) */
   mode: "typing" | "navigating"
+  /** Ob der Navigationsmodus aktiv ist */
+  navMode: boolean
   /** Index der aktuell ausgewählten Zeile (null, wenn keine ausgewählt ist) */
   selectedLineIndex: number | null
   /** Aktueller Versatz für die Anzeige der Zeilen */
@@ -182,6 +184,8 @@ export interface TypewriterActions {
   setFixedLineLength: (length: number) => void
   /** Funktion zum Setzen des Modus */
   setMode: (mode: "typing" | "navigating") => void
+  /** Aktiviert oder deaktiviert den Navigationsmodus */
+  setNavMode: (enabled: boolean) => void
   /** Funktion zum Setzen des ausgewählten Zeilenindex */
   setSelectedLineIndex: (index: number | null) => void
   /** Aktualisiert die maximale Anzahl sichtbarer Zeilen */

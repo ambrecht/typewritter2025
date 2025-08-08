@@ -7,9 +7,9 @@ import ControlBar from "@/components/control-bar"
 import OptionsBar from "@/components/options-bar"
 import ActiveInput from "@/components/active-input"
 import { ActiveLine } from "@/components/writing-area/ActiveLine"
-import NavigationIndicator from "@/components/navigation-indicator"
 import { useAndroidKeyboard } from "@/hooks/useAndroidKeyboard"
 import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
+import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation"
 import OfflineIndicator from "@/components/offline-indicator"
 import SaveNotification from "@/components/save-notification"
 import SettingsModal from "@/components/settings-modal"
@@ -35,12 +35,8 @@ export default function TypewriterPage() {
     setFixedLineLength,
     paragraphRanges,
     inParagraph,
-    mode,
-    selectedLineIndex,
-    adjustOffset,
-    navigateForward,
-    navigateBackward,
-    resetNavigation,
+    navMode,
+    offset,
     flowMode,
     startFlowMode,
     stopFlowMode,
@@ -56,7 +52,6 @@ export default function TypewriterPage() {
   const activeLineRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null) // Ref für den Text-Container
-  const pressedKeysRef = useRef<Set<string>>(new Set())
 
   // Ref zur Entdoppelung schneller gleicher Tastendrücke (z.B. Android IME)
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: "", time: 0 })
@@ -99,6 +94,8 @@ export default function TypewriterPage() {
     }, 1500)
   }, [])
 
+  useKeyboardNavigation({ hiddenInputRef, isAndroid, onNavigate: showTemporaryNavigationHint })
+
   // Effekt für den blinkenden Cursor
   useEffect(() => {
     const interval = setInterval(() => {
@@ -127,11 +124,10 @@ export default function TypewriterPage() {
 
   // Modul 4: Rückkehr zur aktuellen Schreibposition bei Eingabe
   useEffect(() => {
-    // Wenn wir in den Schreibmodus zurückkehren, fokussiere das Eingabefeld
-    if (mode === "typing" && selectedLineIndex === null) {
+    if (!navMode) {
       focusInput()
     }
-  }, [mode, selectedLineIndex, focusInput])
+  }, [navMode, focusInput])
 
   // Globale Tastatur-Listener
   useEffect(() => {
@@ -139,12 +135,10 @@ export default function TypewriterPage() {
       if (
         event.repeat ||
         event.isComposing ||
-        (event as any).keyCode === 229 ||
-        pressedKeysRef.current.has(event.key)
+        (event as any).keyCode === 229
       ) {
         return
       }
-      pressedKeysRef.current.add(event.key)
 
       const target = event.target as HTMLElement
       // Diese Bedingung blockiert jetzt NICHT mehr, wenn unser hidden-input den Fokus hat.
@@ -161,51 +155,17 @@ export default function TypewriterPage() {
       }
       lastKeyRef.current = { key: event.key, time: now }
 
-      if (event.key.startsWith("Arrow")) {
-        event.preventDefault()
-        showTemporaryNavigationHint()
-        if (event.key === "ArrowUp") adjustOffset(-1)
-        if (event.key === "ArrowDown") adjustOffset(1)
-        if (event.key === "ArrowLeft") navigateBackward(10)
-        if (event.key === "ArrowRight") navigateForward(10)
-        return
-      }
-
-      if (mode === "navigating") {
-        if (event.key === "Escape" || event.key === "Enter") {
-          event.preventDefault()
-          resetNavigation()
-          focusInput() // Fokus nach Beenden der Navigation wiederherstellen
-        }
-        return
-      }
-
       if (event.key.length === 1 || event.key === "Backspace" || event.key === "Enter") {
         event.preventDefault()
         handleKeyPress(event.key)
       }
     }
 
-    const handleGlobalKeyUp = (event: KeyboardEvent) => {
-      pressedKeysRef.current.delete(event.key)
-    }
-
     document.addEventListener("keydown", handleGlobalKeyDown)
-    document.addEventListener("keyup", handleGlobalKeyUp)
     return () => {
       document.removeEventListener("keydown", handleGlobalKeyDown)
-      document.removeEventListener("keyup", handleGlobalKeyUp)
     }
-  }, [
-    mode,
-    adjustOffset,
-    navigateForward,
-    navigateBackward,
-    resetNavigation,
-    handleKeyPress,
-    showTemporaryNavigationHint,
-    focusInput, // focusInput als Abhängigkeit hinzufügen
-  ])
+  }, [handleKeyPress])
 
   const openSettings = useCallback(() => setShowSettings(true), [])
 
@@ -305,8 +265,8 @@ export default function TypewriterPage() {
           activeLine={activeLine}
           stackFontSize={stackFontSize}
           darkMode={darkMode}
-          mode={mode}
-          selectedLineIndex={selectedLineIndex}
+          navMode={navMode}
+          offset={offset}
           isFullscreen={isFullscreen}
           linesContainerRef={linesContainerRef}
         />
@@ -326,14 +286,13 @@ export default function TypewriterPage() {
         />
       </ActiveInput>
 
-      <NavigationIndicator darkMode={darkMode} />
       <SaveNotification />
 
       <FlowModeOverlay />
 
       {/* Offline-Indikator */}
       <OfflineIndicator darkMode={darkMode} />
-      {mode === "navigating" && showNavigationHint && (
+      {navMode && showNavigationHint && (
         <div
           className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 py-1 px-2 rounded-full z-50 ${
             darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"

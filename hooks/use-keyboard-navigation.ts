@@ -8,9 +8,7 @@ import { useTypewriterStore } from "@/store/typewriter-store"
 interface UseKeyboardNavigationOptions {
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
   isAndroid?: boolean
-  navigateUp?: () => void
-  navigateDown?: () => void
-  resetNavigation?: () => void
+  onNavigate?: () => void
 }
 
 /**
@@ -22,11 +20,10 @@ interface UseKeyboardNavigationOptions {
 export function useKeyboardNavigation({
   hiddenInputRef,
   isAndroid = false,
-  navigateUp,
-  navigateDown,
-  resetNavigation,
+  onNavigate,
 }: UseKeyboardNavigationOptions) {
-  const { mode, selectedLineIndex } = useTypewriterStore()
+  const { navMode, setNavMode, navigateUp, navigateDown, setOffset } =
+    useTypewriterStore()
 
   // Fokussiere das Eingabefeld
   const focusInput = useCallback(() => {
@@ -52,14 +49,49 @@ export function useKeyboardNavigation({
     }
   }, [hiddenInputRef, isAndroid])
 
-  // Fokussiere das Eingabefeld, wenn wir in den Schreibmodus zurückkehren
+  // Globale Tastatur-Events für Navigation
   useEffect(() => {
-    if (mode === "typing" && selectedLineIndex === null) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        if (!navMode) {
+          setNavMode(true)
+        }
+        e.preventDefault()
+        onNavigate?.()
+        if (e.key === "ArrowUp") navigateUp()
+        if (e.key === "ArrowDown") navigateDown()
+        return
+      }
+
+      if (!navMode) return
+
+      if (e.key === "Escape") {
+        e.preventDefault()
+        setNavMode(false)
+        setOffset(0)
+        focusInput()
+        return
+      }
+
+      if (e.key.length === 1) {
+        setNavMode(false)
+        setOffset(0)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [navMode, navigateUp, navigateDown, setNavMode, setOffset, onNavigate, focusInput])
+
+  // Fokussiere das Eingabefeld, wenn der Navigationsmodus beendet wird
+  useEffect(() => {
+    if (!navMode) {
       focusInput()
     }
-  }, [mode, selectedLineIndex, focusInput])
+  }, [navMode, focusInput])
 
   return {
     focusInput,
+    setNavMode,
   }
 }

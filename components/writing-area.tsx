@@ -21,8 +21,8 @@ interface WritingAreaProps {
   activeLine: string
   stackFontSize: number
   darkMode: boolean
-  mode: "typing" | "navigating"
-  selectedLineIndex: number | null
+  navMode: boolean
+  offset: number
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement | null>
 }
@@ -38,8 +38,8 @@ export default function WritingArea({
   activeLine,
   stackFontSize,
   darkMode,
-  mode,
-  selectedLineIndex,
+  navMode,
+  offset,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
 }: WritingAreaProps) {
@@ -54,8 +54,7 @@ export default function WritingArea({
   const visibleLines = useVisibleLines(
     lines,
     maxVisibleLines,
-    mode,
-    selectedLineIndex,
+    offset,
     isFullscreen,
   )
 
@@ -72,7 +71,7 @@ export default function WritingArea({
     }, 150)
 
     return () => clearTimeout(timeoutId)
-  }, [lines.length, mode, externalLinesContainerRef, linesContainerRef])
+  }, [lines.length, externalLinesContainerRef, linesContainerRef])
 
   useEffect(() => {
     if (linesContainerRef.current) {
@@ -96,11 +95,7 @@ export default function WritingArea({
         }}
         aria-live="polite"
       >
-        <LineStack
-          visibleLines={visibleLines}
-          mode={mode}
-          isFullscreen={isFullscreen}
-        />
+        <LineStack visibleLines={visibleLines} navMode={navMode} isFullscreen={isFullscreen} />
       </div>
     </div>
   )

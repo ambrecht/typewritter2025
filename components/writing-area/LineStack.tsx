@@ -4,13 +4,13 @@ import { renderFormattedLine } from "./renderFormattedLine"
 
 interface LineStackProps {
   visibleLines: { line: { text: string }; index: number; key: string }[]
-  mode: "typing" | "navigating"
+  navMode: boolean
   isFullscreen?: boolean
 }
 
 export const LineStack = memo(function LineStack({
   visibleLines,
-  mode,
+  navMode,
   isFullscreen = false,
 }: LineStackProps) {
   const isAndroid = typeof navigator !== "undefined" && navigator.userAgent.includes("Android")
@@ -24,7 +24,7 @@ export const LineStack = memo(function LineStack({
         flexDirection: "column",
         // Beginne im Tippmodus oben links, damit die erste Zeile an der Oberkante startet
         // und neue Zeilen darunter erscheinen
-        justifyContent: mode === "navigating" ? "center" : "flex-start",
+        justifyContent: navMode ? "center" : "flex-start",
         maxHeight: "100%",
         lineHeight: isFullscreen ? "1.2" : isAndroid ? "1.3" : "1.5",
         gap: "0",

@@ -26,6 +26,7 @@ const initialState: Omit<
   inParagraph: false,
   currentParagraphStart: 0,
   mode: "typing",
+  navMode: false,
   selectedLineIndex: null,
   offset: 0,
   maxVisibleLines: 0,
@@ -280,6 +281,11 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       setMode: (mode) => set({ mode }),
 
       /**
+       * Aktiviert oder deaktiviert den Navigationsmodus.
+       */
+      setNavMode: (enabled: boolean) => set({ navMode: enabled, mode: enabled ? "navigating" : "typing" }),
+
+      /**
        * Setzt den Index der ausgewählten Zeile im Navigationsmodus.
        * @param {number | null} index - Der Index der Zeile oder `null`.
       */
@@ -298,7 +304,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         const allLines = [...lines, activeLine]
         const maxOffset = Math.max(allLines.length - maxVisibleLines, 0)
         const newOffset = Math.min(Math.max(offset + delta, 0), maxOffset)
-        set({ mode: "navigating", offset: newOffset })
+        set({ mode: "navigating", navMode: true, offset: newOffset })
       },
 
       /**
@@ -337,7 +343,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
        */
       resetNavigation: () => {
-        set({ mode: "typing", selectedLineIndex: null, offset: 0 })
+        set({ mode: "typing", navMode: false, selectedLineIndex: null, offset: 0 })
       },
 
       /**
@@ -435,6 +441,9 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           }
           if (typeof state.offset === "undefined") {
             state.offset = 0
+          }
+          if (typeof state.navMode === "undefined") {
+            state.navMode = false
           }
         }
       },
