@@ -21,7 +21,7 @@ interface WritingAreaProps {
   activeLine: string
   stackFontSize: number
   darkMode: boolean
-  mode: "typing" | "navigating"
+  mode: "write" | "nav"
   offset: number
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement | null>

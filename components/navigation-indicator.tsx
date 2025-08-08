@@ -10,10 +10,10 @@ interface NavigationIndicatorProps {
  * Zeigt einen Indikator für die aktuelle Navigation an
  */
 export default function NavigationIndicator({ darkMode }: NavigationIndicatorProps) {
-  const { mode, selectedLineIndex, lines } = useTypewriterStore()
+  const { mode } = useTypewriterStore()
 
-  // Wenn wir nicht im Navigationsmodus sind oder keine Zeile ausgewählt ist, zeige nichts an
-  if (mode !== "navigating" || selectedLineIndex === null) return null
+  // Nur im Navigationsmodus anzeigen
+  if (mode !== "nav") return null
 
   return (
     <div
@@ -21,9 +21,7 @@ export default function NavigationIndicator({ darkMode }: NavigationIndicatorPro
         darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"
       }`}
     >
-      <div className="text-sm font-medium">
-        Zeile {selectedLineIndex + 1} von {lines.length}
-      </div>
+      <div className="text-sm font-medium">Navigationsmodus</div>
     </div>
   )
 }

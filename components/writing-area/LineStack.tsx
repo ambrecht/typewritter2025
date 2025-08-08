@@ -2,7 +2,7 @@ import { memo, CSSProperties } from "react"
 
 interface LineStackProps {
   visibleLines: { line: { text: string }; index: number; key: string }[]
-  mode: "typing" | "navigating"
+  mode: "write" | "nav"
   lineHpx?: number
 }
 
@@ -20,7 +20,7 @@ export const LineStack = memo(function LineStack({
         flexDirection: "column",
         // Beginne im Tippmodus oben links, damit die erste Zeile an der Oberkante startet
         // und neue Zeilen darunter erscheinen
-        justifyContent: mode === "navigating" ? "center" : "flex-start",
+        justifyContent: mode === "nav" ? "center" : "flex-start",
         maxHeight: "100%",
         lineHeight: "var(--lineHpx)",
         gap: "0",

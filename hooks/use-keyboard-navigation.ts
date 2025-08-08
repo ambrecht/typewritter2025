@@ -54,7 +54,7 @@ export function useKeyboardNavigation({
 
   // Fokussiere das Eingabefeld, wenn wir in den Schreibmodus zurückkehren
   useEffect(() => {
-    if (mode === "typing" && selectedLineIndex === null) {
+    if (mode === "write" && selectedLineIndex === null) {
       focusInput()
     }
   }, [mode, selectedLineIndex, focusInput])
