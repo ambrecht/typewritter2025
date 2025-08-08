@@ -65,14 +65,28 @@ export default function WritingArea({
     }
 
     const timeoutId = setTimeout(() => {
-      if (linesContainerRef.current) {
-        linesContainerRef.current.scrollTop =
-          linesContainerRef.current.scrollHeight
+      const container = linesContainerRef.current
+      if (!container) return
+
+      const activeIndex = selectedLineIndex ?? lines.length - 1
+      const activeLineElement = container.querySelector<HTMLElement>(
+        `[data-line-index="${activeIndex}"]`,
+      )
+
+      if (activeLineElement) {
+        const containerRect = container.getBoundingClientRect()
+        const activeRect = activeLineElement.getBoundingClientRect()
+
+        if (activeRect.top < containerRect.top) {
+          activeLineElement.scrollIntoView({ block: "start" })
+        } else if (activeRect.bottom > containerRect.bottom) {
+          activeLineElement.scrollIntoView({ block: "end" })
+        }
       }
     }, 150)
 
     return () => clearTimeout(timeoutId)
-  }, [lines.length, mode, externalLinesContainerRef, linesContainerRef])
+  }, [lines.length, mode, selectedLineIndex, externalLinesContainerRef, linesContainerRef])
 
   useEffect(() => {
     if (linesContainerRef.current) {
@@ -87,7 +101,7 @@ export default function WritingArea({
 
       <div
         ref={linesContainerRef}
-        className={`flex-1 overflow-hidden overflow-x-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${
+        className={`flex-1 overflow-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${
           darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
         }`}
         style={{
