@@ -274,9 +274,7 @@ export default function TypewriterPage() {
   return (
     <div
       ref={viewportRef}
-      className={`h-screen flex flex-col ${
-        darkMode ? "dark bg-[#121212] text-[#E0E0E0]" : "bg-[#f3efe9] text-gray-900"
-      }`}
+      className="h-[100svh] w-[100vw] flex flex-col overflow-hidden"
       tabIndex={-1}
       onClick={focusInput}
     >

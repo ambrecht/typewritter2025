@@ -4,14 +4,13 @@
 
 /* ===== Grundlegende Anpassungen ===== */
 .android-typewriter {
-  height: 100vh;
+  height: 100svh;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Highlight-Effekt bei Tap */
   touch-action: manipulation; /* Verbessert Touch-Reaktion */
 }
