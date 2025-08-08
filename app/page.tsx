@@ -284,7 +284,7 @@ export default function TypewriterPage() {
 
       <OptionsBar
         ref={headerRef}
-        className={`h-10 shrink-0 border-b ${
+        className={`w-screen min-h-[40px] max-h-[10vh] shrink-0 border-b ${
           darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
         } transition-colors duration-300`}
       >
