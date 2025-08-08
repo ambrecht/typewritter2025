@@ -37,6 +37,7 @@ describe("TypewriterStore", () => {
 
     expect(result.current.lines).toHaveLength(1)
     expect(result.current.lines[0].text).toBe("Test line")
+    expect(typeof result.current.lines[0].id).toBe("string")
     expect(result.current.activeLine).toBe("")
   })
 

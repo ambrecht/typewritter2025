@@ -32,8 +32,6 @@ const initialState: Omit<
   flowMode: false, // Neuer Zustand für den Flow Mode
 }
 
-let nextLineId = 1
-
 /**
  * @function useTypewriterStore
  * @description Der zentrale Zustand-Store für die Typewriter-Anwendung, implementiert mit Zustand.
@@ -144,7 +142,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
 
             const newLines: Line[] = [
               ...lines,
-              { id: nextLineId++, text: lineToAdd },
+              { id: crypto.randomUUID(), text: lineToAdd },
             ]
             set({
               lines: newLines,
@@ -201,7 +199,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         }
         const newLines: Line[] = [
           ...lines,
-          { id: nextLineId++, text: activeLine },
+          { id: crypto.randomUUID(), text: activeLine },
         ]
         const newText = newLines.map((l) => l.text).join("\n")
         set({
@@ -261,7 +259,6 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        * Setzt die gesamte Sitzung auf den initialen Zustand zurück.
        */
       resetSession: () => {
-        nextLineId = 1
         set({ ...initialState, containerWidth: get().containerWidth })
       },
 
@@ -373,7 +370,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
             const newLinesStrings = result.text.split("\n")
             const newActiveLine = newLinesStrings.pop() || ""
             const lineObjects: Line[] = newLinesStrings.map((text) => ({
-              id: nextLineId++,
+              id: crypto.randomUUID(),
               text,
             }))
             set({
@@ -411,7 +408,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           if (state.lines && state.lines.length > 0) {
             if (typeof state.lines[0] === "string") {
               state.lines = (state.lines as unknown as string[]).map((text) => ({
-                id: nextLineId++,
+                id: crypto.randomUUID(),
                 text,
               }))
             } else if (
@@ -419,15 +416,15 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
               state.lines[0] !== null
             ) {
               state.lines = (state.lines as any[]).map((line) => ({
-                id: typeof line.id === "number" ? line.id : nextLineId++,
+                id:
+                  typeof line.id === "string"
+                    ? line.id
+                    : typeof line.id === "number"
+                      ? String(line.id)
+                      : crypto.randomUUID(),
                 text: typeof line.text === "string" ? line.text : "",
               }))
             }
-            const maxId = (state.lines as Line[]).reduce(
-              (max, line) => Math.max(max, line.id),
-              0,
-            )
-            nextLineId = maxId + 1
           }
           // Stelle sicher, dass flowMode nach dem Laden existiert
           if (typeof state.flowMode === "undefined") {
