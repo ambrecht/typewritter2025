@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, CSSProperties } from "react"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import WritingArea from "@/components/writing-area"
 import ControlBar from "@/components/control-bar"
@@ -10,6 +10,7 @@ import { ActiveLine } from "@/components/writing-area/ActiveLine"
 import NavigationIndicator from "@/components/navigation-indicator"
 import { useAndroidKeyboard } from "@/hooks/useAndroidKeyboard"
 import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
+import { useMaxVisibleLines } from "@/hooks/useMaxVisibleLines"
 import OfflineIndicator from "@/components/offline-indicator"
 import SaveNotification from "@/components/save-notification"
 import SettingsModal from "@/components/settings-modal"
@@ -18,7 +19,6 @@ import FlowModeOverlay from "@/components/flow-mode-overlay"
 
 // Importiere die ApiKeyWarning-Komponente am Anfang der Datei
 import ApiKeyWarning from "@/components/api-key-warning"
-import { debounce } from "@/utils/debounce" // Korrekter Import
 
 export default function TypewriterPage() {
   const {
@@ -49,7 +49,6 @@ export default function TypewriterPage() {
     saveSession,
     handleKeyPress,
     setContainerWidth,
-    setMaxVisibleLines,
   } = useTypewriterStore()
 
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -65,9 +64,6 @@ export default function TypewriterPage() {
   const [showCursor, setShowCursor] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
-  const [orientation, setOrientation] = useState<"portrait" | "landscape">(
-    typeof window !== "undefined" && window.innerWidth > window.innerHeight ? "landscape" : "portrait",
-  )
   const [showSettings, setShowSettings] = useState(false)
   const [showFlowSettings, setShowFlowSettings] = useState(false)
 
@@ -89,6 +85,8 @@ export default function TypewriterPage() {
     setFontSize: useTypewriterStore.getState().setFontSize,
     setStackFontSize: useTypewriterStore.getState().setStackFontSize,
   })
+
+  const lineHpx = useMaxVisibleLines(viewportRef, headerRef, activeLineRef)
 
   const showTemporaryNavigationHint = useCallback(() => {
     if (navigationHintTimerRef.current) {
@@ -210,51 +208,25 @@ export default function TypewriterPage() {
 
   const openSettings = useCallback(() => setShowSettings(true), [])
 
-  // Effekt für Layout-Anpassungen
+  // Aktualisiere die Breite des Textcontainers
   useEffect(() => {
-    const updateLayout = debounce(() => {
-      // Korrektes Ref für die Breitenberechnung verwenden
+    const updateWidth = () => {
       if (linesContainerRef.current) {
         setContainerWidth(linesContainerRef.current.clientWidth)
       }
+    }
+    updateWidth()
+    const observer = new ResizeObserver(updateWidth)
+    if (linesContainerRef.current) observer.observe(linesContainerRef.current)
+    return () => observer.disconnect()
+  }, [setContainerWidth])
 
-      const viewportHeight = viewportRef.current?.clientHeight ?? window.innerHeight
-      const inputHeight = activeLineRef.current?.offsetHeight ?? 0
-      const optionsHeight = headerRef.current?.offsetHeight ?? 0
-
-      let lineHeight = 0
-      if (linesContainerRef.current) {
-        const stackLine = (linesContainerRef.current.querySelector(
-          ".line-stack div",
-        ) as HTMLElement | null) ||
-          (linesContainerRef.current.querySelector(
-            ".line-stack",
-          ) as HTMLElement | null)
-        if (stackLine) {
-          lineHeight = parseFloat(getComputedStyle(stackLine).lineHeight)
-        }
-      }
-      if (lineHeight) {
-        const maxLines = Math.floor(
-          (viewportHeight - inputHeight - optionsHeight) / lineHeight,
-        )
-        setMaxVisibleLines(maxLines)
-      }
-
-      if (typeof window !== "undefined") {
-        setOrientation(window.innerWidth > window.innerHeight ? "landscape" : "portrait")
-      }
-    }, 150)
-
+  // Android-Erkennung
+  useEffect(() => {
     const isAndroidDevice = /Android/.test(navigator.userAgent)
     setIsAndroid(isAndroidDevice)
     if (isAndroidDevice) document.body.classList.add("android-typewriter")
-
-    window.addEventListener("resize", updateLayout)
-    updateLayout()
-
-    return () => window.removeEventListener("resize", updateLayout)
-  }, [setContainerWidth])
+  }, [])
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -308,10 +280,14 @@ export default function TypewriterPage() {
           offset={offset}
           isFullscreen={isFullscreen}
           linesContainerRef={linesContainerRef}
+          lineHpx={lineHpx}
         />
       </div>
 
-      <ActiveInput className="shrink-0 sticky bottom-0">
+      <ActiveInput
+        className="shrink-0 sticky bottom-0"
+        style={{ ["--lineHpx" as any]: `${lineHpx}px` } as CSSProperties }
+      >
       <ActiveLine
           activeLine={activeLine}
           darkMode={darkMode}

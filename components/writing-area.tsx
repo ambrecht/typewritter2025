@@ -25,6 +25,7 @@ interface WritingAreaProps {
   offset: number
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement | null>
+  lineHpx?: number
 }
 
 /**
@@ -42,6 +43,7 @@ export default function WritingArea({
   offset,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
+  lineHpx,
 }: WritingAreaProps) {
   // Verwende Hooks für Container-Dimensionen
   const { linesContainerRef: internalLinesContainerRef, maxVisibleLines } =
@@ -89,7 +91,7 @@ export default function WritingArea({
         <LineStack
           visibleLines={visibleLines}
           mode={mode}
-          isFullscreen={isFullscreen}
+          lineHpx={lineHpx}
         />
       </div>
     </div>

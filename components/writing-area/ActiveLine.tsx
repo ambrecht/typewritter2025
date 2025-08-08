@@ -15,12 +15,9 @@ interface ActiveLineProps {
   showCursor: boolean
   maxCharsPerLine: number
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
-  handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
-  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
   activeLineRef: React.RefObject<HTMLDivElement | null>
   isAndroid?: boolean
   isFullscreen?: boolean
-  activeLineRef?: React.RefObject<HTMLDivElement | null>
 }
 
 /**
@@ -104,6 +101,8 @@ export function ActiveLine({
       className={fixedActiveLineClass}
       onClick={() => hiddenInputRef.current?.focus()}
       style={{
+        fontSize: `${fontSize}px`,
+        lineHeight: "var(--lineHpx, 1.2em)",
         minHeight: `${fontSize * 1.5 + 24}px`,
         padding: "12px 1.25rem",
         height: "auto",
@@ -119,7 +118,7 @@ export function ActiveLine({
         {/* Visible text with cursor */}
         <div
           className={activeLineTextClass}
-          style={{ fontSize: `${fontSize}px`, lineHeight: "1.2" }}
+          style={{ fontSize: `${fontSize}px`, lineHeight: "var(--lineHpx, 1.2em)" }}
           aria-hidden="true"
         >
           {activeLine.slice(0, cursorPosition)}
@@ -148,7 +147,7 @@ export function ActiveLine({
           className="absolute inset-0 w-full h-full bg-transparent text-transparent caret-transparent outline-none resize-none overflow-hidden z-10"
           style={{
             fontSize: `${fontSize}px`,
-            lineHeight: "1.5",
+            lineHeight: "var(--lineHpx, 1.2em)",
             fontFamily: "inherit",
           }}
           rows={1}
