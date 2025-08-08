@@ -53,7 +53,7 @@ export function ActiveLine({
   activeLineRef,
 }: ActiveLineProps) {
 
-  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif border-t z-10 active-line relative ${
+  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif border-t z-10 active-line relative overflow-hidden ${
     darkMode
       ? "bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
       : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
@@ -104,9 +104,8 @@ export function ActiveLine({
       className={fixedActiveLineClass}
       onClick={() => hiddenInputRef.current?.focus()}
       style={{
-        minHeight: `${fontSize * 1.5 + 24}px`,
+        height: `${fontSize * 1.5 + 24}px`,
         padding: "12px 1.25rem",
-        height: "auto",
       }}
       data-testid="active-line"
     >
@@ -156,27 +155,29 @@ export function ActiveLine({
         />
 
       </div>
-      {/* Fortschrittsbalken und Zeichenzähler */}
-      <div className={`absolute bottom-0 left-0 h-1 ${darkMode ? "bg-gray-700" : "bg-[#e2dfda]"} w-full`}>
-        <div
-          className={`h-full ${
-            activeLine.length > maxCharsPerLine
-              ? "bg-red-500"
-              : activeLine.length > maxCharsPerLine * 0.8
-                ? "bg-amber-500"
-                : "bg-green-500"
-          } transition-all duration-150`}
-          style={{
-            width: `${Math.min((activeLine.length / maxCharsPerLine) * 100, 100)}%`,
-          }}
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={maxCharsPerLine}
-          aria-valuenow={activeLine.length}
-        />
-      </div>
-      <div className="absolute bottom-2 right-4 text-xs opacity-60 font-mono">
-        {activeLine.length}/{maxCharsPerLine}
+      {/* Overlay for progress and character count */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className={`absolute bottom-0 left-0 h-1 w-full ${darkMode ? "bg-gray-700" : "bg-[#e2dfda]"}`}>
+          <div
+            className={`h-full ${
+              activeLine.length > maxCharsPerLine
+                ? "bg-red-500"
+                : activeLine.length > maxCharsPerLine * 0.8
+                  ? "bg-amber-500"
+                  : "bg-green-500"
+            } transition-all duration-150`}
+            style={{
+              width: `${Math.min((activeLine.length / maxCharsPerLine) * 100, 100)}%`,
+            }}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={maxCharsPerLine}
+            aria-valuenow={activeLine.length}
+          />
+        </div>
+        <div className="absolute bottom-2 right-4 text-xs opacity-60 font-mono">
+          {activeLine.length}/{maxCharsPerLine}
+        </div>
       </div>
 
     </div>
