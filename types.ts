@@ -33,7 +33,7 @@ export interface ParagraphRange {
  */
 export interface Line {
   /** Eindeutige ID der Zeile */
-  id: number
+  id: string
   /** Der Textinhalt der Zeile */
   text: string
 }

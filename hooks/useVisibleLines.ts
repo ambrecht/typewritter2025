@@ -61,7 +61,7 @@ export function useVisibleLines(
     return lines.slice(start, start + visibleCount).map((line, idx) => ({
       line: parseLine(line.text),
       index: start + idx,
-      key: String(line.id),
+      key: line.id,
     }))
   }, [lines, maxVisibleLines, offset])
 }
