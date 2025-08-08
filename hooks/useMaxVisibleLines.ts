@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useState, RefObject, useEffect } from "react"
+import { useLayoutEffect, useState, RefObject } from "react"
 import { useTypewriterStore } from "@/store/typewriter-store"
 
 /**
@@ -12,46 +12,50 @@ export function useMaxVisibleLines(
   headerRef: RefObject<HTMLElement>,
   inputRef: RefObject<HTMLElement>,
 ) {
-  const [state, setState] = useState({ max: 0, lineH: 0 })
+  const [lineH, setLineH] = useState(0)
   const setMaxVisibleLines = useTypewriterStore((s) => s.setMaxVisibleLines)
 
   useLayoutEffect(() => {
-    const measureLineHeight = () => {
-      const sample = document.createElement("div")
-      sample.style.position = "absolute"
-      sample.style.visibility = "hidden"
-      sample.style.pointerEvents = "none"
-      sample.textContent = "M"
+    const clamp = (value: number, min: number, max: number) =>
+      Math.max(min, Math.min(value, max))
 
+    const sample = document.createElement("div")
+    sample.style.position = "absolute"
+    sample.style.visibility = "hidden"
+    sample.style.pointerEvents = "none"
+    sample.textContent = "M"
+    rootRef.current?.appendChild(sample)
+
+    const measureLineHeight = () => {
       const inputEl = inputRef.current
       if (inputEl) {
         const computed = window.getComputedStyle(inputEl)
         sample.style.font = computed.font
         sample.style.lineHeight = computed.lineHeight
       }
-
-      document.body.appendChild(sample)
-      const height = sample.getBoundingClientRect().height || 1
-      document.body.removeChild(sample)
-      return height
+      return sample.getBoundingClientRect().height || 1
     }
 
     const calculate = () => {
-      const rootH = rootRef.current?.clientHeight ?? window.innerHeight
-      const headerH = headerRef.current?.offsetHeight ?? 0
-      const inputH = inputRef.current?.offsetHeight ?? 0
-      const lineH = measureLineHeight()
-      const max = Math.floor((rootH - headerH - inputH) / lineH)
-      setState({ max, lineH })
-      return { max, lineH }
+      const vh = rootRef.current?.getBoundingClientRect().height ?? window.innerHeight
+      const rawHeaderH = headerRef.current?.offsetHeight ?? 0
+      const headH = clamp(rawHeaderH, 40, 0.1 * vh)
+      const lineHeight = measureLineHeight()
+      const maxVisible = Math.max(0, Math.floor((vh - headH - lineHeight) / lineHeight))
+
+      setLineH(lineHeight)
+      if (rootRef.current)
+        rootRef.current.style.setProperty("--lineHpx", `${lineHeight}px`)
+      setMaxVisibleLines(maxVisible)
     }
 
     calculate()
 
-    const resizeObserver = new ResizeObserver(() => calculate())
+    const resizeObserver = new ResizeObserver(calculate)
     if (rootRef.current) resizeObserver.observe(rootRef.current)
     if (headerRef.current) resizeObserver.observe(headerRef.current)
     if (inputRef.current) resizeObserver.observe(inputRef.current)
+    resizeObserver.observe(sample)
 
     window.addEventListener("resize", calculate)
     window.addEventListener("orientationchange", calculate)
@@ -60,12 +64,9 @@ export function useMaxVisibleLines(
       resizeObserver.disconnect()
       window.removeEventListener("resize", calculate)
       window.removeEventListener("orientationchange", calculate)
+      sample.remove()
     }
-  }, [rootRef, headerRef, inputRef])
+  }, [rootRef, headerRef, inputRef, setMaxVisibleLines])
 
-  useEffect(() => {
-    setMaxVisibleLines(state.max)
-  }, [state.max, setMaxVisibleLines])
-
-  return state.lineH
+  return lineH
 }
