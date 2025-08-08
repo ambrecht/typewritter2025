@@ -15,26 +15,9 @@ interface ActiveLineProps {
   showCursor: boolean
   maxCharsPerLine: number
   hiddenInputRef: React.RefObject<HTMLTextAreaElement | null>
-  handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
-  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
   activeLineRef: React.RefObject<HTMLDivElement | null>
   isAndroid?: boolean
   isFullscreen?: boolean
-  activeLineRef?: React.RefObject<HTMLDivElement | null>
-}
-
-/**
- * @hook useAutoResizeTextarea
- * @description Ein Custom Hook, der die Höhe einer Textarea automatisch an ihren Inhalt anpasst.
- */
-function useAutoResizeTextarea(ref: React.RefObject<HTMLTextAreaElement>, value: string) {
-  useEffect(() => {
-    const textarea = ref.current
-    if (textarea) {
-      textarea.style.height = "auto"
-      textarea.style.height = `${textarea.scrollHeight}px`
-    }
-  }, [ref, value])
 }
 
 /**
@@ -51,12 +34,14 @@ export function ActiveLine({
   maxCharsPerLine,
   hiddenInputRef,
   activeLineRef,
+  isAndroid,
+  isFullscreen,
 }: ActiveLineProps) {
 
-  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif border-t z-10 active-line relative ${
+  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif z-10 active-line relative ${
     darkMode
-      ? "bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
-      : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
+      ? "bg-gray-800 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
+      : "bg-[#f3efe9] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
   }`
 
   const activeLineTextClass = getActiveLineTextClass(darkMode)
@@ -98,16 +83,19 @@ export function ActiveLine({
   }, [activeLine])
 
   // Ändere die return-Anweisung, um die Schreibkopfzeile besser hervorzuheben
+  const lineHeight = isFullscreen ? 1.2 : isAndroid ? 1.3 : 1.5
+  const lineHeightPx = fontSize * lineHeight
+
   return (
     <div
       ref={activeLineRef}
       className={fixedActiveLineClass}
       onClick={() => hiddenInputRef.current?.focus()}
       style={{
-        minHeight: `${fontSize * 1.5 + 24}px`,
-        padding: "12px 1.25rem",
-        height: "auto",
-      }}
+        "--lineHpx": `${lineHeightPx}px`,
+        height: "var(--lineHpx)",
+        lineHeight: "var(--lineHpx)",
+      } as React.CSSProperties}
       data-testid="active-line"
     >
       {/* Füge einen visuellen Indikator für die Schreibzeile hinzu */}
@@ -119,7 +107,7 @@ export function ActiveLine({
         {/* Visible text with cursor */}
         <div
           className={activeLineTextClass}
-          style={{ fontSize: `${fontSize}px`, lineHeight: "1.2" }}
+          style={{ fontSize: `${fontSize}px`, lineHeight: "var(--lineHpx)" }}
           aria-hidden="true"
         >
           {activeLine.slice(0, cursorPosition)}
@@ -148,7 +136,7 @@ export function ActiveLine({
           className="absolute inset-0 w-full h-full bg-transparent text-transparent caret-transparent outline-none resize-none overflow-hidden z-10"
           style={{
             fontSize: `${fontSize}px`,
-            lineHeight: "1.5",
+            lineHeight: "var(--lineHpx)",
             fontFamily: "inherit",
           }}
           rows={1}
@@ -157,7 +145,11 @@ export function ActiveLine({
 
       </div>
       {/* Fortschrittsbalken und Zeichenzähler */}
-      <div className={`absolute bottom-0 left-0 h-1 ${darkMode ? "bg-gray-700" : "bg-[#e2dfda]"} w-full`}>
+      <div
+        className={`pointer-events-none absolute bottom-0 left-0 h-px w-full transform translate-y-full ${
+          darkMode ? "bg-gray-700" : "bg-[#e2dfda]"
+        }`}
+      >
         <div
           className={`h-full ${
             activeLine.length > maxCharsPerLine
