@@ -8,13 +8,14 @@ import { useTypewriterStore } from "@/store/typewriter-store"
  * und der aktuellen Höhe des Eingabebereichs.
  */
 export function useMaxVisibleLines(
+  rootRef: RefObject<HTMLElement>,
+  headerRef: RefObject<HTMLElement>,
   inputRef: RefObject<HTMLElement>,
-  ) {
-  const [maxVisible, setMaxVisible] = useState(0)
-  const setMaxVisibleLines = useTypewriterStore((state) => state.setMaxVisibleLines)
+) {
+  const [state, setState] = useState({ max: 0, lineH: 0 })
+  const setMaxVisibleLines = useTypewriterStore((s) => s.setMaxVisibleLines)
 
   useLayoutEffect(() => {
-    const HEADER_HEIGHT = 40
     const measureLineHeight = () => {
       const sample = document.createElement("div")
       sample.style.position = "absolute"
@@ -36,34 +37,35 @@ export function useMaxVisibleLines(
     }
 
     const calculate = () => {
-      const vh = window.innerHeight
+      const rootH = rootRef.current?.clientHeight ?? window.innerHeight
+      const headerH = headerRef.current?.offsetHeight ?? 0
       const inputH = inputRef.current?.offsetHeight ?? 0
-      const lineHeight = measureLineHeight()
-      const max = Math.floor((vh - HEADER_HEIGHT - inputH) / lineHeight)
-      setMaxVisible(max)
-      return max
+      const lineH = measureLineHeight()
+      const max = Math.floor((rootH - headerH - inputH) / lineH)
+      setState({ max, lineH })
+      return { max, lineH }
     }
 
     calculate()
 
-    const element = inputRef.current
-    const observer = new ResizeObserver(() => calculate())
-    if (element) observer.observe(element)
+    const resizeObserver = new ResizeObserver(() => calculate())
+    if (rootRef.current) resizeObserver.observe(rootRef.current)
+    if (headerRef.current) resizeObserver.observe(headerRef.current)
+    if (inputRef.current) resizeObserver.observe(inputRef.current)
 
     window.addEventListener("resize", calculate)
     window.addEventListener("orientationchange", calculate)
 
     return () => {
+      resizeObserver.disconnect()
       window.removeEventListener("resize", calculate)
       window.removeEventListener("orientationchange", calculate)
-      if (element) observer.unobserve(element)
-      observer.disconnect()
     }
-  }, [inputRef])
+  }, [rootRef, headerRef, inputRef])
 
   useEffect(() => {
-    setMaxVisibleLines(maxVisible)
-  }, [maxVisible, setMaxVisibleLines])
+    setMaxVisibleLines(state.max)
+  }, [state.max, setMaxVisibleLines])
 
-  return maxVisible
+  return state.lineH
 }

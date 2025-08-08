@@ -1,20 +1,16 @@
-import { memo } from "react"
-import { MarkdownIndicator } from "./MarkdownIndicator"
-import { renderFormattedLine } from "./renderFormattedLine"
+import { memo, CSSProperties } from "react"
 
 interface LineStackProps {
   visibleLines: { line: { text: string }; index: number; key: string }[]
   mode: "typing" | "navigating"
-  isFullscreen?: boolean
+  lineHpx?: number
 }
 
 export const LineStack = memo(function LineStack({
   visibleLines,
   mode,
-  isFullscreen = false,
+  lineHpx,
 }: LineStackProps) {
-  const isAndroid = typeof navigator !== "undefined" && navigator.userAgent.includes("Android")
-
   return (
     <div
       className="line-stack"
@@ -26,12 +22,13 @@ export const LineStack = memo(function LineStack({
         // und neue Zeilen darunter erscheinen
         justifyContent: mode === "navigating" ? "center" : "flex-start",
         maxHeight: "100%",
-        lineHeight: isFullscreen ? "1.2" : isAndroid ? "1.3" : "1.5",
+        lineHeight: "var(--lineHpx)",
         gap: "0",
         padding: "0",
         margin: "0",
         paddingBottom: "0",
         marginBottom: "0",
+        ...(lineHpx ? ({ ["--lineHpx" as any]: `${lineHpx}px` } as CSSProperties) : {}),
       }}
     >
       {visibleLines.map(({ line, index, key }) => (
@@ -42,3 +39,4 @@ export const LineStack = memo(function LineStack({
     </div>
   )
 })
+
