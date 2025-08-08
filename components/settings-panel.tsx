@@ -133,7 +133,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     // Content
     const content = document.createElement("div")
     content.className = "p-6 space-y-8"
-    content.style.height = "calc(100vh - 70px)"
+    content.style.height = "calc(100svh - 70px)"
     content.style.overflow = "auto"
     content.style.color = darkMode ? "#f9fafb" : "#111827"
 

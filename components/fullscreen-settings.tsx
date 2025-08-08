@@ -78,7 +78,7 @@ export default function FullscreenSettings({ isOpen, onClose }: FullscreenSettin
   // Content-Bereich
   const content = document.createElement("div")
   content.className = "p-6 space-y-8 overflow-y-auto"
-  content.style.height = "calc(100vh - 70px)"
+  content.style.height = "calc(100svh - 70px)"
 
   // Füge den Inhalt hinzu (vereinfacht)
   content.innerHTML = `
