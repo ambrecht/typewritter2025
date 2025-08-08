@@ -50,10 +50,10 @@ export function ActiveLine({
   activeLineRef,
 }: ActiveLineProps) {
 
-  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif border-t z-10 active-line relative ${
+  const fixedActiveLineClass = `flex-shrink-0 sticky bottom-0 font-serif z-10 active-line relative ${
     darkMode
-      ? "bg-gray-800 border-gray-700 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
-      : "bg-[#f3efe9] border-[#e0dcd3] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
+      ? "bg-gray-800 shadow-[0_-8px_16px_rgba(0,0,0,0.3)]"
+      : "bg-[#f3efe9] shadow-[0_-8px_16px_rgba(0,0,0,0.2)]"
   }`
 
   const activeLineTextClass = getActiveLineTextClass(darkMode)
@@ -102,10 +102,8 @@ export function ActiveLine({
       onClick={() => hiddenInputRef.current?.focus()}
       style={{
         fontSize: `${fontSize}px`,
-        lineHeight: "var(--lineHpx, 1.2em)",
-        minHeight: `${fontSize * 1.5 + 24}px`,
-        padding: "12px 1.25rem",
-        height: "auto",
+        lineHeight: "var(--lineHpx)",
+        padding: "0 1.25rem",
       }}
       data-testid="active-line"
     >
@@ -118,7 +116,7 @@ export function ActiveLine({
         {/* Visible text with cursor */}
         <div
           className={activeLineTextClass}
-          style={{ fontSize: `${fontSize}px`, lineHeight: "var(--lineHpx, 1.2em)" }}
+          style={{ fontSize: `${fontSize}px`, lineHeight: "var(--lineHpx)" }}
           aria-hidden="true"
         >
           {activeLine.slice(0, cursorPosition)}
@@ -147,7 +145,7 @@ export function ActiveLine({
           className="absolute inset-0 w-full h-full bg-transparent text-transparent caret-transparent outline-none resize-none overflow-hidden z-10"
           style={{
             fontSize: `${fontSize}px`,
-            lineHeight: "var(--lineHpx, 1.2em)",
+            lineHeight: "var(--lineHpx)",
             fontFamily: "inherit",
           }}
           rows={1}
