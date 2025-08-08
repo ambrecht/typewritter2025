@@ -4,8 +4,13 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const ActiveInput = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn(className)} {...props} />
+  ({ className, style, ...props }, ref) => (
+    <div
+      ref={ref}
+      style={{ ...style, height: "var(--lineHpx)", lineHeight: "var(--lineHpx)" }}
+      className={cn(className)}
+      {...props}
+    />
   )
 )
 ActiveInput.displayName = "ActiveInput"
