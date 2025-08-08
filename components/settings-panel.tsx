@@ -52,7 +52,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     modalRoot.style.height = "100%"
     modalRoot.style.zIndex = "2147483647" // Höchstmöglicher z-index
     modalRoot.style.backgroundColor = darkMode ? "#111827" : "#ffffff"
-    modalRoot.style.overflow = "auto"
+    modalRoot.style.overflow = "hidden"
 
     // Verhindere Scrolling im Hintergrund
     const originalStyle = window.getComputedStyle(document.body).overflow
@@ -134,7 +134,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     const content = document.createElement("div")
     content.className = "p-6 space-y-8"
     content.style.height = "calc(100vh - 70px)"
-    content.style.overflow = "auto"
+    content.style.overflow = "hidden"
     content.style.color = darkMode ? "#f9fafb" : "#111827"
 
     // Schriftgröße für aktive Zeile

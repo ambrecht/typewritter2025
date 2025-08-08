@@ -32,7 +32,7 @@ export default function FullscreenSettings({ isOpen, onClose }: FullscreenSettin
   settingsContainer.style.zIndex = "999999"
   settingsContainer.style.backgroundColor = darkMode ? "#111827" : "#ffffff"
   settingsContainer.style.color = darkMode ? "#f3f4f6" : "#1f2937"
-  settingsContainer.style.overflow = "auto"
+    settingsContainer.style.overflow = "hidden"
 
   // Füge das Element zum body hinzu
   document.body.appendChild(settingsContainer)
@@ -77,8 +77,9 @@ export default function FullscreenSettings({ isOpen, onClose }: FullscreenSettin
 
   // Content-Bereich
   const content = document.createElement("div")
-  content.className = "p-6 space-y-8 overflow-y-auto"
-  content.style.height = "calc(100vh - 70px)"
+    content.className = "p-6 space-y-8"
+    content.style.height = "calc(100vh - 70px)"
+    content.style.overflowY = "hidden"
 
   // Füge den Inhalt hinzu (vereinfacht)
   content.innerHTML = `

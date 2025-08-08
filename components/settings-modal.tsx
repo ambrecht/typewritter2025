@@ -79,7 +79,7 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
 
       {/* Content */}
       <div
-        className="p-6 space-y-8 overflow-auto"
+        className="p-6 space-y-8 overflow-hidden"
         style={{
           height: "calc(100vh - 70px)",
           color: darkMode ? "#f9fafb" : "#111827",

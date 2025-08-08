@@ -265,7 +265,11 @@ function ControlBar({
   ]
 
   const renderButtonGroup = (buttons: any[], showLabels = true) => (
-    <div className={`flex ${isVeryNarrowScreen ? "gap-1" : "gap-2"}`}>
+    <div
+      className={`flex ${
+        isVeryNarrowScreen ? "flex-wrap justify-center gap-1" : "gap-2"
+      }`}
+    >
       {buttons.map((btn, index) => (
         <Button
           key={index}
@@ -314,7 +318,7 @@ function ControlBar({
           <div className="flex justify-center gap-2">
             {renderButtonGroup(primaryButtons, false)}
           </div>
-          <div className="flex justify-center gap-2 overflow-x-auto pb-1">
+          <div className="flex justify-center gap-2 pb-1">
             {renderButtonGroup(secondaryButtons, false)}
           </div>
         </div>
