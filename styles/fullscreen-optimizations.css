@@ -13,7 +13,7 @@
 /* Optimierungen für Android im Vollbildmodus */
 .android-typewriter.fullscreen .writing-container {
   /* Maximale Höhe für Android im Vollbildmodus */
-  height: calc(100vh - 120px) !important;
+  height: calc(100svh - 120px) !important;
 }
 
 /* Verbesserte Sichtbarkeit der aktiven Zeile im Vollbildmodus */
