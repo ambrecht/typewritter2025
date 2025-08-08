@@ -18,14 +18,13 @@ export function useContainerDimensions(stackFontSize: number) {
 
   // State für Container-Dimensionen
   const [containerHeight, setContainerHeight] = useState<number | null>(null)
-  const [maxVisibleLines, setMaxVisibleLines] = useState(20) // Starte mit einem höheren Wert
+  const [maxVisibleLines, setMaxVisibleLines] = useState(1) // Initialwert
   const [isAndroid, setIsAndroid] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Ref für die letzte Berechnung
   const lastCalculation = useRef({
     containerHeight: 0,
-    activeLineHeight: 0,
     lineHeight: 0,
     maxVisibleLines: 0,
   })
@@ -57,15 +56,8 @@ export function useContainerDimensions(stackFontSize: number) {
     const calculateMaxVisibleLines = debounce(() => {
       const containerHeight = linesContainerRef.current?.clientHeight || 0
 
-      // Ändere die Berechnung der maximalen Anzahl sichtbarer Zeilen,
-      // um mehr Platz für die größere aktive Zeile zu berücksichtigen
-
-      // Schätze die Höhe der aktiven Zeile (falls noch nicht gerendert)
-      const activeLineHeight = activeLineRef.current?.clientHeight || stackFontSize * 2.5 // Erhöht von 2.0 auf 2.5
-
-      // Verfügbare Höhe für den Zeilenstack (abzüglich der aktiven Zeile)
-      // Füge einen kleinen Puffer hinzu für den Abstand zwischen Stack und aktiver Zeile
-      const availableHeight = containerHeight - activeLineHeight - 10 // 10px Puffer hinzugefügt
+      // Verfügbare Höhe für den Zeilenstack entspricht der Containerhöhe
+      const availableHeight = containerHeight
 
       // Berechne die Zeilenhöhe basierend auf der Schriftgröße und einem angemessenen Zeilenabstand
       // Verwende einen kleineren Zeilenabstand für mehr Zeilen
@@ -77,12 +69,11 @@ export function useContainerDimensions(stackFontSize: number) {
 
       // Stelle sicher, dass mindestens 1 Zeile sichtbar ist
       // Keine künstliche Begrenzung mehr, um den verfügbaren Platz maximal zu nutzen
-      const newMaxVisibleLines = Math.max(20, visibleLines) // Mindestens 20 Zeilen
+      const newMaxVisibleLines = Math.max(1, visibleLines) // Mindestens 1 Zeile
 
       // Prüfe, ob sich relevante Parameter geändert haben
       const hasChanged =
         Math.abs(containerHeight - lastCalculation.current.containerHeight) > 5 ||
-        Math.abs(activeLineHeight - lastCalculation.current.activeLineHeight) > 2 ||
         Math.abs(lineHeight - lastCalculation.current.lineHeight) > 0.5 ||
         newMaxVisibleLines !== lastCalculation.current.maxVisibleLines
 
@@ -97,7 +88,6 @@ export function useContainerDimensions(stackFontSize: number) {
         // Aktualisiere den Cache
         lastCalculation.current = {
           containerHeight,
-          activeLineHeight,
           lineHeight,
           maxVisibleLines: newMaxVisibleLines,
         }

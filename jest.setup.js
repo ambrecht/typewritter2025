@@ -74,3 +74,8 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }))
+
+// Mock Canvas getContext
+HTMLCanvasElement.prototype.getContext = () => ({
+  measureText: () => ({ width: 0 }),
+})
