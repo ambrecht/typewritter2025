@@ -37,6 +37,7 @@ export default function TypewriterPage() {
     inParagraph,
     mode,
     selectedLineIndex,
+    offset,
     adjustOffset,
     navigateForward,
     navigateBackward,
@@ -164,8 +165,8 @@ export default function TypewriterPage() {
       if (event.key.startsWith("Arrow")) {
         event.preventDefault()
         showTemporaryNavigationHint()
-        if (event.key === "ArrowUp") adjustOffset(-1)
-        if (event.key === "ArrowDown") adjustOffset(1)
+        if (event.key === "ArrowUp") adjustOffset(1)
+        if (event.key === "ArrowDown") adjustOffset(-1)
         if (event.key === "ArrowLeft") navigateBackward(10)
         if (event.key === "ArrowRight") navigateForward(10)
         return
@@ -176,12 +177,13 @@ export default function TypewriterPage() {
           event.preventDefault()
           resetNavigation()
           focusInput() // Fokus nach Beenden der Navigation wiederherstellen
+          return
         }
-        return
       }
 
       if (event.key.length === 1 || event.key === "Backspace" || event.key === "Enter") {
         event.preventDefault()
+        resetNavigation()
         handleKeyPress(event.key)
       }
     }
@@ -306,7 +308,7 @@ export default function TypewriterPage() {
           stackFontSize={stackFontSize}
           darkMode={darkMode}
           mode={mode}
-          selectedLineIndex={selectedLineIndex}
+          offset={offset}
           isFullscreen={isFullscreen}
           linesContainerRef={linesContainerRef}
         />

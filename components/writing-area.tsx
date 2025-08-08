@@ -22,7 +22,7 @@ interface WritingAreaProps {
   stackFontSize: number
   darkMode: boolean
   mode: "typing" | "navigating"
-  selectedLineIndex: number | null
+  offset: number
   isFullscreen: boolean
   linesContainerRef?: React.RefObject<HTMLDivElement | null>
 }
@@ -39,7 +39,7 @@ export default function WritingArea({
   stackFontSize,
   darkMode,
   mode,
-  selectedLineIndex,
+  offset,
   isFullscreen,
   linesContainerRef: externalLinesContainerRef,
 }: WritingAreaProps) {
@@ -55,7 +55,7 @@ export default function WritingArea({
     lines,
     maxVisibleLines,
     mode,
-    selectedLineIndex,
+    offset,
     isFullscreen,
   )
 
@@ -68,7 +68,7 @@ export default function WritingArea({
       const container = linesContainerRef.current
       if (!container) return
 
-      const activeIndex = selectedLineIndex ?? lines.length - 1
+      const activeIndex = Math.max(0, lines.length - 1 - offset)
       const activeLineElement = container.querySelector<HTMLElement>(
         `[data-line-index="${activeIndex}"]`,
       )
@@ -86,7 +86,7 @@ export default function WritingArea({
     }, 150)
 
     return () => clearTimeout(timeoutId)
-  }, [lines.length, mode, selectedLineIndex, externalLinesContainerRef, linesContainerRef])
+  }, [lines.length, mode, offset, externalLinesContainerRef, linesContainerRef])
 
   useEffect(() => {
     if (linesContainerRef.current) {
