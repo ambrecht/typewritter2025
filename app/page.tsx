@@ -263,14 +263,17 @@ export default function TypewriterPage() {
 
   return (
     <div
+      id="app"
       ref={viewportRef}
       className="h-[100svh] w-[100vw] flex flex-col overflow-hidden"
+      style={{ overflow: "hidden", isolation: "isolate" }}
       tabIndex={-1}
       onClick={focusInput}
     >
       <ApiKeyWarning />
 
       <OptionsBar
+        id="opts"
         ref={headerRef}
         className={`min-h-[40px] max-h-[10vh] shrink-0 border-b ${
           darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
@@ -287,7 +290,7 @@ export default function TypewriterPage() {
         />
       </OptionsBar>
 
-      <div className="flex-1 overflow-hidden">
+      <div id="stack-wrap" className="flex-1 overflow-hidden relative z-0">
         <WritingArea
           lines={lines}
           stackFontSize={stackFontSize}
@@ -301,6 +304,7 @@ export default function TypewriterPage() {
       </div>
 
       <ActiveInput
+        id="active"
         className="shrink-0 sticky bottom-0"
         style={{ ["--lineHpx" as any]: `${lineHpx}px` } as CSSProperties }
       >
