@@ -153,6 +153,20 @@ npx jest --watch
 npx jest --coverage
 ```
 
+### End-to-End Tests
+
+Für browserbasierte E2E-Tests kommt [Playwright](https://playwright.dev/) zum Einsatz. Vor dem ersten Lauf müssen die benötigten Browser installiert werden:
+
+```bash
+npx playwright install
+```
+
+Die Tests können anschließend mit folgendem Befehl ausgeführt werden:
+
+```bash
+npm run test:e2e
+```
+
 Die Tests befinden sich im Verzeichnis `__tests__/`.
 
 ## Sicherheit
