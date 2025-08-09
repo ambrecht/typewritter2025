@@ -5,6 +5,9 @@ import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
 import { measureTextWidth } from "@/utils/canvas-utils"
 
+// Cache für gemessene Graphem-Breiten
+const graphemeWidthCache = new Map<string, number>()
+
 /**
  * @constant initialState
  * @description Der initiale Zustand der Typewriter-Anwendung.
@@ -114,9 +117,33 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           // The containerWidth from the store is now the clientWidth of the text area,
           // which already accounts for padding. No subtraction needed.
           const availableWidth = containerWidth
-          const textWidth = measureTextWidth(newActiveLineContent, font)
+          const segmenter = new Intl.Segmenter("de", { granularity: "grapheme" })
+          const segments = Array.from(segmenter.segment(newActiveLineContent))
+          let currentWidth = 0
+          let lastBoundaryIndex = -1
+          let lastBoundaryChar: string | null = null
+          let splitIndex = -1
 
-          if (textWidth <= availableWidth) {
+          for (let i = 0; i < segments.length; i++) {
+            const char = segments[i].segment
+            const cacheKey = `${font}-${char}`
+            let charWidth = graphemeWidthCache.get(cacheKey)
+            if (charWidth === undefined) {
+              charWidth = measureTextWidth(char, font)
+              graphemeWidthCache.set(cacheKey, charWidth)
+            }
+            if (currentWidth + charWidth > availableWidth) {
+              splitIndex = lastBoundaryIndex >= 0 ? lastBoundaryIndex : i
+              break
+            }
+            currentWidth += charWidth
+            if (char === " " || char === "\u00AD") {
+              lastBoundaryIndex = i
+              lastBoundaryChar = char
+            }
+          }
+
+          if (splitIndex === -1) {
             set({
               activeLine: newActiveLineContent,
               statistics: calculateTextStatistics([
@@ -125,28 +152,30 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
               ].join("\n")),
             })
           } else {
-            // Der Text ist zu lang, führe einen Umbruch durch.
-            const lastSpaceIndex = newActiveLineContent.lastIndexOf(" ")
-            let lineToAdd: string
-            let remainder: string
-
-            if (lastSpaceIndex > 0) {
-              // Weicher Umbruch am letzten Leerzeichen
-              lineToAdd = newActiveLineContent.substring(0, lastSpaceIndex)
-              remainder = newActiveLineContent.substring(lastSpaceIndex + 1)
-            } else {
-              // Harter Umbruch, wenn kein Leerzeichen gefunden wurde
-              lineToAdd = newActiveLineContent
-              remainder = ""
+            const lineSegments = segments.slice(0, splitIndex)
+            let remainderSegments = segments.slice(splitIndex)
+            if (lastBoundaryIndex >= 0) {
+              remainderSegments = remainderSegments.slice(1)
             }
+            let lineToAdd = lineSegments.map((s) => s.segment).join("")
+
+            if (lastBoundaryChar === "\u00AD") {
+              lineToAdd = lineToAdd + "-"
+            }
+
+            lineToAdd = lineToAdd.trim()
+
+            const remainder = remainderSegments.map((s) => s.segment).join("")
 
             const newLines: Line[] = [
               ...lines,
               { id: crypto.randomUUID(), text: lineToAdd },
             ]
+
             set({
               lines: newLines,
               activeLine: remainder,
+              mode: "write",
               offset: 0,
               statistics: calculateTextStatistics([
                 ...newLines.map((l) => l.text),
