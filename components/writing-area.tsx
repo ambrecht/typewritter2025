@@ -6,8 +6,6 @@ import type { Line } from "@/types"
 
 import { useVisibleLines } from "@/hooks/useVisibleLines"
 import { useTypewriterStore } from "@/store/typewriter-store"
-import { CopyButton } from "./writing-area/CopyButton"
-import { NavigationHint } from "./writing-area/NavigationHint"
 import { LineStack } from "./writing-area/LineStack"
 
 /**
@@ -18,7 +16,6 @@ import { LineStack } from "./writing-area/LineStack"
  */
 interface WritingAreaProps {
   lines: Line[]
-  activeLine: string
   stackFontSize: number
   darkMode: boolean
   mode: "write" | "nav"
@@ -36,7 +33,6 @@ interface WritingAreaProps {
  */
 export default function WritingArea({
   lines,
-  activeLine,
   stackFontSize,
   darkMode,
   mode,
@@ -73,9 +69,6 @@ export default function WritingArea({
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
-      <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
-      <NavigationHint darkMode={darkMode} />
-
       <div
         ref={setLinesContainerRef}
         className={`flex-1 overflow-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${

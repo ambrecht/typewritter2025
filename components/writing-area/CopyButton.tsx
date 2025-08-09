@@ -33,7 +33,7 @@ export function CopyButton({ lines, activeLine, darkMode }: CopyButtonProps) {
   return (
     <button
       onClick={copyAllText}
-      className={`absolute top-2 right-2 z-20 p-2 rounded-full ${
+      className={`p-2 rounded-full ${
         darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300"
       }`}
       aria-label="Gesamten Text kopieren"
