@@ -303,7 +303,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        */
       navigateUp: () => {
         set({ mode: "nav" })
-        get().adjustOffset(-1)
+        get().adjustOffset(1)
       },
 
       /**
@@ -311,7 +311,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
        */
       navigateDown: () => {
         set({ mode: "nav" })
-        get().adjustOffset(1)
+        get().adjustOffset(-1)
       },
 
         /**

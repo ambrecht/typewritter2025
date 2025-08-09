@@ -170,7 +170,7 @@ export default function TypewriterPage() {
         event.preventDefault()
         showTemporaryNavigationHint()
         setMode("nav")
-        adjustOffset(event.key === "ArrowUp" ? -1 : 1)
+        adjustOffset(event.key === "ArrowUp" ? 1 : -1)
         return
       }
 

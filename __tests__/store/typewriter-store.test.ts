@@ -67,6 +67,30 @@ describe("TypewriterStore", () => {
     expect(result.current.offset).toBe(0)
   })
 
+  it("should navigate up and down through lines", () => {
+    const { result } = renderHook(() => useTypewriterStore())
+
+    act(() => {
+      result.current.setActiveLine("Line 1")
+      result.current.addLineToStack()
+      result.current.setActiveLine("Line 2")
+      result.current.addLineToStack()
+      result.current.setMaxVisibleLines(1)
+    })
+
+    act(() => {
+      result.current.navigateUp()
+    })
+
+    expect(result.current.offset).toBe(1)
+
+    act(() => {
+      result.current.navigateDown()
+    })
+
+    expect(result.current.offset).toBe(0)
+  })
+
   it("should update line break config", () => {
     const { result } = renderHook(() => useTypewriterStore())
 
