@@ -215,16 +215,24 @@ export default function TypewriterPage() {
 
   const openSettings = useCallback(() => setShowSettings(true), [])
 
-  // Aktualisiere die Breite des Textcontainers
+  // Aktualisiere die verfügbare Breite der aktiven Zeile (ohne Padding)
   useEffect(() => {
     const updateWidth = () => {
-      if (linesContainerRef.current) {
-        setContainerWidth(linesContainerRef.current.clientWidth)
+      if (activeLineRef.current) {
+        const element = activeLineRef.current
+        const style = getComputedStyle(element)
+        const available =
+          element.clientWidth -
+          parseFloat(style.paddingLeft) -
+          parseFloat(style.paddingRight)
+        if (available > 0) {
+          setContainerWidth(available)
+        }
       }
     }
     updateWidth()
     const observer = new ResizeObserver(updateWidth)
-    if (linesContainerRef.current) observer.observe(linesContainerRef.current)
+    if (activeLineRef.current) observer.observe(activeLineRef.current)
     return () => observer.disconnect()
   }, [setContainerWidth])
 
