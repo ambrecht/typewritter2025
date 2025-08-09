@@ -1,17 +1,17 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import type { TypewriterState, TypewriterActions, Line } from "@/types"
+import type { TypewriterState, TypewriterActions, Line, WrapMode } from "@/types"
 import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
 import { measureTextWidth } from "@/utils/canvas-utils"
 
-// Grapheme width cache
+// Cache for grapheme widths (performance)
 const graphemeWidthCache = new Map<string, number>()
 
 const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoading" | "containerWidth"> = {
   lines: [],
   activeLine: "",
-  maxCharsPerLine: 56, // legacy display only
+  maxCharsPerLine: 56, // legacy only
   statistics: { wordCount: 0, letterCount: 0, pageCount: 0 },
   lineBreakConfig: { maxCharsPerLine: 56, autoMaxChars: true }, // legacy
   fontSize: 24,
@@ -26,7 +26,7 @@ const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoa
   maxVisibleLines: 0,
   flowMode: false,
 
-  // New wrap configuration
+  // wrapping config
   wrapMode: "word-wrap",
   hyphenChar: "-",
   maxUserCols: undefined,
@@ -43,24 +43,28 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       isSaving: false,
       isLoading: false,
 
-      // --- CONFIG ACTIONS ---
-      setWrapMode: (mode) => set({ wrapMode: mode }),
-      setHyphenChar: (c) => set({ hyphenChar: c || "-" }),
-      setUserMaxCols: (n) => {
+      // --- CONFIG ---
+      setWrapMode: (mode: WrapMode) => set({ wrapMode: mode }),
+      setHyphenChar: (c: string) => set({ hyphenChar: c || "-" }),
+      setUserMaxCols: (n: number) => {
         const maxAuto = get().maxAutoCols
         const clamped = Math.max(1, Math.min(n ?? maxAuto, maxAuto))
         set({ maxUserCols: clamped })
       },
-      setTextMetrics: ({ avgGraphemeWidth, maxAutoCols }) => {
+      setTextMetrics: ({ avgGraphemeWidth, maxAutoCols }: { avgGraphemeWidth: number; maxAutoCols: number }) => {
         const clampedAuto = Math.max(1, Math.floor(maxAutoCols))
         let user = get().maxUserCols
         if (user && user > clampedAuto) user = clampedAuto
-        set({ avgGraphemeWidth: Math.max(1, avgGraphemeWidth), maxAutoCols: clampedAuto, maxUserCols: user })
+        set({
+          avgGraphemeWidth: Math.max(1, avgGraphemeWidth),
+          maxAutoCols: clampedAuto,
+          maxUserCols: user,
+        })
       },
 
       toggleFlowMode: () => set((s) => ({ flowMode: !s.flowMode })),
 
-      // Helper: commit a line to history and recalc stats
+      // Internal: commit exactly one history line and continue seamlessly in ACL
       _commitLine: (lineText: string, remainder: string) => {
         const newLines: Line[] = [...get().lines, { id: crypto.randomUUID(), text: lineText.trimEnd() }]
         const joined = [...newLines.map((l) => l.text), remainder].join("\n")
@@ -74,6 +78,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         })
       },
 
+      // Grapheme-aware, pixel-measured input handling with two wrap modes
       handleKeyPress: (key: string) => {
         const state = get()
         const {
@@ -91,7 +96,6 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
 
         if (key === "Enter") {
           if (activeLine.length === 0 && lines.length > 0 && lines[lines.length - 1].text.trim() === "") {
-            // prevent double empty lines
             return
           }
           get()._commitLine(activeLine, "")
@@ -114,17 +118,15 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
 
         const next = activeLine + key
 
-        // Effective pixel limit from columns:
+        // Effective pixel limit derived from columns and content width
         const effectiveCols = Math.min(maxAutoCols, maxUserCols ?? maxAutoCols)
-        const hyphenWidth = measureTextWidth(hyphenChar, `${fontSize}px "Lora", serif`)
+        const font = `${fontSize}px "Lora", serif`
+        const hyphenWidth = measureTextWidth(hyphenChar, font)
         const pixelLimitFromCols = effectiveCols * Math.max(1, avgGraphemeWidth)
         const pixelLimit = Math.min(containerWidth, pixelLimitFromCols)
 
-        const font = `${fontSize}px "Lora", serif`
-
-        // Quick path: does next fully fit in pixel limit?
-        const nextWidth = measureTextWidth(next, font)
-        if (nextWidth <= pixelLimit) {
+        // Fast path: fits entirely
+        if (measureTextWidth(next, font) <= pixelLimit) {
           set({
             activeLine: next,
             statistics: calculateTextStatistics([...lines.map((l) => l.text), next].join("\n")),
@@ -132,42 +134,35 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           return
         }
 
-        // Overflow handling: grapheme-aware
+        // Overflow handling (grapheme-aware)
         const seg = new Intl.Segmenter("de", { granularity: "grapheme" })
-        const segments = Array.from(seg.segment(next))
-        // Find last space position (grapheme index)
-        let lastSpaceIndex = -1
-        for (let i = 0; i < segments.length; i++) {
-          if (segments[i].segment === " ") lastSpaceIndex = i
+        const nextSegs = Array.from(seg.segment(next))
+
+        // Word-wrap mode: if ACL has content and overflow occurs with a new word, commit ACL and move word to next ACL
+        if (wrapMode === "word-wrap") {
+          // Look for last space before the just-typed overflow
+          let lastSpaceIndex = -1
+          for (let i = 0; i < nextSegs.length; i++) {
+            if (nextSegs[i].segment === " ") lastSpaceIndex = i
+          }
+          const currentHasText = activeLine.trimEnd().length > 0
+          if (currentHasText && lastSpaceIndex >= 0) {
+            // Commit existing ACL (trimEnd), keep the word (without leading spaces) in ACL
+            const committed = activeLine.trimEnd()
+            const remainder = next.slice(activeLine.length).replace(/^\s+/, "")
+            get()._commitLine(committed, remainder)
+            return
+          }
+          // If ACL is empty (or we couldn't separate by space), fall through to hard split behavior
         }
 
+        // Hard-hyphen behavior (or word-wrap fallback when ACL empty)
+        const remainderStr = next.slice(activeLine.length)
+        const remainderSeg = Array.from(seg.segment(remainderStr))
         const currentWidth = measureTextWidth(activeLine, font)
         const remainingWidth = Math.max(0, pixelLimit - currentWidth)
 
-        // Word-Wrap: if we have a space in the current (before the new word), commit up to that space
-        if (wrapMode === "word-wrap" && lastSpaceIndex >= 0) {
-          const lastSpacePosInStr = lastSpaceIndex // segments indices map to grapheme positions
-          // Compute committed = substring up to lastSpaceIndex (exclude space)
-          const committed = segments
-            .slice(0, lastSpacePosInStr)
-            .map((s) => s.segment)
-            .join("")
-            .trimEnd()
-          const remainder = segments
-            .slice(lastSpacePosInStr + 1)
-            .map((s) => s.segment)
-            .join("")
-            .replace(/^\s+/, "")
-          get()._commitLine(committed, remainder)
-          return
-        }
-
-        // Word-Wrap: at line start and long word -> fallback to hard hyphen
-        // or Hard-Hyphen mode
-        // Determine how many graphemes of the remainder (beyond activeLine) can fit considering hyphen
-        const remainderStr = next.slice(activeLine.length)
-        const remainderSeg = Array.from(seg.segment(remainderStr))
-
+        // Try to take as many graphemes as possible and leave room for hyphen
         if (remainingWidth > hyphenWidth + 1) {
           let consumedWidth = 0
           let consumedCount = 0
@@ -199,18 +194,17 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           }
         }
 
-        // No space and no room for hyphen segment: commit current line as-is; move the word to next line
+        // No space fit and no room for hyphen segment: commit ACL as-is, move whole word to next line
         if (activeLine.trimEnd().length > 0) {
           get()._commitLine(activeLine.trimEnd(), next.slice(activeLine.length).replace(/^\s+/, ""))
           return
         }
 
-        // At line start and word longer than limit: split hard to N-1 + hyphen
-        // Determine max graphemes that fit in (pixelLimit - hyphenWidth)
+        // ACL empty and long word: split to fit N-1 + hyphen at pixel limit
         let widthAcc = 0
         let countAcc = 0
-        for (let i = 0; i < segments.length; i++) {
-          const g = segments[i].segment
+        for (let i = 0; i < nextSegs.length; i++) {
+          const g = nextSegs[i].segment
           const cacheKey = `${font}::${g}`
           let w = graphemeWidthCache.get(cacheKey)
           if (w === undefined) {
@@ -222,11 +216,11 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           countAcc++
         }
         const head =
-          segments
+          nextSegs
             .slice(0, Math.max(0, countAcc))
             .map((s) => s.segment)
             .join("") + hyphenChar
-        const tail = segments
+        const tail = nextSegs
           .slice(Math.max(0, countAcc))
           .map((s) => s.segment)
           .join("")
@@ -235,7 +229,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
 
       setContainerWidth: (width: number) => set({ containerWidth: width }),
       setOffset: (offset: number) => set({ offset }),
-      setActiveLine: (text) => {
+      setActiveLine: (text: string) => {
         const newFullText = [...get().lines.map((l) => l.text), text].join("\n")
         set({ activeLine: text, statistics: calculateTextStatistics(newFullText) })
       },
@@ -255,7 +249,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           statistics: calculateTextStatistics(newText),
         })
       },
-      updateLineBreakConfig: (config) => {
+      updateLineBreakConfig: (config: Partial<TypewriterState["lineBreakConfig"]>) => {
         const newConfig = { ...get().lineBreakConfig, ...config }
         set({ lineBreakConfig: newConfig, maxCharsPerLine: newConfig.maxCharsPerLine })
       },
@@ -278,6 +272,7 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       setSelectedLineIndex: (index) => set({ selectedLineIndex: index }),
       setMaxVisibleLines: (count: number) => set({ maxVisibleLines: count }),
 
+      // Navigation offset windowing: only affects history viewport
       adjustOffset: (delta: number) => {
         const { offset, lines, maxVisibleLines } = get()
         const maxOffset = Math.max(lines.length - maxVisibleLines, 0)

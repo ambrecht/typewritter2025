@@ -49,7 +49,7 @@ export default function TypewriterPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [showFlowSettings, setShowFlowSettings] = useState(false)
 
-  // ACL is exactly 1 line high
+  // ACL is exactly one visual line high (measured)
   const [activeLineHeight, setActiveLineHeight] = useState<number>(Math.round(fontSize * 1.4))
 
   const focusInput = useCallback(() => {
@@ -80,12 +80,12 @@ export default function TypewriterPage() {
     setTimeout(focusInput, 250)
   }, [focusInput])
 
-  // Focus when returning to write mode
+  // Refocus when returning to write mode
   useEffect(() => {
     if (mode === "write") focusInput()
   }, [mode, focusInput])
 
-  // Compute line heights, maxVisibleLines, containerWidth, avgGraphemeWidth, maxAutoCols
+  // Compute headH, lineH, activeH (= lineH), N lines; also compute content width and text metrics
   useEffect(() => {
     const measureLineHeight = (fontPx: number, factor: number) => {
       const sample = document.createElement("div")
@@ -98,36 +98,36 @@ export default function TypewriterPage() {
       sample.style.lineHeight = String(factor)
       sample.textContent = "M"
       document.body.appendChild(sample)
-      const h = sample.getBoundingClientRect().height || Math.max(1, fontPx * factor)
+      const h = sample.getBoundingClientRect().height || Math.max(1, fontPx * 1.2)
       document.body.removeChild(sample)
       return h
     }
 
     const recalc = () => {
       const vh = window.innerHeight
-      const headerH = Math.max(40, Math.min(vh * 0.1, headerRef.current?.offsetHeight ?? 40))
+      const rawHead = headerRef.current?.offsetHeight ?? 40
+      const headH = Math.max(40, Math.min(vh * 0.1, rawHead))
       const factor = isFullscreen ? 1.3 : 1.4
-      const stackLineH = measureLineHeight(stackFontSize, factor)
-      const aclH = measureLineHeight(fontSize, factor)
-      const availableForStack = Math.max(vh - headerH - aclH, 0)
-      const maxLines = Math.max(Math.floor(availableForStack / stackLineH), 0)
-      setMaxVisibleLines(maxLines)
-      setActiveLineHeight(Math.round(aclH))
+      const lineH = measureLineHeight(stackFontSize, factor)
+      const activeH = lineH // ACL reserves one line height
+      const availableH = Math.max(vh - headH - activeH, 0)
+      const N = Math.max(0, Math.floor(availableH / lineH))
+      setMaxVisibleLines(N)
+      setActiveLineHeight(Math.round(activeH))
 
-      // Available width for the ACL (content width)
+      // Available content width for ACL; also provide avg grapheme width and maxAutoCols
       if (activeLineRef.current) {
         const contentWidth = activeLineRef.current.clientWidth
         setContainerWidth(contentWidth)
 
-        // Compute avg grapheme width in current font
         const font = `${fontSize}px "Lora", serif`
         const sampleText = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         const sampleWidth = measureTextWidth(sampleText, font)
         const graphemes = new Intl.Segmenter("de", { granularity: "grapheme" })
-        const count = Array.from(graphemes.segment(sampleText)).length || sampleText.length
-        const avg = count > 0 ? sampleWidth / count : Math.max(1, fontSize * 0.6)
-        const maxAutoCols = Math.max(1, Math.floor(contentWidth / Math.max(1, avg)))
-        setTextMetrics({ avgGraphemeWidth: avg, maxAutoCols })
+        const graphemeCount = Array.from(graphemes.segment(sampleText)).length || sampleText.length
+        const avgGraphemeWidth = graphemeCount > 0 ? sampleWidth / graphemeCount : Math.max(1, fontSize * 0.6)
+        const maxAutoCols = Math.max(1, Math.floor(contentWidth / Math.max(1, avgGraphemeWidth)))
+        setTextMetrics({ avgGraphemeWidth, maxAutoCols })
       }
     }
 
@@ -166,7 +166,7 @@ export default function TypewriterPage() {
     if (isAndroidDevice) document.body.classList.add("android-typewriter")
   }, [])
 
-  // Global keyboard handling (Up/Down -> nav, Esc to exit, typing exits nav)
+  // Global keyboard handling: Up/Down -> nav offset; Esc -> exit; typing exits nav
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (
@@ -244,7 +244,7 @@ export default function TypewriterPage() {
     >
       <ApiKeyWarning />
 
-      {/* OptionsBar: 100vw wide, min 40px, max 10vh */}
+      {/* OptionsBar: 100vw, min 40px, max 10vh; fixed space, no overflow */}
       <OptionsBar
         ref={headerRef}
         className={`w-screen min-h-[40px] max-h-[10vh] shrink-0 overflow-hidden border-b ${
@@ -262,7 +262,7 @@ export default function TypewriterPage() {
         />
       </OptionsBar>
 
-      {/* LineStack: fills remaining space; clipped, no scrollbars */}
+      {/* LineStack: middle zone, clipped, never scrolls */}
       <div className="flex-1 overflow-hidden">
         <WritingArea
           lines={lines}
@@ -275,7 +275,7 @@ export default function TypewriterPage() {
         />
       </div>
 
-      {/* ACL: exactly one line high */}
+      {/* ACL: bottom zone, exactly one line high, no sticky/absolute overlays */}
       <ActiveInput className="shrink-0">
         <ActiveLine
           activeLine={activeLine}

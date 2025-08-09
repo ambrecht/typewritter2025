@@ -1,53 +1,14 @@
 /**
- * Konfiguration für Zeilenumbrüche (Legacy)
+ * Legacy line break config (kept for compatibility)
  */
 export interface LineBreakConfig {
   maxCharsPerLine: number
   autoMaxChars: boolean
 }
 
-/**
- * Ergebnis einer Zeilenumbruchoperation
- */
-export interface LineBreakResult {
-  line: string
-  remainder: string
-}
-
-/**
- * Absatzbereich
- */
-export interface ParagraphRange {
-  start: number
-  end: number
-}
-
-/**
- * Zeile im Stack
- */
 export interface Line {
   id: string
   text: string
-}
-
-export enum MarkdownType {
-  NORMAL = "normal",
-  HEADING1 = "heading1",
-  HEADING2 = "heading2",
-  HEADING3 = "heading3",
-  BLOCKQUOTE = "blockquote",
-  UNORDERED_LIST = "unordered_list",
-  ORDERED_LIST = "ordered_list",
-  DIALOG = "dialog",
-  CODE = "code",
-  PARAGRAPH = "paragraph",
-}
-
-export interface FormattedLine {
-  text: string
-  type: MarkdownType
-  level?: number
-  order?: number
 }
 
 export interface TextStatistics {
@@ -56,22 +17,18 @@ export interface TextStatistics {
   pageCount: number
 }
 
-// New wrap configuration
 export type WrapMode = "hard-hyphen" | "word-wrap"
 
-/**
- * Typewriter state
- */
 export interface TypewriterState {
   lines: Line[]
   activeLine: string
-  maxCharsPerLine: number // legacy UI
+  maxCharsPerLine: number // legacy UI only
   statistics: TextStatistics
   lineBreakConfig: LineBreakConfig
   fontSize: number
   stackFontSize: number
   darkMode: boolean
-  paragraphRanges: ParagraphRange[]
+  paragraphRanges: any[]
   inParagraph: boolean
   currentParagraphStart: number
   mode: "write" | "nav"
@@ -84,7 +41,7 @@ export interface TypewriterState {
   containerWidth: number
   flowMode: boolean
 
-  // New
+  // Wrapping spec additions
   wrapMode: WrapMode
   hyphenChar: string
   maxUserCols?: number
@@ -92,9 +49,6 @@ export interface TypewriterState {
   avgGraphemeWidth: number
 }
 
-/**
- * Actions
- */
 export interface TypewriterActions {
   setActiveLine: (text: string) => void
   addLineToStack: () => void
@@ -120,12 +74,12 @@ export interface TypewriterActions {
   toggleFlowMode: () => void
   handleKeyPress: (key: string) => void
 
-  // New config
+  // Wrapping config actions
   setWrapMode: (mode: WrapMode) => void
   setHyphenChar: (c: string) => void
   setUserMaxCols: (n: number) => void
   setTextMetrics: (m: { avgGraphemeWidth: number; maxAutoCols: number }) => void
 
-  // Internal helper used by store only (not exported in UI, but typed here for completeness)
+  // Internal helper (not used by UI directly)
   _commitLine?: (lineText: string, remainder: string) => void
 }

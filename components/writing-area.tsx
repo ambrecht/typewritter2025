@@ -16,6 +16,12 @@ interface WritingAreaProps {
   linesContainerRef: React.RefObject<HTMLDivElement | null>
 }
 
+/**
+ * LineStack/History viewport:
+ * - Anchored to top
+ * - Clipped (overflow hidden)
+ * - Renders only last N lines in write mode, or a window shifted by offset in nav mode
+ */
 export default function WritingArea({
   lines,
   stackFontSize,
@@ -35,7 +41,6 @@ export default function WritingArea({
       const start = Math.max(total - N, 0)
       return lines.slice(start, total)
     } else {
-      // Navigation: offset scrolls history upwards from the bottom window
       const start = Math.max(total - N - offset, 0)
       const end = Math.min(start + N, total)
       return lines.slice(start, end)
@@ -47,29 +52,28 @@ export default function WritingArea({
   return (
     <div
       ref={linesContainerRef as any}
-      className={`line-stack ${darkMode ? "bg-[#121212]" : "bg-[#f3efe9]"} w-full h-full overflow-hidden`}
+      className={`w-full h-full overflow-hidden ${darkMode ? "bg-[#121212]" : "bg-[#f3efe9]"} font-serif`}
       style={{
-        fontFamily: "ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif",
         fontSize: `${stackFontSize}px`,
         lineHeight: String(lineHeight),
         padding: "0.75rem 1.25rem",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "flex-start", // anchor to top in all modes
+        justifyContent: "flex-start",
         gap: "0px",
       }}
       aria-label="Line stack"
     >
-      {visible.map((l) => (
+      {visible.map((l, idx) => (
         <div
           key={l.id}
-          className={`${darkMode ? "text-[#E0E0E0]" : "text-[#222]"} truncate`}
-          style={{ whiteSpace: "nowrap" }}
+          data-line-index={idx}
+          className={`${darkMode ? "text-[#E0E0E0]" : "text-[#222]"}`}
+          style={{ whiteSpace: "nowrap", overflow: "hidden" }}
         >
           {l.text}
         </div>
       ))}
-      {/* Fillers are not needed; we clip strictly to the container height */}
     </div>
   )
 }
