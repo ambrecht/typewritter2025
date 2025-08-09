@@ -111,8 +111,8 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           }
 
           const font = `${fontSize}px "Lora", serif`
-          // The containerWidth from the store is now the clientWidth of the text area,
-          // which already accounts for padding. No subtraction needed.
+          // containerWidth enthält bereits die nutzbare Breite der aktiven Zeile
+          // (clientWidth abzüglich horizontalem Padding)
           const availableWidth = containerWidth
           const textWidth = measureTextWidth(newActiveLineContent, font)
 
@@ -160,9 +160,9 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       },
 
       /**
-       * Aktualisiert die Breite des Schreib-Containers.
+       * Aktualisiert die verfügbare Breite des Schreib-Containers (ohne horizontales Padding).
        * Wichtig für die Berechnung des automatischen Zeilenumbruchs.
-       * @param {number} width - Die neue Breite des Containers in Pixeln.
+       * @param {number} width - Die nutzbare Breite des Containers in Pixeln.
       */
       setContainerWidth: (width: number) => set({ containerWidth: width }),
 
