@@ -8,6 +8,8 @@ import OptionsBar from "@/components/options-bar"
 import ActiveInput from "@/components/active-input"
 import { ActiveLine } from "@/components/writing-area/ActiveLine"
 import NavigationIndicator from "@/components/navigation-indicator"
+import { CopyButton } from "@/components/writing-area/CopyButton"
+import { NavigationHint } from "@/components/writing-area/NavigationHint"
 import { useAndroidKeyboard } from "@/hooks/useAndroidKeyboard"
 import { useResponsiveTypography } from "@/hooks/useResponsiveTypography"
 import { useMaxVisibleLines } from "@/hooks/useMaxVisibleLines"
@@ -288,7 +290,6 @@ export default function TypewriterPage() {
       <div className="flex-1 overflow-hidden">
         <WritingArea
           lines={lines}
-          activeLine={activeLine}
           stackFontSize={stackFontSize}
           darkMode={darkMode}
           mode={mode}
@@ -315,6 +316,11 @@ export default function TypewriterPage() {
           isFullscreen={isFullscreen}
         />
       </ActiveInput>
+
+      <div className="flex justify-between px-4 py-2">
+        <NavigationHint darkMode={darkMode} />
+        <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
+      </div>
 
       <NavigationIndicator darkMode={darkMode} />
       <SaveNotification />
