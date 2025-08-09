@@ -17,7 +17,7 @@ export default function NavigationIndicator({ darkMode }: NavigationIndicatorPro
 
   return (
     <div
-      className={`fixed bottom-20 right-4 p-2 rounded-lg shadow-lg z-50 ${
+      className={`p-2 rounded-lg shadow ${
         darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"
       }`}
     >
