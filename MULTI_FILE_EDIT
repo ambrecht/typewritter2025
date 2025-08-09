@@ -1,0 +1,270 @@
+\`\`\`
+app/globals.css:
+:root {
+  --lineHpx: 24px; /* hard fallback for ACL/line height */
+}
+
+/* Hints/overlays must never block the ACL */
+.hint,
+[data-hint] {
+  pointer-events: none;
+  z-index: 5;
+}
+
+components/active-input.tsx:
+"use client"
+
+import * as React from "react"
+import { cn } from "@/lib/utils"
+
+const ActiveInput = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, style, ...props }, ref) => (
+  <div
+    id="active"
+    ref={ref}
+    className={cn(
+      "shrink-0 relative z-10 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900",
+      className
+    )}
+    // Exakt eine Zeilenhöhe hoch, mit robustem Fallback
+    style={{
+      height: "var(--lineHpx,24px)",
+      lineHeight: "var(--lineHpx,24px)",
+      minHeight: "24px",
+      ...style,
+    }}
+    // Exponiere Messpunkt für Hooks (safeLineHeight)
+    data-role="acl"
+    id="acl"
+    {...props}
+  />
+))
+ActiveInput.displayName = "ActiveInput"
+
+export default ActiveInput
+
+components/writing-area.tsx:
+"use client"
+
+import type React from "react"
+import { useCallback, useMemo, useRef, useEffect } from "react"
+import type { Line } from "@/types"
+import { useTypewriterStore } from "@/store/typewriter-store"
+import { LineStack } from "./writing-area/LineStack"
+
+interface WritingAreaProps {
+  lines: Line[]
+  stackFontSize: number
+  darkMode: boolean
+  mode: "write" | "nav"
+  offset: number
+  isFullscreen: boolean
+  linesContainerRef?: React.RefObject<HTMLDivElement | null>
+  lineHpx?: number
+}
+
+export default function WritingArea({
+  lines,
+  stackFontSize,
+  darkMode,
+  mode,
+  offset,
+  isFullscreen,
+  linesContainerRef: externalLinesContainerRef,
+  lineHpx,
+}: WritingAreaProps) {
+  const internalLinesContainerRef = useRef<HTMLDivElement | null>(null)
+  const maxVisibleLines = useTypewriterStore((s) => s.maxVisibleLines)
+
+  const setLinesContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      internalLinesContainerRef.current = node
+      if (externalLinesContainerRef) {
+        externalLinesContainerRef.current = node
+      }
+    },
+    [externalLinesContainerRef],
+  )
+
+  const factor = isFullscreen ? 1.3 : 1.4
+
+  // Compute the visible window by slicing only last N or offset window
+  const visibleLines = useMemo(() => {
+    const total = lines.length
+    const N = Math.max(0, maxVisibleLines)
+    if (N === 0) return []
+    if (mode === "write") {
+      const start = Math.max(total - N, 0)
+      return lines.slice(start, total)
+    }
+    const start = Math.max(total - N - offset, 0)
+    const end = Math.min(start + N, total)
+    return lines.slice(start, end)
+  }, [lines, maxVisibleLines, mode, offset])
+
+  useEffect(() => {
+    if (internalLinesContainerRef.current) {
+      internalLinesContainerRef.current.classList.toggle(
+        "fullscreen-mode",
+        isFullscreen,
+      )
+    }
+  }, [isFullscreen])
+
+  return (
+    <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
+      <div
+        id="stack-wrap"
+        ref={setLinesContainerRef}
+        className={`flex-1 overflow-hidden relative z-0 ${
+          darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
+        }`}
+        style={{
+          fontSize: `${stackFontSize}px`,
+          lineHeight: String(factor),
+          paddingLeft: "1.5rem",
+          paddingRight: "1.5rem",
+          paddingTop: "1.25rem",
+        }}
+        aria-live="polite"
+      >
+        <LineStack
+          visibleLines={visibleLines}
+          mode={mode}
+          lineHpx={lineHpx}
+        />
+      </div>
+
+      {/* Debug overlay to quickly verify measurements; safe for prod (non-interactive) */}
+      <div
+        className="fixed left-3 bottom-3 text-xs rounded px-2 py-1 bg-black/60 text-white z-[999] pointer-events-none"
+        aria-hidden="true"
+      >
+        <pre id="dbg" />
+      </div>
+    </div>
+  )
+}
+
+hooks/useMaxVisibleLines.ts:
+"use client"
+
+import { useLayoutEffect, useState, RefObject, useCallback } from "react"
+import { useTypewriterStore } from "@/store/typewriter-store"
+
+function safeLineHeight(node: HTMLElement): number {
+  const cs = getComputedStyle(node)
+  let lh = parseFloat(cs.lineHeight)
+  if (!Number.isFinite(lh) || lh <= 0) {
+    const fs = parseFloat(cs.fontSize) || 16
+    // conservative fallback factor
+    lh = Math.round(fs * 1.2)
+  }
+  if (!Number.isFinite(lh) || lh < 16) lh = 16 // hard lower bound
+  return lh
+}
+
+/**
+* Berechnet die maximale Anzahl sichtbarer Zeilen basierend auf Root-Viewport,
+* tatsächlicher OptionsBar-Höhe (geclamped) und der gemessenen Zeilenhöhe.
+*/
+export function useMaxVisibleLines(
+  rootRef: RefObject<HTMLElement>,
+  headerRef: RefObject<HTMLElement>,
+  inputRef: RefObject<HTMLElement>,
+) {
+  const [lineH, setLineH] = useState(0)
+  const setMaxVisibleLines = useTypewriterStore((s) => s.setMaxVisibleLines)
+
+  const calculate = useCallback(() => {
+    const rootEl = rootRef.current
+    if (!rootEl) return
+
+    const vh = rootEl.getBoundingClientRect().height || window.innerHeight
+    const rawHeaderH = headerRef.current?.offsetHeight ?? 40
+    const headH = Math.min(Math.max(rawHeaderH, 40), 0.1 * vh)
+
+    // Prefer the actual ACL node for measurement; fallback to provided inputRef; then root
+    const aclEl =
+      (document.getElementById("acl") as HTMLElement | null) ??
+      (inputRef.current as HTMLElement | null) ??
+      (rootEl as HTMLElement)
+
+    const lineHeight = safeLineHeight(aclEl)
+
+    // Publish var globally so any component can use it as var(--lineHpx)
+    document.documentElement.style.setProperty(
+      "--lineHpx",
+      `${lineHeight || 24}px`,
+    )
+
+    const activeH = lineHeight
+    const availableH = vh - headH - activeH
+    const N = Math.max(0, Math.floor(availableH / lineHeight))
+
+    setLineH(lineHeight)
+    setMaxVisibleLines(N)
+
+    // Debug overlay (if present)
+    const dbg = document.getElementById("dbg")
+    if (dbg) {
+      dbg.textContent = JSON.stringify(
+        {
+          vh: Math.round(vh),
+          headH: Math.round(headH),
+          lineH: Math.round(lineHeight),
+          N,
+        },
+        null,
+        2,
+      )
+    }
+  }, [rootRef, headerRef, inputRef, setMaxVisibleLines])
+
+  useLayoutEffect(() => {
+    calculate()
+
+    const ro = new ResizeObserver(() => calculate())
+    if (rootRef.current) ro.observe(rootRef.current)
+    if (headerRef.current) ro.observe(headerRef.current)
+    if (inputRef.current) ro.observe(inputRef.current)
+
+    const aclEl = document.getElementById("acl")
+    if (aclEl) ro.observe(aclEl)
+
+    window.addEventListener("resize", calculate)
+    window.addEventListener("orientationchange", calculate)
+
+    return () => {
+      ro.disconnect()
+      window.removeEventListener("resize", calculate)
+      window.removeEventListener("orientationchange", calculate)
+    }
+  }, [calculate])
+
+  return lineH
+}
+
+components/options-bar.tsx:
+"use client"
+
+import * as React from "react"
+import { cn } from "@/lib/utils"
+
+const OptionsBar = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, style, ...props }, ref) => (
+    <div
+      id="optionsbar"
+      ref={ref}
+      className={cn("sticky top-0 w-screen flex items-center px-4", className)}
+      style={{ maxHeight: "10vh", minHeight: "40px", ...style }}
+      {...props}
+    />
+  )
+)
+OptionsBar.displayName = "OptionsBar"
+
+export default OptionsBar
+\`\`\`
