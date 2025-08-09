@@ -15,17 +15,22 @@ import FlowModeOverlay from "@/components/flow-mode-overlay"
 import ApiKeyWarning from "@/components/api-key-warning"
 import { measureTextWidth } from "@/utils/canvas-utils"
 
+// Fixed top bar height in px (per spec: e.g. 40px)
+const HEAD_H = 40
+
 export default function TypewriterPage() {
   const {
+    // state
     lines,
     activeLine,
-    maxCharsPerLine,
     statistics,
     fontSize,
     stackFontSize,
     darkMode,
     mode,
     offset,
+    maxVisibleLines,
+    // actions
     setMode,
     adjustOffset,
     resetNavigation,
@@ -35,11 +40,15 @@ export default function TypewriterPage() {
     setTextMetrics,
   } = useTypewriterStore()
 
+  const WORD_GOAL = 750
+  const progress = Math.max(0, Math.min(1, statistics.wordCount / WORD_GOAL))
+
   const viewportRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const activeLineRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLTextAreaElement>(null)
   const linesContainerRef = useRef<HTMLDivElement>(null)
+
   const pressedKeysRef = useRef<Set<string>>(new Set())
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: "", time: 0 })
 
@@ -49,8 +58,8 @@ export default function TypewriterPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [showFlowSettings, setShowFlowSettings] = useState(false)
 
-  // ACL is exactly one visual line high (measured)
-  const [activeLineHeight, setActiveLineHeight] = useState<number>(Math.round(fontSize * 1.4))
+  // ACL height equals a single line height in px
+  const [lineHeightPx, setLineHeightPx] = useState<number>(Math.round(stackFontSize * 1.4))
 
   const focusInput = useCallback(() => {
     const el = hiddenInputRef.current
@@ -63,89 +72,91 @@ export default function TypewriterPage() {
     }
   }, [])
 
-  // Blink cursor
   useEffect(() => {
     const t = setInterval(() => setShowCursor((p) => !p), 530)
     return () => clearInterval(t)
   }, [])
 
-  const openFlowSettings = useCallback(() => setShowFlowSettings(true), [])
   const openSettings = useCallback(() => setShowSettings(true), [])
+  const openFlowSettings = useCallback(() => setShowFlowSettings(true), [])
   const closeSettings = useCallback(() => {
     setShowSettings(false)
-    setTimeout(focusInput, 250)
+    setTimeout(focusInput, 200)
   }, [focusInput])
   const closeFlowSettings = useCallback(() => {
     setShowFlowSettings(false)
-    setTimeout(focusInput, 250)
+    setTimeout(focusInput, 200)
   }, [focusInput])
 
-  // Refocus when returning to write mode
   useEffect(() => {
     if (mode === "write") focusInput()
   }, [mode, focusInput])
 
-  // Compute headH, lineH, activeH (= lineH), N lines; also compute content width and text metrics
+  // Height and text metrics calculation
   useEffect(() => {
-    const measureLineHeight = (fontPx: number, factor: number) => {
+    function measureLineHeightPx(fontPx: number, factor = 1.4) {
       const sample = document.createElement("div")
       sample.style.position = "absolute"
+      sample.style.left = "-9999px"
+      sample.style.top = "0"
       sample.style.visibility = "hidden"
       sample.style.pointerEvents = "none"
       sample.style.whiteSpace = "nowrap"
-      sample.style.fontFamily = "ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif"
+      sample.style.fontFamily = 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif'
       sample.style.fontSize = `${fontPx}px`
       sample.style.lineHeight = String(factor)
       sample.textContent = "M"
       document.body.appendChild(sample)
-      const h = sample.getBoundingClientRect().height || Math.max(1, fontPx * 1.2)
+      const h = Math.max(16, Math.round(sample.getBoundingClientRect().height || fontPx * 1.2))
       document.body.removeChild(sample)
       return h
     }
 
     const recalc = () => {
-      const vh = window.innerHeight
-      const rawHead = headerRef.current?.offsetHeight ?? 40
-      const headH = Math.max(40, Math.min(vh * 0.1, rawHead))
-      const factor = isFullscreen ? 1.3 : 1.4
-      const lineH = measureLineHeight(stackFontSize, factor)
-      const activeH = lineH // ACL reserves one line height
-      const availableH = Math.max(vh - headH - activeH, 0)
-      const N = Math.max(0, Math.floor(availableH / lineH))
-      setMaxVisibleLines(N)
-      setActiveLineHeight(Math.round(activeH))
+      const vh = viewportRef.current?.getBoundingClientRect().height ?? window.innerHeight
 
-      // Available content width for ACL; also provide avg grapheme width and maxAutoCols
+      // line height and ACL height
+      const lh = measureLineHeightPx(stackFontSize, isFullscreen ? 1.3 : 1.4)
+      setLineHeightPx(lh)
+      // Only the ACL’s inner content width is relevant for wrapping
       if (activeLineRef.current) {
         const contentWidth = activeLineRef.current.clientWidth
         setContainerWidth(contentWidth)
 
+        // approximate avg grapheme width to compute maxAutoCols
         const font = `${fontSize}px "Lora", serif`
-        const sampleText = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        const sampleWidth = measureTextWidth(sampleText, font)
+        const probe = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        const width = measureTextWidth(probe, font)
         const graphemes = new Intl.Segmenter("de", { granularity: "grapheme" })
-        const graphemeCount = Array.from(graphemes.segment(sampleText)).length || sampleText.length
-        const avgGraphemeWidth = graphemeCount > 0 ? sampleWidth / graphemeCount : Math.max(1, fontSize * 0.6)
+        const count = Array.from(graphemes.segment(probe)).length || probe.length
+        const avgGraphemeWidth = count > 0 ? width / count : Math.max(1, fontSize * 0.6)
         const maxAutoCols = Math.max(1, Math.floor(contentWidth / Math.max(1, avgGraphemeWidth)))
         setTextMetrics({ avgGraphemeWidth, maxAutoCols })
       }
+
+      // Compute how many lines fit: N = floor((vh - HEAD_H - lineH)/lineH)
+      const available = Math.max(0, vh - HEAD_H - lh)
+      const N = Math.max(0, Math.floor(available / lh))
+      setMaxVisibleLines(N)
     }
 
-    const roHeader = new ResizeObserver(recalc)
+    const roViewport = new ResizeObserver(recalc)
     const roACL = new ResizeObserver(recalc)
-    if (headerRef.current) roHeader.observe(headerRef.current)
+    if (viewportRef.current) roViewport.observe(viewportRef.current)
     if (activeLineRef.current) roACL.observe(activeLineRef.current)
+
     window.addEventListener("resize", recalc)
     window.addEventListener("orientationchange", recalc)
+    document.fonts?.ready?.then(recalc).catch(() => {})
     recalc()
 
     return () => {
-      roHeader.disconnect()
+      roViewport.disconnect()
       roACL.disconnect()
       window.removeEventListener("resize", recalc)
       window.removeEventListener("orientationchange", recalc)
     }
-  }, [fontSize, stackFontSize, isFullscreen, setMaxVisibleLines, setContainerWidth, setTextMetrics])
+  }, [fontSize, stackFontSize, isFullscreen, setContainerWidth, setMaxVisibleLines, setTextMetrics])
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -154,6 +165,7 @@ export default function TypewriterPage() {
       document.exitFullscreen().catch((err) => console.error("Exit fullscreen error:", err))
     }
   }, [])
+
   useEffect(() => {
     const onFull = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener("fullscreenchange", onFull)
@@ -166,7 +178,7 @@ export default function TypewriterPage() {
     if (isAndroidDevice) document.body.classList.add("android-typewriter")
   }, [])
 
-  // Global keyboard handling: Up/Down -> nav offset; Esc -> exit; typing exits nav
+  // Global keyboard handling per spec (no scrolling; windowing only)
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (
@@ -200,6 +212,7 @@ export default function TypewriterPage() {
       if (event.key === "ArrowUp" || event.key === "ArrowDown") {
         event.preventDefault()
         if (mode !== "nav") setMode("nav")
+        // Up: older lines => increase offset within [0..max]
         adjustOffset(event.key === "ArrowUp" ? 1 : -1)
         return
       }
@@ -241,16 +254,12 @@ export default function TypewriterPage() {
       } overflow-hidden`}
       tabIndex={-1}
       onClick={onRootClick}
+      aria-label="Typewriter viewport"
     >
       <ApiKeyWarning />
 
-      {/* OptionsBar: 100vw, min 40px, max 10vh; fixed space, no overflow */}
-      <OptionsBar
-        ref={headerRef}
-        className={`w-screen min-h-[40px] max-h-[10vh] shrink-0 overflow-hidden border-b ${
-          darkMode ? "border-gray-700" : isFullscreen ? "border-[#e0dcd3]" : "border-[#d3d0cb]"
-        } transition-colors duration-300`}
-      >
+      {/* Fixed-height OptionsBar (always visible, no sticky overlay) */}
+      <OptionsBar ref={headerRef} className="h-[40px]" data-testid="options-bar">
         <ControlBar
           wordCount={statistics.wordCount}
           pageCount={statistics.pageCount}
@@ -262,31 +271,34 @@ export default function TypewriterPage() {
         />
       </OptionsBar>
 
-      {/* LineStack: middle zone, clipped, never scrolls */}
+      {/* Middle: strictly clipped window (no scrollbars) */}
       <div className="flex-1 overflow-hidden">
         <WritingArea
           lines={lines}
-          stackFontSize={stackFontSize}
           darkMode={darkMode}
+          stackFontSize={stackFontSize}
+          lineHeightPx={lineHeightPx}
           mode={mode as "write" | "nav"}
           offset={offset}
-          isFullscreen={isFullscreen}
-          linesContainerRef={linesContainerRef}
+          maxVisibleLines={maxVisibleLines}
+          containerRef={linesContainerRef}
         />
       </div>
 
-      {/* ACL: bottom zone, exactly one line high, no sticky/absolute overlays */}
-      <ActiveInput className="shrink-0">
+      {/* Bottom: Active Compose Line (exactly one line tall, visually separated) */}
+      <ActiveInput className="shrink-0" data-testid="acl-wrapper">
         <ActiveLine
           activeLine={activeLine}
           darkMode={darkMode}
           fontSize={fontSize}
-          lineHeightPx={activeLineHeight}
+          lineHeightPx={lineHeightPx}
           showCursor={showCursor}
-          maxCharsPerLine={maxCharsPerLine}
+          // legacy counter; wrapping logic is pixel-based in the store
+          maxCharsPerLine={9999}
           hiddenInputRef={hiddenInputRef}
           activeLineRef={activeLineRef}
           isAndroid={isAndroid}
+          progress={progress}
         />
       </ActiveInput>
 

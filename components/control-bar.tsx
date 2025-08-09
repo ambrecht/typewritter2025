@@ -14,7 +14,6 @@ import {
   Save,
   Download,
   Trash2,
-  Rocket,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTypewriterStore } from "@/store/typewriter-store"
@@ -22,10 +21,7 @@ import { useKeyboard } from "@/hooks/use-keyboard"
 
 // Helper to detect touch-capable devices
 function detectTouchDevice() {
-  return (
-    typeof window !== "undefined" &&
-    ("ontouchstart" in window || navigator.maxTouchPoints > 0)
-  )
+  return typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0)
 }
 
 interface ControlBarProps {
@@ -81,9 +77,7 @@ function ControlBar({
     const handleResize = () => {
       setIsCompactView(window.innerWidth < 640)
       setIsSmallScreen(window.innerWidth < 768 || isAndroidDevice)
-      setIsVeryNarrowScreen(
-        window.innerWidth < 400 && window.innerHeight > window.innerWidth,
-      )
+      setIsVeryNarrowScreen(window.innerWidth < 400 && window.innerHeight > window.innerWidth)
     }
 
     handleResize()
@@ -199,10 +193,7 @@ function ControlBar({
 
   // Button-Styling
   const buttonSize = isSmallScreen ? "xs" : "sm"
-  const touchSize =
-    isTouchDeviceState || isAndroid || isVeryNarrowScreen
-      ? "min-h-[44px] min-w-[44px]"
-      : ""
+  const touchSize = isTouchDeviceState || isAndroid || isVeryNarrowScreen ? "min-h-[44px] min-w-[44px]" : ""
   const buttonClass = `${
     darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-200" : "bg-[#d3d0cb] hover:bg-[#c4c1bc] text-[#222]"
   } font-serif ${touchSize}`
@@ -288,13 +279,14 @@ function ControlBar({
     </div>
   )
 
-
   // Standard-Layout
   return (
     <div
-      className={`flex flex-wrap items-center justify-between p-2 sm:p-3 ${
+      className={`relative z-40 isolate flex flex-wrap items-center justify-between p-2 sm:p-3 ${
         darkMode ? "text-gray-200 bg-gray-900" : "text-[#222] bg-[#f3efe9]"
       } text-sm font-serif gap-2`}
+      role="toolbar"
+      aria-label="Options Bar"
     >
       {/* Statistics */}
       <div className="flex items-center gap-2 sm:gap-6">
@@ -311,9 +303,7 @@ function ControlBar({
       {/* Controls */}
       {isVeryNarrowScreen ? (
         <div className="flex flex-col w-full gap-2 mt-2">
-          <div className="flex justify-center gap-2">
-            {renderButtonGroup(primaryButtons, false)}
-          </div>
+          <div className="flex justify-center gap-2">{renderButtonGroup(primaryButtons, false)}</div>
           <div className="flex justify-center gap-2 overflow-x-auto pb-1">
             {renderButtonGroup(secondaryButtons, false)}
           </div>
