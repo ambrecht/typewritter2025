@@ -317,9 +317,15 @@ export default function TypewriterPage() {
         />
       </ActiveInput>
 
-      <div className="flex justify-between px-4 py-2">
+      <div className="fixed left-4 bottom-4 z-50">
         <NavigationHint darkMode={darkMode} />
-        <CopyButton lines={lines} activeLine={activeLine} darkMode={darkMode} />
+      </div>
+      <div className="fixed right-4 bottom-4 z-50">
+        <CopyButton
+          lines={lines}
+          activeLine={activeLine}
+          darkMode={darkMode}
+        />
       </div>
 
       <NavigationIndicator darkMode={darkMode} />
