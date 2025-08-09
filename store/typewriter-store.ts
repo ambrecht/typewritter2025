@@ -148,6 +148,8 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
               lines: newLines,
               activeLine: remainder,
               offset: 0,
+              mode: "write",
+              selectedLineIndex: null,
               statistics: calculateTextStatistics([
                 ...newLines.map((l) => l.text),
                 remainder,
@@ -206,6 +208,8 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           lines: newLines,
           activeLine: "",
           offset: 0,
+          mode: "write",
+          selectedLineIndex: null,
           statistics: calculateTextStatistics(newText),
         })
       },
