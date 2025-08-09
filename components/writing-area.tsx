@@ -1,36 +1,21 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useCallback, useRef } from "react"
-import type { Line } from "@/types"
-
-import { useVisibleLines } from "@/hooks/useVisibleLines"
+import { useMemo } from "react"
 import { useTypewriterStore } from "@/store/typewriter-store"
-import { LineStack } from "./writing-area/LineStack"
 
-/**
- * @interface WritingAreaProps
- * @description Props für die WritingArea Komponente.
- * Die Props für `setActiveLine`, `addLineToStack` und `hiddenInputRef` wurden entfernt,
- * da die Eingabelogik nun global gehandhabt wird.
- */
+type Mode = "write" | "nav"
+
 interface WritingAreaProps {
-  lines: Line[]
+  lines: { id: string; text: string }[]
   stackFontSize: number
   darkMode: boolean
-  mode: "write" | "nav"
+  mode: Mode
   offset: number
   isFullscreen: boolean
-  linesContainerRef?: React.RefObject<HTMLDivElement | null>
-  lineHpx?: number
+  linesContainerRef: React.RefObject<HTMLDivElement | null>
 }
 
-/**
- * @component WritingArea
- * @description Die Hauptkomponente des Schreibbereichs.
- * Diese Komponente ist jetzt rein präsentationell und empfängt den darzustellenden Zustand.
- * Die Eingabelogik wurde in die `app/page.tsx` und den Store verlagert.
- */
 export default function WritingArea({
   lines,
   stackFontSize,
@@ -38,54 +23,53 @@ export default function WritingArea({
   mode,
   offset,
   isFullscreen,
-  linesContainerRef: externalLinesContainerRef,
-  lineHpx,
+  linesContainerRef,
 }: WritingAreaProps) {
-  const internalLinesContainerRef = useRef<HTMLDivElement | null>(null)
   const maxVisibleLines = useTypewriterStore((s) => s.maxVisibleLines)
 
-  // Kombiniere internen und externen Ref
-  const setLinesContainerRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      internalLinesContainerRef.current = node
-      if (externalLinesContainerRef) {
-        externalLinesContainerRef.current = node
-      }
-    },
-    [externalLinesContainerRef, internalLinesContainerRef],
-  )
-
-  // Berechne die sichtbaren Zeilen
-  const visibleLines = useVisibleLines(lines, maxVisibleLines, offset)
-
-  useEffect(() => {
-    if (internalLinesContainerRef.current) {
-      internalLinesContainerRef.current.classList.toggle(
-        "fullscreen-mode",
-        isFullscreen,
-      )
+  const visible = useMemo(() => {
+    const total = lines.length
+    const N = Math.max(0, maxVisibleLines)
+    if (N === 0) return []
+    if (mode === "write") {
+      const start = Math.max(total - N, 0)
+      return lines.slice(start, total)
+    } else {
+      // Navigation: offset scrolls history upwards from the bottom window
+      const start = Math.max(total - N - offset, 0)
+      const end = Math.min(start + N, total)
+      return lines.slice(start, end)
     }
-  }, [isFullscreen, internalLinesContainerRef])
+  }, [lines, maxVisibleLines, mode, offset])
+
+  const lineHeight = isFullscreen ? 1.3 : 1.4
 
   return (
-    <div className="flex-1 flex flex-col relative overflow-hidden font-serif">
-      <div
-        ref={setLinesContainerRef}
-        className={`flex-1 overflow-hidden px-4 md:px-6 pt-6 writing-container flex flex-col justify-start ${
-          darkMode ? "bg-gray-900 text-gray-200" : "bg-[#fcfcfa] text-gray-800"
-        }`}
-        style={{
-          fontSize: `${stackFontSize}px`,
-          lineHeight: isFullscreen ? "1.3" : "1.4",
-        }}
-        aria-live="polite"
-      >
-        <LineStack
-          visibleLines={visibleLines}
-          mode={mode}
-          lineHpx={lineHpx}
-        />
-      </div>
+    <div
+      ref={linesContainerRef as any}
+      className={`line-stack ${darkMode ? "bg-[#121212]" : "bg-[#f3efe9]"} w-full h-full overflow-hidden`}
+      style={{
+        fontFamily: "ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif",
+        fontSize: `${stackFontSize}px`,
+        lineHeight: String(lineHeight),
+        padding: "0.75rem 1.25rem",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-start", // anchor to top in all modes
+        gap: "0px",
+      }}
+      aria-label="Line stack"
+    >
+      {visible.map((l) => (
+        <div
+          key={l.id}
+          className={`${darkMode ? "text-[#E0E0E0]" : "text-[#222]"} truncate`}
+          style={{ whiteSpace: "nowrap" }}
+        >
+          {l.text}
+        </div>
+      ))}
+      {/* Fillers are not needed; we clip strictly to the container height */}
     </div>
   )
 }

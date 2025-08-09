@@ -1,16 +1,17 @@
-import { memo, CSSProperties } from "react"
+"use client"
+
+import { memo } from "react"
 
 interface LineStackProps {
-  visibleLines: { line: { text: string }; index: number; key: string }[]
-  mode: "write" | "nav"
-  lineHpx?: number
+  visibleLines: { text: string; index: number; key: string }[]
 }
 
-export const LineStack = memo(function LineStack({
-  visibleLines,
-  mode,
-  lineHpx,
-}: LineStackProps) {
+/**
+ * LineStack renders the window of visible lines.
+ * - Anchored to top
+ * - No gaps/margins that change height
+ */
+export const LineStack = memo(function LineStack({ visibleLines }: LineStackProps) {
   return (
     <div
       className="line-stack"
@@ -18,25 +19,18 @@ export const LineStack = memo(function LineStack({
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        // Zeilen immer oben ausrichten, damit die erste Zeile an der Oberkante startet
-        // und neue Zeilen darunter erscheinen
         justifyContent: "flex-start",
         maxHeight: "100%",
-        lineHeight: "var(--lineHpx)",
         gap: "0",
         padding: "0",
         margin: "0",
-        paddingBottom: "0",
-        marginBottom: "0",
-        ...(lineHpx ? ({ ["--lineHpx" as any]: `${lineHpx}px` } as CSSProperties) : {}),
       }}
     >
-      {visibleLines.map(({ line, index, key }) => (
+      {visibleLines.map(({ text, index, key }) => (
         <div key={key} data-line-index={index} style={{ margin: "0", padding: "0" }}>
-          {line.text}
+          {text}
         </div>
       ))}
     </div>
   )
 })
-

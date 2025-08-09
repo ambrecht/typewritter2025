@@ -19,6 +19,14 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
     setFixedLineLength,
     flowMode,
     toggleFlowMode,
+    // New config
+    wrapMode,
+    hyphenChar,
+    maxUserCols,
+    maxAutoCols,
+    setWrapMode,
+    setHyphenChar,
+    setUserMaxCols,
   } = useTypewriterStore()
 
   if (!isOpen) return null
@@ -43,7 +51,6 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
           zIndex: 10,
         }}
       >
-        {/* Zurück-Button */}
         <button
           className={`flex items-center text-lg font-medium p-3 rounded-full ${
             darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
@@ -54,27 +61,19 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
-            viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-6 w-6 mr-2"
           >
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-          <span>Zurück</span>
+          <span className="ml-2">Zurück</span>
         </button>
-
-        {/* Titel */}
         <h1 id="settings-title" className="text-xl font-medium">
           Einstellungen
         </h1>
-
-        {/* Platzhalter für symmetrisches Layout */}
-        <div style={{ width: "48px" }}></div>
+        <div style={{ width: "48px" }} />
       </div>
 
       {/* Content */}
@@ -85,93 +84,28 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
           color: darkMode ? "#f9fafb" : "#111827",
         }}
       >
-        {/* Schriftgröße für aktive Zeile */}
+        {/* Active line font size */}
         <div className="space-y-4">
           <h2 className="text-xl mb-4 font-serif">Schreibkopf</h2>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <label style={{ display: "flex", alignItems: "center", fontSize: "1.125rem" }}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ marginRight: "0.5rem" }}
-              >
-                <polyline points="4 7 4 4 20 4 20 7"></polyline>
-                <line x1="9" y1="20" x2="15" y2="20"></line>
-                <line x1="12" y1="4" x2="12" y2="20"></line>
-              </svg>
-              Schriftgröße
+          <div className="flex items-center justify-between mb-4">
+            <label className="text-lg flex items-center">
+              <span>Schriftgröße</span>
             </label>
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div className="flex items-center">
               <button
                 onClick={() => setFontSize(Math.max(11, fontSize - 2))}
-                style={{
-                  height: "3.5rem",
-                  width: "3.5rem",
-                  borderRadius: "9999px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
-                }}
+                className="h-14 w-14 rounded-full flex items-center justify-center border"
+                style={{ borderColor: darkMode ? "#4b5563" : "#d1d5db" }}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
+                <span className="sr-only">Kleiner</span>–
               </button>
-              <span
-                style={{
-                  margin: "0 1rem",
-                  fontFamily: "monospace",
-                  width: "3rem",
-                  textAlign: "center",
-                  fontSize: "1.25rem",
-                }}
-              >
-                {fontSize}
-              </span>
+              <span className="mx-4 font-mono w-12 text-center text-xl">{fontSize}</span>
               <button
                 onClick={() => setFontSize(Math.min(64, fontSize + 2))}
-                style={{
-                  height: "3.5rem",
-                  width: "3.5rem",
-                  borderRadius: "9999px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
-                }}
+                className="h-14 w-14 rounded-full flex items-center justify-center border"
+                style={{ borderColor: darkMode ? "#4b5563" : "#d1d5db" }}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
+                <span className="sr-only">Größer</span>+
               </button>
             </div>
           </div>
@@ -186,115 +120,38 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             }}
           >
             <span
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 1,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
+              style={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}
             >
               Beispieltext für Schreibkopf
             </span>
           </div>
         </div>
 
-        {/* Trennlinie */}
-        <div
-          style={{
-            height: "1px",
-            width: "100%",
-            backgroundColor: darkMode ? "#374151" : "#e5e7eb",
-          }}
-        ></div>
+        {/* Divider */}
+        <div style={{ height: 1, backgroundColor: darkMode ? "#374151" : "#e5e7eb" }} />
 
-        {/* Schriftgröße für Zeilenstack */}
+        {/* Stack font size */}
         <div className="space-y-4">
           <h2 className="text-xl mb-4 font-serif">Zeilenstack</h2>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <label style={{ display: "flex", alignItems: "center", fontSize: "1.125rem" }}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ marginRight: "0.5rem" }}
-              >
-                <line x1="17" y1="10" x2="3" y2="10"></line>
-                <line x1="21" y1="6" x2="3" y2="6"></line>
-                <line x1="21" y1="14" x2="3" y2="14"></line>
-                <line x1="17" y1="18" x2="3" y2="18"></line>
-              </svg>
-              Schriftgröße
+          <div className="flex items-center justify-between mb-4">
+            <label className="text-lg flex items-center">
+              <span>Schriftgröße</span>
             </label>
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div className="flex items-center">
               <button
                 onClick={() => setStackFontSize(Math.max(11, stackFontSize - 1))}
-                style={{
-                  height: "3.5rem",
-                  width: "3.5rem",
-                  borderRadius: "9999px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
-                }}
+                className="h-14 w-14 rounded-full flex items-center justify-center border"
+                style={{ borderColor: darkMode ? "#4b5563" : "#d1d5db" }}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
+                <span className="sr-only">Kleiner</span>–
               </button>
-              <span
-                style={{
-                  margin: "0 1rem",
-                  fontFamily: "monospace",
-                  width: "3rem",
-                  textAlign: "center",
-                  fontSize: "1.25rem",
-                }}
-              >
-                {stackFontSize}
-              </span>
+              <span className="mx-4 font-mono w-12 text-center text-xl">{stackFontSize}</span>
               <button
                 onClick={() => setStackFontSize(Math.min(64, stackFontSize + 1))}
-                style={{
-                  height: "3.5rem",
-                  width: "3.5rem",
-                  borderRadius: "9999px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
-                }}
+                className="h-14 w-14 rounded-full flex items-center justify-center border"
+                style={{ borderColor: darkMode ? "#4b5563" : "#d1d5db" }}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
+                <span className="sr-only">Größer</span>+
               </button>
             </div>
           </div>
@@ -309,35 +166,74 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             }}
           >
             <span
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
+              style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
             >
               Beispieltext für den Zeilenstack. Hier sehen Sie, wie bereits geschriebene Zeilen aussehen werden.
             </span>
           </div>
         </div>
 
-        {/* Trennlinie */}
-        <div
-          style={{
-            height: "1px",
-            width: "100%",
-            backgroundColor: darkMode ? "#374151" : "#e5e7eb",
-          }}
-        ></div>
+        {/* Divider */}
+        <div style={{ height: 1, backgroundColor: darkMode ? "#374151" : "#e5e7eb" }} />
 
-        {/* Zeilenlänge */}
+        {/* New: Wrap Mode & Hyphen */}
+        <div className="space-y-3">
+          <h2 className="text-xl mb-2 font-sans">Umbruch</h2>
+          <div className="flex items-center justify-between">
+            <label className="text-lg">Umbruchart</label>
+            <select
+              value={wrapMode}
+              onChange={(e) => setWrapMode(e.target.value as "hard-hyphen" | "word-wrap")}
+              className={`px-3 py-2 rounded border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-gray-300"}`}
+            >
+              <option value="word-wrap">Word-Wrap</option>
+              <option value="hard-hyphen">Hard-Hyphen</option>
+            </select>
+          </div>
+          <div className="flex items-center justify-between">
+            <label className="text-lg">Hyphen-Zeichen</label>
+            <input
+              value={hyphenChar}
+              onChange={(e) => setHyphenChar(e.target.value?.slice(0, 2) || "-")}
+              className={`px-3 py-2 rounded border w-24 text-center ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-gray-300"}`}
+            />
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, backgroundColor: darkMode ? "#374151" : "#e5e7eb" }} />
+
+        {/* New: User Max Cols (clamped to auto) */}
+        <div className="space-y-2">
+          <h2 className="text-xl mb-2 font-sans">Max. Zeichen pro Zeile</h2>
+          <div className="flex items-center justify-between">
+            <span className="text-sm opacity-75">Automatische Grenze</span>
+            <span className="font-mono">{maxAutoCols}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm opacity-75">Benutzerlimit</span>
+            <span className="font-mono">{maxUserCols ?? maxAutoCols}</span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={Math.max(1, maxAutoCols)}
+            value={maxUserCols ?? maxAutoCols}
+            onChange={(e) => setUserMaxCols(Number.parseInt(e.target.value, 10))}
+            className="w-full"
+          />
+          <p className="text-xs opacity-70">Ihr Limit wird automatisch auf die Auto-Grenze geklemmt.</p>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, backgroundColor: darkMode ? "#374151" : "#e5e7eb" }} />
+
+        {/* Legacy settings retained for compatibility */}
         <div className="space-y-4">
-          <h2 className="text-xl mb-4 font-sans">Zeilenlänge</h2>
-          <div
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}
-          >
-            <label className="text-lg font-sans">Maximale Zeichen pro Zeile</label>
-            <span style={{ fontFamily: "monospace", fontSize: "1.25rem" }}>{lineBreakConfig.maxCharsPerLine}</span>
+          <h2 className="text-xl mb-2 font-sans">Legacy: Zeilenlänge</h2>
+          <div className="flex items-center justify-between">
+            <label className="text-lg">Maximale Zeichen pro Zeile</label>
+            <span className="font-mono text-xl">{lineBreakConfig.maxCharsPerLine}</span>
           </div>
           <input
             type="range"
@@ -345,55 +241,25 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
             max="100"
             value={lineBreakConfig.maxCharsPerLine}
             onChange={(e) => setFixedLineLength(Number.parseInt(e.target.value))}
-            style={{
-              width: "100%",
-              height: "2rem",
-              borderRadius: "0.5rem",
-              appearance: "none",
-              cursor: "pointer",
-              backgroundColor: darkMode ? "#1f2937" : "#e5e7eb",
-            }}
+            className="w-full"
           />
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "0.875rem",
-              fontFamily: "monospace",
-              marginTop: "0.5rem",
-            }}
-          >
+          <div className="flex justify-between text-sm font-mono opacity-70">
             <span>20</span>
             <span>60</span>
             <span>100</span>
           </div>
-        </div>
-
-        {/* Trennlinie */}
-        <div
-          style={{
-            height: "1px",
-            width: "100%",
-            backgroundColor: darkMode ? "#374151" : "#e5e7eb",
-          }}
-        ></div>
-
-        {/* Automatische Zeilenlänge */}
-        <div style={{ padding: "1rem 0" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <label className="text-lg font-sans">Automatische Zeilenlänge</label>
-            <label style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+          <div className="flex items-center justify-between">
+            <label className="text-lg">Automatische Zeilenlänge</label>
+            <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={lineBreakConfig.autoMaxChars}
                 onChange={() => updateLineBreakConfig({ autoMaxChars: !lineBreakConfig.autoMaxChars })}
-                style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+                className="sr-only"
               />
-              <div
+              <span
+                className="w-16 h-9 rounded-full relative"
                 style={{
-                  width: "4rem",
-                  height: "2.25rem",
-                  borderRadius: "9999px",
                   backgroundColor: lineBreakConfig.autoMaxChars
                     ? darkMode
                       ? "#4b5563"
@@ -401,92 +267,49 @@ export default function SettingsModal({ isOpen, onClose, darkMode }: SettingsMod
                     : darkMode
                       ? "#1f2937"
                       : "#e5e7eb",
-                  position: "relative",
                 }}
               >
-                <div
+                <span
+                  className="absolute top-1 left-1 h-7 w-7 rounded-full bg-white border"
                   style={{
-                    position: "absolute",
-                    top: "0.25rem",
-                    left: lineBreakConfig.autoMaxChars ? "2.25rem" : "0.25rem",
-                    backgroundColor: "white",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "9999px",
-                    height: "1.75rem",
-                    width: "1.75rem",
-                    transition: "all 0.3s",
+                    transform: lineBreakConfig.autoMaxChars ? "translateX(28px)" : "translateX(0px)",
+                    transition: "all .2s",
+                    borderColor: "#d1d5db",
                   }}
-                ></div>
-              </div>
+                />
+              </span>
             </label>
           </div>
-          <p
-            className="font-sans"
-            style={{
-              fontSize: "0.875rem",
-              marginTop: "0.5rem",
-              color: darkMode ? "#9ca3af" : "#6b7280",
-            }}
-          >
-            Passt die Zeilenlänge automatisch an die Bildschirmgröße an
-          </p>
         </div>
 
-        {/* Trennlinie */}
-        <div
-          style={{
-            height: "1px",
-            width: "100%",
-            backgroundColor: darkMode ? "#374151" : "#e5e7eb",
-          }}
-        ></div>
+        {/* Divider */}
+        <div style={{ height: 1, backgroundColor: darkMode ? "#374151" : "#e5e7eb" }} />
 
-        {/* Flow Mode Einstellung */}
-        <div style={{ padding: "1rem 0" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <label className="text-lg font-sans">Flow Mode</label>
-            <label style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={flowMode}
-                onChange={toggleFlowMode}
-                style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
-              />
-              <div
+        {/* Flow Mode */}
+        <div className="space-y-2">
+          <h2 className="text-xl mb-2 font-sans">Flow Mode</h2>
+          <div className="flex items-center justify-between">
+            <span>Aktiv</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked={flowMode} onChange={toggleFlowMode} className="sr-only" />
+              <span
+                className="w-16 h-9 rounded-full relative"
                 style={{
-                  width: "4rem",
-                  height: "2.25rem",
-                  borderRadius: "9999px",
                   backgroundColor: flowMode ? (darkMode ? "#4b5563" : "#9ca3af") : darkMode ? "#1f2937" : "#e5e7eb",
-                  position: "relative",
                 }}
               >
-                <div
+                <span
+                  className="absolute top-1 left-1 h-7 w-7 rounded-full bg-white border"
                   style={{
-                    position: "absolute",
-                    top: "0.25rem",
-                    left: flowMode ? "2.25rem" : "0.25rem",
-                    backgroundColor: "white",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "9999px",
-                    height: "1.75rem",
-                    width: "1.75rem",
-                    transition: "all 0.3s",
+                    transform: flowMode ? "translateX(28px)" : "translateX(0px)",
+                    transition: "all .2s",
+                    borderColor: "#d1d5db",
                   }}
-                ></div>
-              </div>
+                />
+              </span>
             </label>
           </div>
-          <p
-            className="font-sans"
-            style={{
-              fontSize: "0.875rem",
-              marginTop: "0.5rem",
-              color: darkMode ? "#9ca3af" : "#6b7280",
-            }}
-          >
-            Wenn aktiviert, können Zeichen nicht gelöscht werden (echtes Schreibmaschinen-Feeling).
-          </p>
+          <p className="text-xs opacity-70">Wenn aktiviert, kann nicht gelöscht werden.</p>
         </div>
       </div>
     </div>

@@ -142,7 +142,7 @@ Die App ist als Progressive Web App (PWA) konfiguriert:
 
 Dieses Projekt verwendet **Jest** und **React Testing Library** für Unit Tests. Da kein Test-Script definiert ist, werden die Tests direkt mit `npx jest` ausgeführt.
 
-```bash
+\`\`\`bash
 # Alle Tests ausführen
 npx jest
 
@@ -151,7 +151,7 @@ npx jest --watch
 
 # Testabdeckung generieren
 npx jest --coverage
-```
+\`\`\`
 
 Die Tests befinden sich im Verzeichnis `__tests__/`.
 

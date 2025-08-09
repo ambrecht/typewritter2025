@@ -1,27 +1,19 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import type { TypewriterState, TypewriterActions, LineBreakConfig, Line } from "@/types"
+import type { TypewriterState, TypewriterActions, Line } from "@/types"
 import { calculateTextStatistics } from "@/utils/text-statistics"
 import { saveText, getLastSession } from "@/utils/api"
 import { measureTextWidth } from "@/utils/canvas-utils"
 
-// Cache für gemessene Graphem-Breiten
+// Grapheme width cache
 const graphemeWidthCache = new Map<string, number>()
 
-/**
- * @constant initialState
- * @description Der initiale Zustand der Typewriter-Anwendung.
- * Wird für den Start und beim Zurücksetzen der Sitzung verwendet.
- */
-const initialState: Omit<
-  TypewriterState,
-  "lastSaveStatus" | "isSaving" | "isLoading" | "containerWidth"
-> = {
+const initialState: Omit<TypewriterState, "lastSaveStatus" | "isSaving" | "isLoading" | "containerWidth"> = {
   lines: [],
   activeLine: "",
-  maxCharsPerLine: 56, // Dient als Referenz und Fallback
+  maxCharsPerLine: 56, // legacy display only
   statistics: { wordCount: 0, letterCount: 0, pageCount: 0 },
-  lineBreakConfig: { maxCharsPerLine: 56, autoMaxChars: true },
+  lineBreakConfig: { maxCharsPerLine: 56, autoMaxChars: true }, // legacy
   fontSize: 24,
   stackFontSize: 18,
   darkMode: false,
@@ -32,206 +24,227 @@ const initialState: Omit<
   selectedLineIndex: null,
   offset: 0,
   maxVisibleLines: 0,
-  flowMode: false, // Neuer Zustand für den Flow Mode
+  flowMode: false,
+
+  // New wrap configuration
+  wrapMode: "word-wrap",
+  hyphenChar: "-",
+  maxUserCols: undefined,
+  maxAutoCols: 80,
+  avgGraphemeWidth: 10,
 }
 
-/**
- * @function useTypewriterStore
- * @description Der zentrale Zustand-Store für die Typewriter-Anwendung, implementiert mit Zustand.
- * Verwaltet den gesamten Anwendungszustand, inklusive Aktionen zur Zustandsänderung und Persistenz im LocalStorage.
- *
- * @returns Ein Hook zur Verwendung des Stores in React-Komponenten.
- */
 export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
   persist(
     (set, get) => ({
-      // --- STATE PROPERTIES ---
       ...initialState,
-      containerWidth: 800, // Standardbreite, wird bei UI-Mount aktualisiert
+      containerWidth: 800,
       lastSaveStatus: null,
       isSaving: false,
       isLoading: false,
 
-      // --- ACTIONS ---
-
-      /**
-       * Schaltet den Flow Mode um. Im Flow Mode kann nicht gelöscht werden.
-       */
-      toggleFlowMode: () => set((state) => ({ flowMode: !state.flowMode })),
-
-      /**
-       * Verarbeitet einen Tastendruck. Dies ist die ZENTRALE Funktion für alle Eingaben.
-       * Sie ersetzt die direkte Interaktion mit einem <textarea>-Element.
-       * @param {string} key - Die von der Tastatur gedrückte Taste (z.B. "a", "Backspace", "Enter").
-       */
-      handleKeyPress: (key: string) => {
-        const { flowMode, activeLine, lines, containerWidth, fontSize, lineBreakConfig } = get()
-
-        // 1. Behandelt die "Enter"-Taste
-        if (key === "Enter") {
-          get().addLineToStack()
-          return
-        }
-
-        // 2. Behandelt die "Backspace"-Taste
-        if (key === "Backspace") {
-          // Löschen ist im Flow Mode nicht erlaubt.
-          if (flowMode) {
-            return
-          }
-
-          // Das Löschen wirkt sich NUR auf die activeLine aus.
-          // Wenn die activeLine leer ist, passiert nichts.
-          if (activeLine.length > 0) {
-            const newActiveLine = activeLine.slice(0, -1)
-            set({
-              activeLine: newActiveLine,
-              statistics: calculateTextStatistics([
-                ...lines.map((l) => l.text),
-                newActiveLine,
-              ].join("\n")),
-            })
-          }
-          // Die fehlerhafte Logik, die Zeilen aus dem Stack zurückgeholt hat, wurde entfernt.
-          return
-        }
-
-        // 3. Behandelt alle anderen (druckbaren) Zeichen
-        // Ignoriere Funktionstasten wie "Shift", "Control", "ArrowLeft" etc.
-        if (key.length === 1) {
-          const newActiveLineContent = activeLine + key
-
-          // Wenn der automatische Umbruch deaktiviert ist, einfach Text anhängen.
-          if (!lineBreakConfig.autoMaxChars) {
-            set({
-              activeLine: newActiveLineContent,
-              statistics: calculateTextStatistics([
-                ...lines.map((l) => l.text),
-                newActiveLineContent,
-              ].join("\n")),
-            })
-            return
-          }
-
-          const font = `${fontSize}px "Lora", serif`
-          // containerWidth enthält bereits die nutzbare Breite der aktiven Zeile
-          // (clientWidth abzüglich horizontalem Padding)
-          const availableWidth = containerWidth
-          const segmenter = new Intl.Segmenter("de", { granularity: "grapheme" })
-          const segments = Array.from(segmenter.segment(newActiveLineContent))
-          let currentWidth = 0
-          let lastBoundaryIndex = -1
-          let lastBoundaryChar: string | null = null
-          let splitIndex = -1
-
-          for (let i = 0; i < segments.length; i++) {
-            const char = segments[i].segment
-            const cacheKey = `${font}-${char}`
-            let charWidth = graphemeWidthCache.get(cacheKey)
-            if (charWidth === undefined) {
-              charWidth = measureTextWidth(char, font)
-              graphemeWidthCache.set(cacheKey, charWidth)
-            }
-            if (currentWidth + charWidth > availableWidth) {
-              splitIndex = lastBoundaryIndex >= 0 ? lastBoundaryIndex : i
-              break
-            }
-            currentWidth += charWidth
-            if (char === " " || char === "\u00AD") {
-              lastBoundaryIndex = i
-              lastBoundaryChar = char
-            }
-          }
-
-          if (splitIndex === -1) {
-            set({
-              activeLine: newActiveLineContent,
-              statistics: calculateTextStatistics([
-                ...lines.map((l) => l.text),
-                newActiveLineContent,
-              ].join("\n")),
-            })
-          } else {
-            const lineSegments = segments.slice(0, splitIndex)
-            let remainderSegments = segments.slice(splitIndex)
-            if (lastBoundaryIndex >= 0) {
-              remainderSegments = remainderSegments.slice(1)
-            }
-            let lineToAdd = lineSegments.map((s) => s.segment).join("")
-
-            if (lastBoundaryChar === "\u00AD") {
-              lineToAdd = lineToAdd + "-"
-            }
-
-            lineToAdd = lineToAdd.trim()
-
-            const remainder = remainderSegments.map((s) => s.segment).join("")
-
-            const newLines: Line[] = [
-              ...lines,
-              { id: crypto.randomUUID(), text: lineToAdd },
-            ]
-
-            set({
-              lines: newLines,
-              activeLine: remainder,
-              mode: "write",
-              offset: 0,
-              mode: "write",
-              selectedLineIndex: null,
-              statistics: calculateTextStatistics([
-                ...newLines.map((l) => l.text),
-                remainder,
-              ].join("\n")),
-            })
-          }
-        }
+      // --- CONFIG ACTIONS ---
+      setWrapMode: (mode) => set({ wrapMode: mode }),
+      setHyphenChar: (c) => set({ hyphenChar: c || "-" }),
+      setUserMaxCols: (n) => {
+        const maxAuto = get().maxAutoCols
+        const clamped = Math.max(1, Math.min(n ?? maxAuto, maxAuto))
+        set({ maxUserCols: clamped })
+      },
+      setTextMetrics: ({ avgGraphemeWidth, maxAutoCols }) => {
+        const clampedAuto = Math.max(1, Math.floor(maxAutoCols))
+        let user = get().maxUserCols
+        if (user && user > clampedAuto) user = clampedAuto
+        set({ avgGraphemeWidth: Math.max(1, avgGraphemeWidth), maxAutoCols: clampedAuto, maxUserCols: user })
       },
 
-      /**
-       * Aktualisiert die verfügbare Breite des Schreib-Containers (ohne horizontales Padding).
-       * Wichtig für die Berechnung des automatischen Zeilenumbruchs.
-       * @param {number} width - Die nutzbare Breite des Containers in Pixeln.
-      */
-      setContainerWidth: (width: number) => set({ containerWidth: width }),
+      toggleFlowMode: () => set((s) => ({ flowMode: !s.flowMode })),
 
-      /**
-       * Setzt den Offset für die Sichtbarkeit des Zeilenstacks.
-       * @param {number} offset - Der neue Offset-Wert.
-       */
-      setOffset: (offset: number) => set({ offset }),
-
-      /**
-       * Setzt den Text der aktiven Zeile und führt bei Bedarf einen automatischen Zeilenumbruch durch.
-       * Dies ist die Kernlogik für das "fließende" Schreiben.
-       * @param {string} text - Der neue Text aus dem Eingabefeld.
-       */
-      setActiveLine: (text) => {
-        const newFullText = [...get().lines.map((l) => l.text), text].join("\n")
+      // Helper: commit a line to history and recalc stats
+      _commitLine: (lineText: string, remainder: string) => {
+        const newLines: Line[] = [...get().lines, { id: crypto.randomUUID(), text: lineText.trimEnd() }]
+        const joined = [...newLines.map((l) => l.text), remainder].join("\n")
         set({
-          activeLine: text,
-          statistics: calculateTextStatistics(newFullText),
+          lines: newLines,
+          activeLine: remainder,
+          offset: 0,
+          mode: "write",
+          selectedLineIndex: null,
+          statistics: calculateTextStatistics(joined),
         })
       },
 
-      /**
-       * Fügt die aktuelle `activeLine` zum `lines`-Array hinzu und leert die `activeLine`.
-       * Wird bei "Enter" oder beim automatischen Umbruch aufgerufen.
-       */
-      addLineToStack: () => {
-        const { activeLine, lines } = get()
-        // Verhindere das Hinzufügen mehrerer aufeinanderfolgender leerer Zeilen.
-        if (
-          activeLine.trim() === "" &&
-          lines.length > 0 &&
-          lines[lines.length - 1].text.trim() === ""
-        ) {
+      handleKeyPress: (key: string) => {
+        const state = get()
+        const {
+          flowMode,
+          activeLine,
+          lines,
+          containerWidth,
+          fontSize,
+          wrapMode,
+          hyphenChar,
+          maxUserCols,
+          maxAutoCols,
+          avgGraphemeWidth,
+        } = state
+
+        if (key === "Enter") {
+          if (activeLine.length === 0 && lines.length > 0 && lines[lines.length - 1].text.trim() === "") {
+            // prevent double empty lines
+            return
+          }
+          get()._commitLine(activeLine, "")
           return
         }
-        const newLines: Line[] = [
-          ...lines,
-          { id: crypto.randomUUID(), text: activeLine },
-        ]
+
+        if (key === "Backspace") {
+          if (flowMode) return
+          if (activeLine.length > 0) {
+            const newActive = activeLine.slice(0, -1)
+            set({
+              activeLine: newActive,
+              statistics: calculateTextStatistics([...lines.map((l) => l.text), newActive].join("\n")),
+            })
+          }
+          return
+        }
+
+        if (key.length !== 1) return
+
+        const next = activeLine + key
+
+        // Effective pixel limit from columns:
+        const effectiveCols = Math.min(maxAutoCols, maxUserCols ?? maxAutoCols)
+        const hyphenWidth = measureTextWidth(hyphenChar, `${fontSize}px "Lora", serif`)
+        const pixelLimitFromCols = effectiveCols * Math.max(1, avgGraphemeWidth)
+        const pixelLimit = Math.min(containerWidth, pixelLimitFromCols)
+
+        const font = `${fontSize}px "Lora", serif`
+
+        // Quick path: does next fully fit in pixel limit?
+        const nextWidth = measureTextWidth(next, font)
+        if (nextWidth <= pixelLimit) {
+          set({
+            activeLine: next,
+            statistics: calculateTextStatistics([...lines.map((l) => l.text), next].join("\n")),
+          })
+          return
+        }
+
+        // Overflow handling: grapheme-aware
+        const seg = new Intl.Segmenter("de", { granularity: "grapheme" })
+        const segments = Array.from(seg.segment(next))
+        // Find last space position (grapheme index)
+        let lastSpaceIndex = -1
+        for (let i = 0; i < segments.length; i++) {
+          if (segments[i].segment === " ") lastSpaceIndex = i
+        }
+
+        const currentWidth = measureTextWidth(activeLine, font)
+        const remainingWidth = Math.max(0, pixelLimit - currentWidth)
+
+        // Word-Wrap: if we have a space in the current (before the new word), commit up to that space
+        if (wrapMode === "word-wrap" && lastSpaceIndex >= 0) {
+          const lastSpacePosInStr = lastSpaceIndex // segments indices map to grapheme positions
+          // Compute committed = substring up to lastSpaceIndex (exclude space)
+          const committed = segments
+            .slice(0, lastSpacePosInStr)
+            .map((s) => s.segment)
+            .join("")
+            .trimEnd()
+          const remainder = segments
+            .slice(lastSpacePosInStr + 1)
+            .map((s) => s.segment)
+            .join("")
+            .replace(/^\s+/, "")
+          get()._commitLine(committed, remainder)
+          return
+        }
+
+        // Word-Wrap: at line start and long word -> fallback to hard hyphen
+        // or Hard-Hyphen mode
+        // Determine how many graphemes of the remainder (beyond activeLine) can fit considering hyphen
+        const remainderStr = next.slice(activeLine.length)
+        const remainderSeg = Array.from(seg.segment(remainderStr))
+
+        if (remainingWidth > hyphenWidth + 1) {
+          let consumedWidth = 0
+          let consumedCount = 0
+          for (let i = 0; i < remainderSeg.length; i++) {
+            const g = remainderSeg[i].segment
+            const cacheKey = `${font}::${g}`
+            let w = graphemeWidthCache.get(cacheKey)
+            if (w === undefined) {
+              w = measureTextWidth(g, font)
+              graphemeWidthCache.set(cacheKey, w)
+            }
+            if (consumedWidth + w > remainingWidth - hyphenWidth) break
+            consumedWidth += w
+            consumedCount++
+          }
+
+          if (consumedCount > 0) {
+            const consumedText = remainderSeg
+              .slice(0, consumedCount)
+              .map((s) => s.segment)
+              .join("")
+            const rest = remainderSeg
+              .slice(consumedCount)
+              .map((s) => s.segment)
+              .join("")
+            const committed = (activeLine + consumedText + hyphenChar).trimEnd()
+            get()._commitLine(committed, rest.replace(/^\s+/, ""))
+            return
+          }
+        }
+
+        // No space and no room for hyphen segment: commit current line as-is; move the word to next line
+        if (activeLine.trimEnd().length > 0) {
+          get()._commitLine(activeLine.trimEnd(), next.slice(activeLine.length).replace(/^\s+/, ""))
+          return
+        }
+
+        // At line start and word longer than limit: split hard to N-1 + hyphen
+        // Determine max graphemes that fit in (pixelLimit - hyphenWidth)
+        let widthAcc = 0
+        let countAcc = 0
+        for (let i = 0; i < segments.length; i++) {
+          const g = segments[i].segment
+          const cacheKey = `${font}::${g}`
+          let w = graphemeWidthCache.get(cacheKey)
+          if (w === undefined) {
+            w = measureTextWidth(g, font)
+            graphemeWidthCache.set(cacheKey, w)
+          }
+          if (widthAcc + w > pixelLimit - hyphenWidth) break
+          widthAcc += w
+          countAcc++
+        }
+        const head =
+          segments
+            .slice(0, Math.max(0, countAcc))
+            .map((s) => s.segment)
+            .join("") + hyphenChar
+        const tail = segments
+          .slice(Math.max(0, countAcc))
+          .map((s) => s.segment)
+          .join("")
+        get()._commitLine(head.trimEnd(), tail.replace(/^\s+/, ""))
+      },
+
+      setContainerWidth: (width: number) => set({ containerWidth: width }),
+      setOffset: (offset: number) => set({ offset }),
+      setActiveLine: (text) => {
+        const newFullText = [...get().lines.map((l) => l.text), text].join("\n")
+        set({ activeLine: text, statistics: calculateTextStatistics(newFullText) })
+      },
+      addLineToStack: () => {
+        const { activeLine, lines } = get()
+        if (activeLine.trim() === "" && lines.length > 0 && lines[lines.length - 1].text.trim() === "") {
+          return
+        }
+        const newLines: Line[] = [...lines, { id: crypto.randomUUID(), text: activeLine }]
         const newText = newLines.map((l) => l.text).join("\n")
         set({
           lines: newLines,
@@ -242,44 +255,14 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           statistics: calculateTextStatistics(newText),
         })
       },
-
-      /**
-       * Aktualisiert die Konfiguration für den Zeilenumbruch.
-       * @param {Partial<LineBreakConfig>} config - Ein Objekt mit den zu aktualisierenden Konfigurationswerten.
-       */
-      updateLineBreakConfig: (config: Partial<LineBreakConfig>) => {
+      updateLineBreakConfig: (config) => {
         const newConfig = { ...get().lineBreakConfig, ...config }
-        set({
-          lineBreakConfig: newConfig,
-          maxCharsPerLine: newConfig.maxCharsPerLine,
-        })
+        set({ lineBreakConfig: newConfig, maxCharsPerLine: newConfig.maxCharsPerLine })
       },
-
-      /**
-       * Setzt die Schriftgröße für die aktive Zeile.
-       * @param {number} size - Die neue Schriftgröße in Pixeln.
-       */
       setFontSize: (size: number) => set({ fontSize: size }),
-
-      /**
-       * Setzt die Schriftgröße für den Zeilenstack.
-       * @param {number} size - Die neue Schriftgröße in Pixeln.
-       */
       setStackFontSize: (size: number) => set({ stackFontSize: size }),
-
-      /**
-       * Schaltet den Dark Mode um.
-       */
-      toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
-
-      /**
-       * Leert nur die aktuelle Eingabezeile.
-       */
+      toggleDarkMode: () => set((s) => ({ darkMode: !s.darkMode })),
       clearCurrentInput: () => set({ activeLine: "" }),
-
-      /**
-       * Leert den gesamten Text (Zeilenstack und aktive Zeile).
-       */
       clearAllLines: () =>
         set({
           lines: [],
@@ -287,76 +270,33 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
           offset: 0,
           statistics: { wordCount: 0, letterCount: 0, pageCount: 0 },
         }),
-
-      /**
-       * Setzt die gesamte Sitzung auf den initialen Zustand zurück.
-       */
-      resetSession: () => {
-        set({ ...initialState, containerWidth: get().containerWidth })
-      },
-
-      /**
-       * Setzt eine feste Zeilenlänge und deaktiviert den automatischen Umbruch.
-       * @param {number} length - Die feste Anzahl an Zeichen pro Zeile.
-       */
+      resetSession: () => set({ ...initialState, containerWidth: get().containerWidth }),
       setFixedLineLength: (length: number) => {
         get().updateLineBreakConfig({ maxCharsPerLine: length, autoMaxChars: false })
       },
-
-      /**
-       * Setzt den Anwendungsmodus ('write' oder 'nav').
-       * @param {"write" | "nav"} mode - Der neue Modus.
-      */
       setMode: (mode) => set({ mode }),
-
-      /**
-       * Setzt den Index der ausgewählten Zeile im Navigationsmodus.
-       * @param {number | null} index - Der Index der Zeile oder `null`.
-      */
       setSelectedLineIndex: (index) => set({ selectedLineIndex: index }),
-
-      /**
-       * Aktualisiert die maximale Anzahl sichtbarer Zeilen.
-       */
       setMaxVisibleLines: (count: number) => set({ maxVisibleLines: count }),
 
-      /**
-       * Passt den Zeilenversatz an.
-       */
       adjustOffset: (delta: number) => {
-        const { offset, lines, activeLine, maxVisibleLines } = get()
-        const allLines = [...lines, activeLine]
-        const maxOffset = Math.max(allLines.length - maxVisibleLines, 0)
+        const { offset, lines, maxVisibleLines } = get()
+        const maxOffset = Math.max(lines.length - maxVisibleLines, 0)
         const newOffset = Math.min(Math.max(offset + delta, 0), maxOffset)
         set({ offset: newOffset })
       },
 
-      /**
-       * Navigiert eine Zeile nach oben im Stack.
-       */
       navigateUp: () => {
         set({ mode: "nav" })
         get().adjustOffset(1)
       },
-
-      /**
-       * Navigiert eine Zeile nach unten im Stack oder beendet den Navigationsmodus.
-       */
       navigateDown: () => {
         set({ mode: "nav" })
         get().adjustOffset(-1)
       },
-
-        /**
-         * Beendet den Navigationsmodus und kehrt zum Schreibmodus zurück.
-         */
-        resetNavigation: () => {
-          set({ mode: "write", selectedLineIndex: null, offset: 0 })
+      resetNavigation: () => {
+        set({ mode: "write", selectedLineIndex: null, offset: 0 })
       },
 
-      /**
-       * Speichert die aktuelle Sitzung über die API.
-       */
       saveSession: async () => {
         const { lines, activeLine } = get()
         const fullText = [...lines.map((l) => l.text), activeLine].join("\n")
@@ -376,9 +316,6 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         }
       },
 
-      /**
-       * Lädt die letzte gespeicherte Sitzung von der API.
-       */
       loadLastSession: async () => {
         set({ isLoading: true, lastSaveStatus: null })
         try {
@@ -413,49 +350,21 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
       },
     }),
     {
-      // Konfiguration für die Persistenz-Middleware
-      name: "typewriter-storage", // Eindeutiger Name für den LocalStorage-Key
-      storage: createJSONStorage(() => localStorage), // Verwende LocalStorage
-      /**
-       * Wird nach dem Laden des Zustands aus dem Storage ausgeführt.
-       * Ermöglicht die Migration von alten Datenformaten.
-       */
+      name: "typewriter-storage",
+      storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          if (state.lines && state.lines.length > 0) {
-            if (typeof state.lines[0] === "string") {
-              state.lines = (state.lines as unknown as string[]).map((text) => ({
-                id: crypto.randomUUID(),
-                text,
-              }))
-            } else if (
-              typeof state.lines[0] === "object" &&
-              state.lines[0] !== null
-            ) {
-              state.lines = (state.lines as any[]).map((line) => ({
-                id:
-                  typeof line.id === "string"
-                    ? line.id
-                    : typeof line.id === "number"
-                      ? String(line.id)
-                      : crypto.randomUUID(),
-                text: typeof line.text === "string" ? line.text : "",
-              }))
-            }
+          if (state.lines && (state.lines as any[]).length > 0) {
+            const arr = state.lines as any[]
+            state.lines = arr.map((line: any) => ({
+              id: typeof line.id === "string" ? line.id : crypto.randomUUID(),
+              text: typeof line.text === "string" ? line.text : "",
+            }))
           }
-          // Stelle sicher, dass flowMode nach dem Laden existiert
-          if (typeof state.flowMode === "undefined") {
-            state.flowMode = false
-          }
-          if (typeof state.offset === "undefined") {
-            state.offset = 0
-          }
+          if (typeof (state as any).flowMode === "undefined") (state as any).flowMode = false
+          if (typeof (state as any).offset === "undefined") (state as any).offset = 0
         }
       },
-      /**
-       * Definiert, welche Teile des Zustands im LocalStorage gespeichert werden sollen.
-       * Flüchtige Zustände wie `isSaving` oder `isLoading` werden ausgeschlossen.
-       */
       partialize: (state) =>
         Object.fromEntries(
           Object.entries(state).filter(

@@ -17,4 +17,3 @@ const ActiveInput = React.forwardRef<
 ActiveInput.displayName = "ActiveInput"
 
 export default ActiveInput
-

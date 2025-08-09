@@ -1,10 +1,8 @@
 /**
- * Konfiguration für Zeilenumbrüche
+ * Konfiguration für Zeilenumbrüche (Legacy)
  */
 export interface LineBreakConfig {
-  /** Maximale Anzahl von Zeichen pro Zeile (Standard: 56) */
   maxCharsPerLine: number
-  /** Automatische Berechnung der Zeilenlänge basierend auf dem Viewport */
   autoMaxChars: boolean
 }
 
@@ -12,198 +10,122 @@ export interface LineBreakConfig {
  * Ergebnis einer Zeilenumbruchoperation
  */
 export interface LineBreakResult {
-  /** Text, der in die aktuelle Zeile passt */
   line: string
-  /** Verbleibender Text, der in die nächste Zeile verschoben werden soll */
   remainder: string
 }
 
 /**
- * Repräsentiert einen Bereich von Zeilen, die einen Absatz bilden
+ * Absatzbereich
  */
 export interface ParagraphRange {
-  /** Startindex der Zeile (inklusive) */
   start: number
-  /** Endindex der Zeile (inklusive) */
   end: number
 }
 
 /**
- * Repräsentiert eine Zeile im Textstack
+ * Zeile im Stack
  */
 export interface Line {
-  /** Eindeutige ID der Zeile */
   id: string
-  /** Der Textinhalt der Zeile */
   text: string
 }
 
-/**
- * Unterstützte Markdown-Kategorien für eine formatierte Zeile
- */
 export enum MarkdownType {
-  /** Normale Textzeile ohne spezielle Formatierung */
   NORMAL = "normal",
-  /** Überschrift 1 ("#") */
   HEADING1 = "heading1",
-  /** Überschrift 2 ("##") */
   HEADING2 = "heading2",
-  /** Überschrift 3 ("###") */
   HEADING3 = "heading3",
-  /** Blockzitat (">") */
   BLOCKQUOTE = "blockquote",
-  /** Ungeordnete Liste ("-", "*" oder "+") */
   UNORDERED_LIST = "unordered_list",
-  /** Geordnete Liste ("1.") */
   ORDERED_LIST = "ordered_list",
-  /** Dialogzeile, beginnend mit einem Anführungszeichen */
   DIALOG = "dialog",
-  /** Code-Block oder Inline-Code */
   CODE = "code",
-  /** Absatzkennzeichnung */
   PARAGRAPH = "paragraph",
 }
 
-/**
- * Repräsentiert eine einfache Zeile Text
- */
 export interface FormattedLine {
-  /** Der Textinhalt der Zeile */
   text: string
-  /** Markdown-Typ der Zeile */
   type: MarkdownType
-  /** Optionaler Ebenenwert für Überschriften oder Listen */
   level?: number
-  /** Optionaler Index für geordnete Listen */
   order?: number
 }
 
-/**
- * Statistiken für den Text
- */
 export interface TextStatistics {
-  /** Anzahl der Wörter im Text */
   wordCount: number
-  /** Anzahl der Buchstaben im Text */
   letterCount: number
-  /** Anzahl der Seiten im Text */
   pageCount: number
 }
 
-/**
- * Konfiguration für den Flow Mode
- */
-export interface FlowModeConfig {
-  /** Ist der Flow Mode aktiv? */
-  enabled: boolean
-  /** Soll das Löschen mit Backspace deaktiviert sein? */
-  noBackspace: boolean
-  /** Sollen Satzzeichen automatisch entfernt werden? */
-  noPunctuation: boolean
-  /** Art des Timers: Zeit oder Wortanzahl */
-  timerType: "time" | "words"
-  /** Zielwert (Minuten oder Wörter) */
-  timerTarget: number
-  /** Startzeit des Timers (Millisekunden seit Epoch) */
-  timerStartTime?: number
-  /** Wortzahl zu Beginn des Timers */
-  initialWordCount?: number
-}
+// New wrap configuration
+export type WrapMode = "hard-hyphen" | "word-wrap"
 
 /**
- * Typewriter-Anwendungszustand
+ * Typewriter state
  */
 export interface TypewriterState {
-  /** Array bereits geschriebener Zeilen */
   lines: Line[]
-  /** Aktuell bearbeitete Zeile */
   activeLine: string
-  /** Maximale Anzahl von Zeichen pro Zeile */
-  maxCharsPerLine: number
-  /** Textstatistiken */
+  maxCharsPerLine: number // legacy UI
   statistics: TextStatistics
-  /** Konfiguration für Zeilenumbrüche */
   lineBreakConfig: LineBreakConfig
-  /** Schriftgröße in Pixeln für aktive Zeile */
   fontSize: number
-  /** Schriftgröße in Pixeln für Stack vorheriger Zeilen */
   stackFontSize: number
-  /** Ob der Dark Mode aktiviert ist */
   darkMode: boolean
-  /** Array von Absatzbereichen (für Abwärtskompatibilität) */
   paragraphRanges: ParagraphRange[]
-  /** Ob wir uns derzeit in einem Absatz befinden (für Abwärtskompatibilität) */
   inParagraph: boolean
-  /** Startindex des aktuellen Absatzes (für Abwärtskompatibilität) */
   currentParagraphStart: number
-  /** Aktueller Modus (Schreiben oder Navigieren) */
   mode: "write" | "nav"
-  /** Index der aktuell ausgewählten Zeile (null, wenn keine ausgewählt ist) */
   selectedLineIndex: number | null
-  /** Aktueller Versatz für die Anzeige der Zeilen */
   offset: number
-  /** Maximale Anzahl sichtbarer Zeilen */
   maxVisibleLines: number
-  /** Status der letzten Speicheroperation */
   lastSaveStatus: { success: boolean; message: string } | null
-  /** Ob gerade gespeichert wird */
   isSaving: boolean
-  /** Ob gerade geladen wird */
   isLoading: boolean
-  /** Breite des Schreib-Containers in Pixeln */
   containerWidth: number
-  /** Ob der Flow Mode (kein Löschen) aktiviert ist */
   flowMode: boolean
+
+  // New
+  wrapMode: WrapMode
+  hyphenChar: string
+  maxUserCols?: number
+  maxAutoCols: number
+  avgGraphemeWidth: number
 }
 
 /**
- * Aktionen für den Typewriter-Store
+ * Actions
  */
 export interface TypewriterActions {
-  /** Funktion zum Setzen der aktiven Zeile (nur für internes Laden) */
   setActiveLine: (text: string) => void
-  /** Funktion zum Hinzufügen der aktiven Zeile zum Stack */
   addLineToStack: () => void
-  /** Funktion zum Aktualisieren der Konfiguration */
   updateLineBreakConfig: (config: Partial<LineBreakConfig>) => void
-  /** Funktion zum Setzen der Schriftgröße für aktive Zeile */
   setFontSize: (size: number) => void
-  /** Funktion zum Setzen der Schriftgröße für Stack vorheriger Zeilen */
   setStackFontSize: (size: number) => void
-  /** Funktion zum Umschalten des Dark Mode */
   toggleDarkMode: () => void
-  /** Funktion zum Löschen der aktuellen Eingabe */
   clearCurrentInput: () => void
-  /** Funktion zum Löschen aller Zeilen */
   clearAllLines: () => void
-  /** Funktion zum Zurücksetzen der Sitzung */
   resetSession: () => void
-  /** Funktion zum Setzen einer festen Zeilenlänge */
   setFixedLineLength: (length: number) => void
-  /** Funktion zum Setzen des Modus */
   setMode: (mode: "write" | "nav") => void
-  /** Funktion zum Setzen des ausgewählten Zeilenindex */
   setSelectedLineIndex: (index: number | null) => void
-  /** Aktualisiert die maximale Anzahl sichtbarer Zeilen */
   setMaxVisibleLines: (count: number) => void
-  /** Passt den Versatz der sichtbaren Zeilen an */
   adjustOffset: (delta: number) => void
-  /** Funktion zum Navigieren nach oben im Stack */
   navigateUp: () => void
-  /** Funktion zum Navigieren nach unten im Stack */
   navigateDown: () => void
-  /** Funktion zum Zurücksetzen der Navigation */
   resetNavigation: () => void
-  /** Funktion zum Speichern der aktuellen Sitzung */
   saveSession: () => Promise<void>
-  /** Funktion zum Laden der letzten Sitzung */
   loadLastSession: () => Promise<void>
-  /** Funktion zum Setzen der Container-Breite */
   setContainerWidth: (width: number) => void
-  /** Funktion zum Setzen des Offsets für die sichtbaren Zeilen */
   setOffset: (offset: number) => void
-  /** Schaltet den Flow Mode (kein Löschen) um */
   toggleFlowMode: () => void
-  /** Verarbeitet einen Tastendruck für die Eingabe */
   handleKeyPress: (key: string) => void
+
+  // New config
+  setWrapMode: (mode: WrapMode) => void
+  setHyphenChar: (c: string) => void
+  setUserMaxCols: (n: number) => void
+  setTextMetrics: (m: { avgGraphemeWidth: number; maxAutoCols: number }) => void
+
+  // Internal helper used by store only (not exported in UI, but typed here for completeness)
+  _commitLine?: (lineText: string, remainder: string) => void
 }
