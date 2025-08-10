@@ -311,6 +311,11 @@ export const useTypewriterStore = create<TypewriterState & TypewriterActions>()(
         }
       },
 
+      // Allow users to abort a pending save operation. This does not cancel the
+      // underlying network request but immediately resets the saving state so
+      // the UI can recover.
+      cancelSave: () => set({ isSaving: false }),
+
       loadLastSession: async () => {
         set({ isLoading: true, lastSaveStatus: null })
         try {
