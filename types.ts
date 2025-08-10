@@ -69,6 +69,7 @@ export interface TypewriterActions {
   resetNavigation: () => void
   saveSession: () => Promise<void>
   loadLastSession: () => Promise<void>
+  cancelSave: () => void
   setContainerWidth: (width: number) => void
   setOffset: (offset: number) => void
   toggleFlowMode: () => void

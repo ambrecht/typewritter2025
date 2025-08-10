@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useTypewriterStore } from "@/store/typewriter-store"
 import WritingArea from "@/components/writing-area"
-import ControlBar from "@/components/control-bar"
-import OptionsBar from "@/components/options-bar"
+import Toolbar from "@/components/toolbar"
 import ActiveInput from "@/components/active-input"
 import { ActiveLine } from "@/components/writing-area/ActiveLine"
 import OfflineIndicator from "@/components/offline-indicator"
@@ -14,6 +13,7 @@ import FlowSettingsModal from "@/components/flow-settings-modal"
 import FlowModeOverlay from "@/components/flow-mode-overlay"
 import ApiKeyWarning from "@/components/api-key-warning"
 import { measureTextWidth } from "@/utils/canvas-utils"
+import { useFocusTimerStore } from "@/store/focus-timer-store"
 
 // Fixed top bar height in px (per spec: e.g. 40px)
 const HEAD_H = 40
@@ -38,6 +38,8 @@ export default function TypewriterPage() {
     setContainerWidth,
     setMaxVisibleLines,
     setTextMetrics,
+    setFontSize,
+    setStackFontSize,
   } = useTypewriterStore()
 
   const WORD_GOAL = 750
@@ -57,6 +59,7 @@ export default function TypewriterPage() {
   const [isAndroid, setIsAndroid] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showFlowSettings, setShowFlowSettings] = useState(false)
+  const { running: timerRunning, start: startTimer, stop: stopTimer } = useFocusTimerStore()
 
   // ACL height equals a single line height in px
   const [lineHeightPx, setLineHeightPx] = useState<number>(Math.round(stackFontSize * 1.4))
@@ -158,14 +161,6 @@ export default function TypewriterPage() {
     }
   }, [fontSize, stackFontSize, isFullscreen, setContainerWidth, setMaxVisibleLines, setTextMetrics])
 
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      viewportRef.current?.requestFullscreen().catch((err) => console.error("Fullscreen error:", err))
-    } else {
-      document.exitFullscreen().catch((err) => console.error("Exit fullscreen error:", err))
-    }
-  }, [])
-
   useEffect(() => {
     const onFull = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener("fullscreenchange", onFull)
@@ -201,6 +196,26 @@ export default function TypewriterPage() {
         return
       }
       lastKeyRef.current = { key: event.key, time: now }
+
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === "=" || event.key === "+") {
+          event.preventDefault()
+          setFontSize(fontSize + 1)
+          setStackFontSize(stackFontSize + 1)
+          return
+        }
+        if (event.key === "-") {
+          event.preventDefault()
+          setFontSize(Math.max(8, fontSize - 1))
+          setStackFontSize(Math.max(8, stackFontSize - 1))
+          return
+        }
+        if (event.key === "Enter") {
+          event.preventDefault()
+          timerRunning ? stopTimer() : startTimer(25)
+          return
+        }
+      }
 
       if (event.key === "Escape") {
         event.preventDefault()
@@ -259,17 +274,7 @@ export default function TypewriterPage() {
       <ApiKeyWarning />
 
       {/* Fixed-height OptionsBar (always visible, no sticky overlay) */}
-      <OptionsBar ref={headerRef} className="h-[40px]" data-testid="options-bar">
-        <ControlBar
-          wordCount={statistics.wordCount}
-          pageCount={statistics.pageCount}
-          toggleFullscreen={toggleFullscreen}
-          hiddenInputRef={hiddenInputRef}
-          isFullscreen={isFullscreen}
-          openSettings={openSettings}
-          openFlowSettings={openFlowSettings}
-        />
-      </OptionsBar>
+      <Toolbar ref={headerRef} className="h-[40px]" data-testid="options-bar" />
 
       {/* Middle: strictly clipped window (no scrollbars) */}
       <div className="flex-1 overflow-hidden">
